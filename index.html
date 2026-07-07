@@ -323,12 +323,23 @@ a.maplink:hover{text-decoration:underline}
 footer{text-align:center;color:var(--faint);font-size:12px;padding:30px 0 10px}
 .routetotal{font-size:12px;color:var(--sun);margin-top:7px;font-weight:700}
 
+/* ---------- Verlauf ---------- */
+.logrow{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.logrow:last-child{border-bottom:none}
+.logrow .chip{flex:0 0 auto}
+.loginfo{flex:1;min-width:0}
+.logdesc{font-size:13.5px;overflow-wrap:anywhere}
+.logts{font-size:11.5px;color:var(--faint)}
+.logrow.undone .logdesc{text-decoration:line-through;color:var(--faint)}
+.stage.today{border-color:var(--sun);background:rgba(255,178,87,.07);box-shadow:0 0 20px -8px rgba(255,178,87,.5)}
+.todaybadge{font-size:10px;font-weight:800;letter-spacing:.12em;background:linear-gradient(120deg,var(--sun-deep),var(--coral));color:#1a0d05;padding:2px 8px;border-radius:99px}
+
 /* ---------- Druck (Papier-Fallback für Funklöcher) ---------- */
 @media print{
   body{background:#fff}
   body::before,body::after{display:none}
   .eclipse,nav,.header-actions,.savebar,.addrow,.del,.iconbtn,footer,#toast,.modal-bg,
-  .mapwrap,.layerchips,.actions,.hint,button:not(.checkbox){display:none!important}
+  .mapwrap,.layerchips,.actions,.hint,button:not(.checkbox),#page-verlauf{display:none!important}
   section.page{display:block!important}
   section.page::before{
     content:attr(data-title);display:block;font-size:19px;font-weight:800;margin:24px 0 10px;
@@ -370,6 +381,7 @@ footer{text-align:center;color:var(--faint);font-size:12px;padding:30px 0 10px}
   <section class="page" id="page-einkauf" data-title="Einkaufsliste"></section>
   <section class="page" id="page-budget" data-title="Budget"></section>
   <section class="page" id="page-festival" data-title="Festival"></section>
+  <section class="page" id="page-verlauf" data-title="Verlauf"></section>
 
   <footer>🌒 Sizigia Eclipse Gathering · 10.–14.08.2026 · Totale Sonnenfinsternis am 12.08.2026<br>Daten werden lokal im Browser gespeichert — regelmäßig Backup exportieren!</footer>
 </div>
@@ -580,6 +592,7 @@ function defaultState(){
       ]},
     ],
     budget:{ expenses:[] },
+    log:[],
     festival:[
       {id:uid(), title:'Sizigia Eclipse Gathering 2026', text:'10.–14.08.2026 · Provinz Huesca (Aragón, Spanien).\nGenauer Standort & Anfahrt: siehe Ticket-/Info-Mail — hier eintragen, sobald bekannt.'},
       {id:uid(), title:'Totale Sonnenfinsternis · 12.08.2026', text:'Highlight des Festivals: totale Sonnenfinsternis am frühen Abend (in Nordspanien ca. 20:25–20:30 Uhr, Totalität ~1–2 Min — genaue Zeit je nach Standort prüfen!).\nSoFi-Brillen für alle sind Pflicht. 🌒'},
@@ -627,6 +640,7 @@ function restoreSnapshot(idx){
   if(!confirm('Sicherung vom ' + new Date(s.ts).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) + ' Uhr wiederherstellen? Der aktuelle Stand wird vorher gesichert.')) return;
   takeSnapshot('Vor Wiederherstellung');
   state = migrate(JSON.parse(s.raw));
+  logChange('hat eine Sicherung wiederhergestellt (' + s.reason + ')');
   save(); renderAll();
   toast('Sicherung wiederhergestellt ↩');
 }
@@ -767,6 +781,7 @@ function importData(ev){
       if(!confirm('Backup importieren? Die aktuellen Daten auf diesem Gerät werden überschrieben (eine Sicherung wird vorher angelegt).')) return;
       takeSnapshot('Vor Import');
       state = migrate(data);
+      logChange('hat ein Backup importiert (Wiederherstellung: siehe Sicherungen in der Übersicht)');
       save(); renderAll();
       toast('Backup importiert ✅');
     }catch(e){
@@ -779,6 +794,90 @@ function importData(ev){
 
 /* ---------- Helfer ---------- */
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ============================================================
+   IDENTITÄT & VERLAUF (Changelog)
+   - whoami: Crew-Mitglied dieses Geräts (nur lokal gespeichert).
+   - state.log: geteiltes Protokoll aller Änderungen (max. 150),
+     jede Aktion mit Umkehr-Daten (undo) für Schritt-Rückgängig.
+   ============================================================ */
+const WHO_KEY = STORAGE_KEY + '-whoami';
+function whoami(){ return localStorage.getItem(WHO_KEY) || null; }
+function setWhoami(id){ localStorage.setItem(WHO_KEY, id); renderAll(); toast('Alles klar, ' + (crewById(id)?.name || '') + ' 👋'); }
+function askWho(){
+  openModal('Wer bist du?', [
+    {key:'who', label:'Damit der Verlauf weiß, wer was ändert (nur auf diesem Gerät gespeichert)', type:'select',
+     value:whoami() || state.crew[0].id, options:state.crew.map(c=>({value:c.id, label:c.name}))}
+  ], v=>{ localStorage.setItem(WHO_KEY, v.who); });
+}
+function logChange(desc, undo=null, who=whoami()){
+  if(!Array.isArray(state.log)) state.log = [];
+  state.log.push({id:uid(), ts:new Date().toISOString(), who, desc, undo});
+  while(state.log.length > 150) state.log.shift();
+}
+function refLabel(ref){
+  if(ref==='checklist') return 'Checkliste';
+  const [kind, id] = ref.split(':');
+  if(kind==='vdoc') return state.vehicles.find(v=>v.id===id)?.name || 'Fahrzeug';
+  if(kind==='pack') return 'Packliste · ' + (state.packing.find(c=>c.id===id)?.name || '?');
+  if(kind==='shop') return 'Einkauf · ' + (state.shopping.find(c=>c.id===id)?.name || '?');
+  return ref;
+}
+// Inverse Operation eines Log-Eintrags anwenden; wirft, wenn das Ziel weg ist
+function applyRevert(u){
+  const need = x => { if(!x) throw new Error('Ziel existiert nicht mehr'); return x; };
+  switch(u.t){
+    case 'toggle':   need(resolveList(u.ref)?.find(i=>i.id===u.id)).done = u.prev; break;
+    case 'itemAdd':  { const l=need(resolveList(u.ref)); const i=l.findIndex(x=>x.id===u.id); if(i<0) throw 0; l.splice(i,1); break; }
+    case 'itemDel':  { const l=need(resolveList(u.ref)); l.splice(Math.min(u.idx,l.length),0,u.item); break; }
+    case 'itemEdit': Object.assign(need(resolveList(u.ref)?.find(i=>i.id===u.id)), u.prev); break;
+    case 'stageAdd': { const l=getStageList(u.ref); const i=l.findIndex(x=>x.id===u.id); if(i<0) throw 0; l.splice(i,1); break; }
+    case 'stageDel': { const l=getStageList(u.ref); l.splice(Math.min(u.idx,l.length),0,u.stage); break; }
+    case 'stageEdit':{ const s=need(getStageList(u.ref).find(x=>x.id===u.id));
+      ['date','from','to','km','time','stay','note','link'].forEach(k=>s[k]=u.prev[k]);
+      if(u.prev.lat!=null){ s.lat=u.prev.lat; s.lng=u.prev.lng; } else { delete s.lat; delete s.lng; } break; }
+    case 'stageMove':{ const l=getStageList(u.ref); if(u.from<0||u.from>=l.length) throw 0; const [s]=l.splice(u.from,1); l.splice(u.to,0,s); break; }
+    case 'routeSel': state.selectedRoute = u.prev; break;
+    case 'vote':     { const sp=need(state.spots.find(s=>s.id===u.spotId)); const i=sp.votes.indexOf(u.crewId);
+      if(u.prev && i<0) sp.votes.push(u.crewId); if(!u.prev && i>=0) sp.votes.splice(i,1); break; }
+    case 'spotAdd':  { const i=state.spots.findIndex(s=>s.id===u.id); if(i<0) throw 0; state.spots.splice(i,1); break; }
+    case 'spotDel':  state.spots.splice(Math.min(u.idx,state.spots.length),0,u.spot); break;
+    case 'spotEdit': { const sp=need(state.spots.find(s=>s.id===u.id));
+      ['name','region','detour','desc','link'].forEach(k=>sp[k]=u.prev[k]);
+      if(u.prev.lat!=null){ sp.lat=u.prev.lat; sp.lng=u.prev.lng; } else { delete sp.lat; delete sp.lng; } break; }
+    case 'driver':   { const v=need(state.vehicles.find(x=>x.id===u.vid)); const i=v.drivers.indexOf(u.cid);
+      if(u.prev && i<0) v.drivers.push(u.cid); if(!u.prev && i>=0) v.drivers.splice(i,1); break; }
+    case 'pass':     { state.vehicles.forEach(v=>{ const i=v.passengers.indexOf(u.cid); if(i>=0) v.passengers.splice(i,1); });
+      if(u.prevVid){ need(state.vehicles.find(x=>x.id===u.prevVid)).passengers.push(u.cid); } break; }
+    case 'vehEdit':  Object.assign(need(state.vehicles.find(x=>x.id===u.vid)), u.prev); break;
+    case 'expAdd':   { const i=state.budget.expenses.findIndex(e=>e.id===u.id); if(i<0) throw 0; state.budget.expenses.splice(i,1); break; }
+    case 'expDel':   state.budget.expenses.push(u.expense); break;
+    case 'crewEdit': need(crewById(u.cid)).name = u.prev; break;
+    case 'festAdd':  { const i=state.festival.findIndex(f=>f.id===u.id); if(i<0) throw 0; state.festival.splice(i,1); break; }
+    case 'festDel':  state.festival.splice(Math.min(u.idx,state.festival.length),0,u.f); break;
+    case 'festEdit': Object.assign(need(state.festival.find(f=>f.id===u.id)), u.prev); break;
+    case 'catAdd':   { const t=u.kind==='pack'?state.packing:state.shopping; const i=t.findIndex(c=>c.id===u.id); if(i<0) throw 0; t.splice(i,1); break; }
+    default: throw new Error('unbekannter Typ');
+  }
+}
+function revertEntry(id){
+  const e = (state.log||[]).find(x=>x.id===id);
+  if(!e || !e.undo || e.undone) return;
+  const backup = JSON.stringify(state);
+  try{ applyRevert(e.undo); }
+  catch(err){
+    state = migrate(JSON.parse(backup));
+    toast('Nicht mehr möglich — der betroffene Eintrag existiert nicht mehr');
+    return;
+  }
+  e.undone = true;
+  logChange('hat rückgängig gemacht: ' + e.desc, null);
+  save(); renderAll();
+  toast('Schritt rückgängig gemacht ↩', 'Doch nicht', ()=>{
+    state = migrate(JSON.parse(backup));
+    save(); renderAll();
+  });
+}
 function crewById(id){ return state.crew.find(c=>c.id===id); }
 function euro(n){ return n.toLocaleString('de-DE',{style:'currency',currency:'EUR'}); }
 let _toastAction = null;
@@ -1018,6 +1117,7 @@ const TABS = [
   {id:'einkauf',    label:'🛒 Einkauf'},
   {id:'budget',     label:'💶 Budget'},
   {id:'festival',   label:'🎪 Festival'},
+  {id:'verlauf',    label:'🕘 Verlauf'},
 ];
 let activeTab = sessionStorage.getItem('sizigia-tab') || 'uebersicht';
 function renderNav(){
@@ -1100,6 +1200,12 @@ function renderOverview(){
     </div>
 
     <div class="card">
+      <h2>🕘 Zuletzt passiert <span class="spacer"></span><button class="btn ghost small" onclick="switchTab('verlauf')">alle ›</button></h2>
+      ${(state.log||[]).length===0 ? '<p class="hint" style="margin:0">Noch keine Änderungen — leg los!</p>' :
+        [...state.log].reverse().slice(0,3).map(logRow).join('')}
+    </div>
+
+    <div class="card">
       <h2>💾 Datensicherung</h2>
       <p style="font-size:14px;color:var(--muted)">Alle Eingaben werden automatisch <b style="color:var(--text)">lokal in diesem Browser</b> gespeichert. Damit nichts verloren geht und ihr den Stand teilen könnt: regelmäßig oben rechts <b style="color:var(--text)">⬇︎ Backup exportieren</b> und die Datei in die Gruppe schicken — auf jedem anderen Gerät per <b style="color:var(--text)">⬆︎ Import</b> laden.</p>
       ${(()=>{
@@ -1114,7 +1220,12 @@ function renderOverview(){
 }
 function editCrew(id){
   const c = crewById(id);
-  openModal('Crew-Mitglied bearbeiten', [{key:'name',label:'Name',value:c.name}], v=>{ if(v.name.trim()) c.name = v.name.trim(); });
+  openModal('Crew-Mitglied bearbeiten', [{key:'name',label:'Name',value:c.name}], v=>{
+    if(!v.name.trim() || v.name.trim()===c.name) return;
+    const prev = c.name;
+    c.name = v.name.trim();
+    logChange('hat „'+prev+'" in „'+c.name+'" umbenannt', {t:'crewEdit', cid:id, prev});
+  });
 }
 
 /* ============================================================
@@ -1122,14 +1233,18 @@ function editCrew(id){
    ============================================================ */
 function renderStage(s, listRef, idx, len){
   const link = mapsLink(s);
+  // Während des Trips: heutige Etappe hervorheben (Datum "So 02.08." → Tag+Monat)
+  const m = String(s.date||'').match(/(\d{1,2})\.(\d{1,2})\./);
+  const now = new Date();
+  const isToday = m && +m[1]===now.getDate() && +m[2]===now.getMonth()+1;
   return `
-  <div class="stage">
+  <div class="stage${isToday?' today':''}">
     <div class="actions">
       ${idx>0?`<button title="nach oben" onclick="moveStage('${listRef}',${idx},-1)">↑</button>`:''}
       ${idx<len-1?`<button title="nach unten" onclick="moveStage('${listRef}',${idx},1)">↓</button>`:''}
       <button title="bearbeiten" onclick="editStage('${listRef}',${idx})">✎</button>
     </div>
-    <div class="toprow"><span class="date">${esc(s.date)}</span><span class="fromto">${esc(s.from)} → ${esc(s.to)}</span></div>
+    <div class="toprow"><span class="date">${esc(s.date)}</span>${isToday?'<span class="todaybadge">HEUTE</span>':''}<span class="fromto">${esc(s.from)} → ${esc(s.to)}</span></div>
     <div class="meta">
       ${s.km?`<span>📏 ${esc(s.km)}</span>`:''}
       ${s.time?`<span>⏱ ${esc(s.time)}</span>`:''}
@@ -1189,7 +1304,13 @@ function renderRoute(){
       <div class="hint">Nur ein Vorschlag — Datum & Route der Rückreise sind noch offen, alles anpassbar.</div>
     </div>`;
 }
-function selectRoute(id){ state.selectedRoute = id; save(); renderAll(); }
+function selectRoute(id){
+  if(state.selectedRoute === id) return;
+  const prev = state.selectedRoute;
+  state.selectedRoute = id;
+  logChange('hat Route „' + (state.routes.find(r=>r.id===id)?.name||'?') + '" als Favorit gewählt', {t:'routeSel', prev});
+  save(); renderAll();
+}
 function stageFields(s={}){
   const stored = (s.lat!=null && s.lng!=null) ? {lat:+s.lat, lng:+s.lng} : null;
   const auto = stored ? null : (()=>{ const g=geoLookup(s.to); return g?{lat:g[0],lng:g[1]}:null; })();
@@ -1211,21 +1332,28 @@ function addStage(ref){
     const s = {id:uid(), ...rest};
     applyPos(s, pos);
     getStageList(ref).push(s);
+    logChange('hat Etappe „'+s.from+' → '+s.to+'" hinzugefügt', {t:'stageAdd', ref, id:s.id});
   });
 }
 function editStage(ref, idx){
   const list = getStageList(ref);
   const s = list[idx];
   openModal('Etappe bearbeiten', stageFields(s), v=>{
+    const prev = {date:s.date, from:s.from, to:s.to, km:s.km, time:s.time, stay:s.stay, note:s.note, link:s.link, lat:s.lat, lng:s.lng};
     const {pos, ...rest} = v;
     Object.assign(s, rest);
     applyPos(s, pos);
-  }, ()=>list.splice(idx,1));
+    logChange('hat Etappe „'+s.from+' → '+s.to+'" bearbeitet', {t:'stageEdit', ref, id:s.id, prev});
+  }, ()=>{
+    logChange('hat Etappe „'+s.from+' → '+s.to+'" gelöscht', {t:'stageDel', ref, stage:{...s}, idx});
+    list.splice(idx,1);
+  });
 }
 function moveStage(ref, idx, dir){
   const list = getStageList(ref);
   const [s] = list.splice(idx,1);
   list.splice(idx+dir,0,s);
+  logChange('hat Etappe „'+s.from+' → '+s.to+'" verschoben', {t:'stageMove', ref, from:idx+dir, to:idx});
   save(); renderAll();
 }
 
@@ -1271,7 +1399,10 @@ function renderSpots(){
 function toggleVote(spotId, crewId){
   const sp = state.spots.find(s=>s.id===spotId);
   const i = sp.votes.indexOf(crewId);
-  if(i>=0) sp.votes.splice(i,1); else sp.votes.push(crewId);
+  const had = i>=0;
+  if(had) sp.votes.splice(i,1); else sp.votes.push(crewId);
+  logChange(had ? 'hat die Stimme für „'+sp.name+'" zurückgezogen' : 'hat für „'+sp.name+'" gestimmt',
+    {t:'vote', spotId, crewId, prev:had}, crewId);
   save(); renderAll();
 }
 function spotFields(s={}){
@@ -1292,15 +1423,20 @@ function addSpot(){
     const sp = {id:uid(), votes:[], ...rest};
     applyPos(sp, pos);
     state.spots.push(sp);
+    logChange('hat Spot „'+sp.name+'" hinzugefügt', {t:'spotAdd', id:sp.id});
   });
 }
 function editSpot(id){
   const sp = state.spots.find(s=>s.id===id);
   openModal('Spot bearbeiten', spotFields(sp), v=>{
+    const prev = {name:sp.name, region:sp.region, detour:sp.detour, desc:sp.desc, link:sp.link, lat:sp.lat, lng:sp.lng};
     const {pos, ...rest} = v;
     Object.assign(sp, rest);
     applyPos(sp, pos);
+    logChange('hat Spot „'+sp.name+'" bearbeitet', {t:'spotEdit', id, prev});
   }, ()=>{
+    const idx = state.spots.findIndex(s=>s.id===id);
+    logChange('hat Spot „'+sp.name+'" gelöscht', {t:'spotDel', spot:{...sp}, idx});
     state.spots = state.spots.filter(s=>s.id!==id);
   });
 }
@@ -1340,23 +1476,35 @@ function editVehicle(id){
     {key:'name',label:'Bezeichnung',value:v.name},
     {key:'pickup',label:'Start / Übernahme',value:v.pickup},
     {key:'notes',label:'Notizen',type:'textarea',value:v.notes},
-  ], val=>Object.assign(v,val));
+  ], val=>{
+    const prev = {name:v.name, pickup:v.pickup, notes:v.notes};
+    Object.assign(v,val);
+    logChange('hat Fahrzeug „'+v.name+'" bearbeitet', {t:'vehEdit', vid:id, prev});
+  });
 }
 function togglePassenger(vid, cid){
   // Eine Person sitzt in genau einem Fahrzeug: woanders austragen
   const v = state.vehicles.find(x=>x.id===vid);
+  const prevVid = state.vehicles.find(o=>o.passengers.includes(cid))?.id || null;
+  const name = crewById(cid)?.name || '?';
   const i = v.passengers.indexOf(cid);
-  if(i>=0){ v.passengers.splice(i,1); }
-  else{
+  if(i>=0){
+    v.passengers.splice(i,1);
+    logChange('hat '+name+' aus „'+v.name+'" ausgetragen', {t:'pass', cid, prevVid});
+  } else {
     state.vehicles.forEach(o=>{ const j=o.passengers.indexOf(cid); if(j>=0) o.passengers.splice(j,1); });
     v.passengers.push(cid);
+    logChange('hat '+name+' in „'+v.name+'" gesetzt', {t:'pass', cid, prevVid});
   }
   save(); renderAll();
 }
 function toggleDriver(vid, cid){
   const v = state.vehicles.find(x=>x.id===vid);
   const i = v.drivers.indexOf(cid);
-  if(i>=0) v.drivers.splice(i,1); else v.drivers.push(cid);
+  const was = i>=0;
+  if(was) v.drivers.splice(i,1); else v.drivers.push(cid);
+  logChange((crewById(cid)?.name||'?') + (was?' ist kein Fahrer mehr von „':' ist jetzt Fahrer von „') + v.name + '"',
+    {t:'driver', vid, cid, prev:was});
   save(); renderAll();
 }
 
@@ -1385,6 +1533,8 @@ function itemRow(item, ref){
 function toggleItem(ref, id){
   const it = resolveList(ref).find(i=>i.id===id);
   it.done = !it.done;
+  logChange((it.done ? 'hat „'+it.text+'" abgehakt' : 'hat den Haken bei „'+it.text+'" entfernt') + ' (' + refLabel(ref) + ')',
+    {t:'toggle', ref, id, prev:!it.done});
   save(); renderAll();
 }
 function deleteItem(ref, id){
@@ -1392,13 +1542,18 @@ function deleteItem(ref, id){
   const idx = list.findIndex(i=>i.id===id);
   if(idx<0) return;
   const label = list[idx].text;
-  withUndo('„' + (label.length>28 ? label.slice(0,28)+'…' : label) + '" gelöscht', ()=>list.splice(idx,1));
+  withUndo('„' + (label.length>28 ? label.slice(0,28)+'…' : label) + '" gelöscht', ()=>{
+    logChange('hat „'+label+'" gelöscht (' + refLabel(ref) + ')', {t:'itemDel', ref, item:{...list[idx]}, idx});
+    list.splice(idx,1);
+  });
 }
 function addListItem(ref){
   const input = document.getElementById('add-' + ref.replace(':','-'));
   const text = input.value.trim();
   if(!text) return;
-  resolveList(ref).push({id:uid(), text, done:false, who:''});
+  const item = {id:uid(), text, done:false, who:''};
+  resolveList(ref).push(item);
+  logChange('hat „'+text+'" hinzugefügt (' + refLabel(ref) + ')', {t:'itemAdd', ref, id:item.id});
   input.value = '';
   save(); renderAll();
   // Fokus zurück ins Eingabefeld für schnelles Weitertippen
@@ -1411,8 +1566,15 @@ function editItem(ref, id){
     {key:'text',label:'Text',value:it.text},
     {key:'who',label:'Wer bringt’s mit / erledigt’s?',type:'select',value:it.who||'',
       options:[{value:'',label:'– niemand zugeordnet –'}, ...state.crew.map(c=>({value:c.id,label:c.name}))]},
-  ], v=>{ it.text = v.text.trim()||it.text; it.who = v.who; },
-     ()=>{ const l=resolveList(ref); l.splice(l.findIndex(i=>i.id===id),1); });
+  ], v=>{
+    const prev = {text:it.text, who:it.who};
+    it.text = v.text.trim()||it.text; it.who = v.who;
+    logChange('hat „'+it.text+'" bearbeitet (' + refLabel(ref) + ')', {t:'itemEdit', ref, id, prev});
+  }, ()=>{
+    const l=resolveList(ref); const i=l.findIndex(x=>x.id===id);
+    logChange('hat „'+l[i].text+'" gelöscht (' + refLabel(ref) + ')', {t:'itemDel', ref, item:{...l[i]}, idx:i});
+    l.splice(i,1);
+  });
 }
 
 /* ============================================================
@@ -1435,7 +1597,9 @@ function addCategory(kind){
   openModal('Neue Kategorie', [{key:'name',label:'Name der Kategorie',value:''}], v=>{
     if(!v.name.trim()) return;
     const target = kind==='pack' ? state.packing : state.shopping;
-    target.push({id:uid(), name:v.name.trim(), items:[]});
+    const cat = {id:uid(), name:v.name.trim(), items:[]};
+    target.push(cat);
+    logChange('hat Kategorie „'+cat.name+'" angelegt ('+(kind==='pack'?'Packliste':'Einkauf')+')', {t:'catAdd', kind, id:cat.id});
   });
 }
 // Packlisten-Filter: nur die einer Person zugeordneten Sachen zeigen
@@ -1517,7 +1681,7 @@ function renderBudget(){
       <div class="formgrid">
         <input id="exDesc" class="full" placeholder="Was? (z. B. Tanken Brenner, Einkauf Lidl)">
         <input id="exAmount" type="number" step="0.01" inputmode="decimal" placeholder="Betrag €">
-        <select id="exPayer">${state.crew.map(c=>`<option value="${c.id}">${esc(c.name)} hat gezahlt</option>`).join('')}</select>
+        <select id="exPayer">${state.crew.map(c=>`<option value="${c.id}"${c.id===whoami()?' selected':''}>${esc(c.name)} hat gezahlt</option>`).join('')}</select>
       </div>
       <div style="font-size:12px;color:var(--muted);margin-bottom:7px;letter-spacing:.06em;text-transform:uppercase">Wird geteilt durch (antippen):</div>
       <div class="chips" id="exSharers">
@@ -1567,13 +1731,17 @@ function addExpense(){
   if(!desc){ toast('Beschreibung fehlt'); return; }
   if(!amount || amount<=0){ toast('Gültigen Betrag eingeben'); return; }
   if(sharers.length===0){ toast('Mindestens eine Person auswählen'); return; }
-  state.budget.expenses.push({id:uid(), date:new Date().toISOString(), desc, amount, payer, sharers});
+  const exp = {id:uid(), date:new Date().toISOString(), desc, amount, payer, sharers};
+  state.budget.expenses.push(exp);
+  logChange('hat Ausgabe „'+desc+'" ('+euro(amount)+', gezahlt von '+(crewById(payer)?.name||'?')+') eingetragen', {t:'expAdd', id:exp.id});
   save(); renderAll();
   toast('Ausgabe gespeichert 💶');
 }
 function deleteExpense(id){
+  const e = state.budget.expenses.find(x=>x.id===id);
   withUndo('Ausgabe gelöscht', ()=>{
-    state.budget.expenses = state.budget.expenses.filter(e=>e.id!==id);
+    logChange('hat Ausgabe „'+e.desc+'" ('+euro(e.amount)+') gelöscht', {t:'expDel', expense:{...e}});
+    state.budget.expenses = state.budget.expenses.filter(x=>x.id!==id);
   });
 }
 
@@ -1594,13 +1762,64 @@ function editFestival(id){
   openModal('Info bearbeiten', [
     {key:'title',label:'Titel',value:f.title},
     {key:'text',label:'Text',type:'textarea',value:f.text},
-  ], v=>Object.assign(f,v), ()=>{ state.festival = state.festival.filter(x=>x.id!==id); });
+  ], v=>{
+    const prev = {title:f.title, text:f.text};
+    Object.assign(f,v);
+    logChange('hat Festival-Info „'+f.title+'" bearbeitet', {t:'festEdit', id, prev});
+  }, ()=>{
+    const idx = state.festival.findIndex(x=>x.id===id);
+    logChange('hat Festival-Info „'+f.title+'" gelöscht', {t:'festDel', f:{...f}, idx});
+    state.festival = state.festival.filter(x=>x.id!==id);
+  });
 }
 function addFestival(){
   openModal('Neuer Info-Block', [
     {key:'title',label:'Titel',value:''},
     {key:'text',label:'Text',type:'textarea',value:''},
-  ], v=>{ if(v.title.trim()) state.festival.push({id:uid(), title:v.title.trim(), text:v.text}); });
+  ], v=>{
+    if(!v.title.trim()) return;
+    const f = {id:uid(), title:v.title.trim(), text:v.text};
+    state.festival.push(f);
+    logChange('hat Festival-Info „'+f.title+'" hinzugefügt', {t:'festAdd', id:f.id});
+  });
+}
+
+/* ============================================================
+   VERLAUF (Changelog)
+   ============================================================ */
+function fmtLogTs(ts){
+  const d = new Date(ts), now = new Date();
+  const time = d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'});
+  if(d.toDateString() === now.toDateString()) return 'Heute ' + time;
+  if(d.toDateString() === new Date(now - 86400000).toDateString()) return 'Gestern ' + time;
+  return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}) + ' ' + time;
+}
+function logRow(e){
+  const c = e.who ? crewById(e.who) : null;
+  return `<div class="logrow${e.undone?' undone':''}">
+    <span class="chip static" style="--c:${c?c.color:'#666'}"><span class="dot"></span>${c?esc(c.name):'—'}</span>
+    <div class="loginfo">
+      <div class="logdesc">${esc(e.desc)}</div>
+      <div class="logts">${fmtLogTs(e.ts)}${e.undone?' · rückgängig gemacht':''}</div>
+    </div>
+    ${e.undo && !e.undone ? `<button class="btn ghost small" onclick="revertEntry('${e.id}')" title="Diesen Schritt rückgängig machen">↩︎</button>` : ''}
+  </div>`;
+}
+function renderLog(){
+  const entries = [...(state.log||[])].reverse().slice(0,100);
+  const me = whoami();
+  document.getElementById('page-verlauf').innerHTML = `
+    <div class="card">
+      <h2>🙋 Wer bist du?</h2>
+      <div class="chips">${state.crew.map(c=>`<span class="chip${me===c.id?' on':''}" style="--c:${c.color}" onclick="setWhoami('${c.id}')"><span class="dot"></span>${esc(c.name)}</span>`).join('')}</div>
+      <div class="hint">Wird nur auf diesem Gerät gespeichert — damit der Verlauf weiß, wer was ändert.</div>
+    </div>
+    <div class="card">
+      <h2>🕘 Verlauf</h2>
+      ${entries.length===0 ? '<p class="hint" style="margin:0">Noch keine Änderungen protokolliert — ab jetzt wird alles hier festgehalten.</p>' : entries.map(logRow).join('')}
+      ${(state.log||[]).length>100 ? '<p class="hint">Nur die letzten 100 Einträge werden angezeigt (gespeichert: max. 150).</p>' : ''}
+      <div class="hint">↩︎ macht genau diesen einen Schritt rückgängig — auch Schritte von anderen. Für größere Sprünge: Sicherungen in der Übersicht.</div>
+    </div>`;
 }
 
 /* ============================================================
@@ -1630,6 +1849,7 @@ function renderAll(){
   renderShopping();
   renderBudget();
   renderFestival();
+  renderLog();
   updateSaveInfo();
   // Gerettete Eingaben wiederherstellen
   for(const id in keepVals){
@@ -1644,6 +1864,12 @@ function renderAll(){
 renderAll();
 // Erstbesuch: Standarddaten direkt persistieren
 if(!state.meta.lastSaved) save();
+// Erste Nutzung auf diesem Gerät: fragen, wer da tippt (für den Verlauf)
+if(!whoami()) setTimeout(askWho, 600);
+// Offline-Start ermöglichen: Service Worker cached die App (nur gehostet, nicht file://)
+if('serviceWorker' in navigator && location.protocol === 'https:'){
+  navigator.serviceWorker.register('./sw.js').catch(()=>{});
+}
 // Mehrere offene Tabs synchron halten: schreibt ein anderer Tab, hier nachziehen
 // (das storage-Event feuert nur in den JEWEILS ANDEREN Tabs — keine Schleife)
 window.addEventListener('storage', e=>{

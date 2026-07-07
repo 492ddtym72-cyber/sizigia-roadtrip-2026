@@ -27,6 +27,13 @@ alle 25 s sowie beim Öffnen/Fokussieren abgeglichen. Offline funktioniert alles
 weiter (lokal), synchronisiert wird sobald wieder Netz da ist — Status steht
 oben in der Speicherleiste. Details: `AGENTS.md`.
 
+### Verlauf & Rückgängig
+
+Der Tab **🕘 Verlauf** protokolliert, wer was geändert hat (beim ersten Öffnen
+wählst du einmal, wer du bist — nur auf deinem Gerät gespeichert). Jeder
+einzelne Schritt lässt sich dort per ↩︎ rückgängig machen; für größere Sprünge
+gibt es die automatischen Sicherungen in der Übersicht.
+
 ## Für Entwickler & KI-Agenten
 
 Alles Wichtige steht in [`AGENTS.md`](AGENTS.md).

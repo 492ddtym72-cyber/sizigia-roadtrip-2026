@@ -101,6 +101,20 @@ AGENTS.md                   # Diese Datei (CLAUDE.md verweist hierauf)
 - Budget-Berechnung zentral in `budgetCalc()` (Salden + Greedy-Ausgleich);
   `copySettlement()` teilt den Ausgleich als Text (Clipboard mit Fallback).
 - Packlisten-Personenfilter: Modul-Variable `packFilter` (nicht persistiert).
+- **Identität:** `whoami()` liest das Crew-Mitglied dieses Geräts aus
+  localStorage (`<STORAGE_KEY>-whoami`, nicht synchronisiert); Erstbesuch
+  fragt per Modal (`askWho`). Wählbar im Verlauf-Tab.
+- **Verlauf/Changelog:** `state.log` (max. 150 Einträge, synchronisiert) —
+  jede Mutation ruft `logChange(desc, undo, who?)` VOR `save()` auf. `undo`
+  ist eine typisierte Umkehr-Operation für `applyRevert()` (Dispatcher);
+  `revertEntry(id)` wendet sie an, markiert den Eintrag `undone` und
+  protokolliert den Revert selbst. Ziel weg ⇒ sauberer Abbruch + Toast.
+  **Neue Mutations-Funktionen müssen einen `logChange`-Aufruf bekommen**
+  (Beschreibung deutsch, Muster: „hat … [Ziel] …") und, wenn machbar,
+  einen `undo`-Typ in `applyRevert`.
+- **Service Worker (`sw.js`):** cached die App fürs Offline-Öffnen der
+  gehosteten URL (Netz zuerst, Cache-Fallback; fremde Origins unangetastet).
+  Registrierung nur unter `https:` — `file://`-Nutzung bleibt unberührt.
 
 ## Verifikation
 
