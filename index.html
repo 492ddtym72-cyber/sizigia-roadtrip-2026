@@ -320,6 +320,26 @@ a.maplink:hover{text-decoration:underline}
 }
 
 footer{text-align:center;color:var(--faint);font-size:12px;padding:30px 0 10px}
+.routetotal{font-size:12px;color:var(--sun);margin-top:7px;font-weight:700}
+
+/* ---------- Druck (Papier-Fallback für Funklöcher) ---------- */
+@media print{
+  body{background:#fff}
+  body::before,body::after{display:none}
+  .eclipse,nav,.header-actions,.savebar,.addrow,.del,.iconbtn,footer,#toast,.modal-bg,
+  .mapwrap,.layerchips,.actions,.hint,button:not(.checkbox){display:none!important}
+  section.page{display:block!important}
+  section.page::before{
+    content:attr(data-title);display:block;font-size:19px;font-weight:800;margin:24px 0 10px;
+    font-family:var(--font-display);letter-spacing:.08em;text-transform:uppercase;
+  }
+  .wrap{max-width:none;padding:0}
+  *{color:#000!important;background:#fff!important;border-color:#bbb!important;box-shadow:none!important;animation:none!important}
+  .title h1,.count-cell b{-webkit-text-fill-color:#000}
+  .card,.stage,.spot{break-inside:avoid;border:1px solid #ccc}
+  .progress i,.checkbox.done{background:#333!important}
+  .item.done .txt{color:#888!important}
+}
 </style>
 </head>
 <body>
@@ -341,14 +361,14 @@ footer{text-align:center;color:var(--faint);font-size:12px;padding:30px 0 10px}
 
   <nav id="nav"></nav>
 
-  <section class="page" id="page-uebersicht"></section>
-  <section class="page" id="page-route"></section>
-  <section class="page" id="page-spots"></section>
-  <section class="page" id="page-logistik"></section>
-  <section class="page" id="page-packen"></section>
-  <section class="page" id="page-einkauf"></section>
-  <section class="page" id="page-budget"></section>
-  <section class="page" id="page-festival"></section>
+  <section class="page" id="page-uebersicht" data-title="Übersicht"></section>
+  <section class="page" id="page-route" data-title="Route"></section>
+  <section class="page" id="page-spots" data-title="Spots"></section>
+  <section class="page" id="page-logistik" data-title="Logistik"></section>
+  <section class="page" id="page-packen" data-title="Packliste"></section>
+  <section class="page" id="page-einkauf" data-title="Einkaufsliste"></section>
+  <section class="page" id="page-budget" data-title="Budget"></section>
+  <section class="page" id="page-festival" data-title="Festival"></section>
 
   <footer>🌒 Sizigia Eclipse Gathering · 10.–14.08.2026 · Totale Sonnenfinsternis am 12.08.2026<br>Daten werden lokal im Browser gespeichert — regelmäßig Backup exportieren!</footer>
 </div>
@@ -941,12 +961,23 @@ function listProgress(items){
   const done = flat.filter(i=>i.done).length;
   return {done, total:flat.length, pct: flat.length ? Math.round(done/flat.length*100) : 0};
 }
+// Summen über Etappen: km aus "280 km", Stunden aus "~4,5 Std"
+function routeTotals(stages){
+  let km=0, h=0;
+  stages.forEach(s=>{
+    km += parseInt(String(s.km||'').replace(/[^\d]/g,''), 10) || 0;
+    const m = String(s.time||'').replace(',','.').match(/(\d+(?:\.\d+)?)/);
+    if(m) h += parseFloat(m[1]);
+  });
+  return {km, hTxt: String(Math.round(h*10)/10).replace('.',',')};
+}
 function renderOverview(){
   const start = new Date('2026-08-02T08:00:00');
   const diff = Math.max(0, start - Date.now());
   const days = Math.floor(diff/86400000), hrs = Math.floor(diff%86400000/3600000), min = Math.floor(diff%3600000/60000);
+  const eclDays = Math.max(0, Math.ceil((new Date('2026-08-12T20:26:00') - Date.now())/86400000));
   const route = state.routes.find(r=>r.id===state.selectedRoute);
-  const totalKm = route.stages.reduce((s,x)=> s + (parseInt(String(x.km).replace(/\D/g,''))||0), 0);
+  const tot = routeTotals(route.stages);
   const pPack = listProgress(state.packing), pShop = listProgress(state.shopping), pCheck = listProgress(state.checklist);
   const pDocs = listProgress(state.vehicles.map(v=>({items:v.docs})));
 
@@ -958,7 +989,7 @@ function renderOverview(){
         <div class="count-cell"><b>${hrs}</b><span>Std</span></div>
         <div class="count-cell"><b>${min}</b><span>Min</span></div>
       </div>
-      <div class="label" style="margin-top:6px">bis zum Roadtrip 🚐🌒</div>
+      <div class="label" style="margin-top:6px">bis zum Roadtrip 🚐 · Totale Sonnenfinsternis in ${eclDays} Tagen 🌒</div>
     </div>
 
     <div class="grid2">
@@ -973,16 +1004,16 @@ function renderOverview(){
         <div class="factrow"><span class="k">Fahrzeuge</span><span class="v">🚐 Camper (Lukas, ab Innsbruck) · 🚗 Kleinwagen (Bernhard, ab München)</span></div>
         <div class="factrow"><span class="k">Festival</span><span class="v">Sizigia Eclipse Gathering · 10.–14.08. · Huesca (ES)</span></div>
         <div class="factrow"><span class="k">Highlight</span><span class="v">🌒 Totale Sonnenfinsternis am 12.08.2026</span></div>
-        <div class="factrow"><span class="k">Route</span><span class="v">${route.emoji} ${esc(route.name)} · ca. ${totalKm} km Hinweg</span></div>
+        <div class="factrow"><span class="k">Route</span><span class="v">${route.emoji} ${esc(route.name)} · ca. ${tot.km} km, ~${tot.hTxt} Std Fahrzeit</span></div>
       </div>
     </div>
 
     <div class="card">
       <h2>📊 Fortschritt</h2>
       <div style="display:grid;gap:12px">
-        ${[['🎒 Packliste',pPack],['🛒 Einkauf',pShop],['✅ Checkliste vor Abfahrt',pCheck],['🚐 Fahrzeug-Dokumente',pDocs]].map(([l,p])=>`
-          <div>
-            <div style="display:flex;justify-content:space-between;font-size:13.5px"><span>${l}</span><span style="color:var(--muted)">${p.done}/${p.total}</span></div>
+        ${[['🎒 Packliste',pPack,'packen'],['🛒 Einkauf',pShop,'einkauf'],['✅ Checkliste vor Abfahrt',pCheck,'logistik'],['🚐 Fahrzeug-Dokumente',pDocs,'logistik']].map(([l,p,tab])=>`
+          <div style="cursor:pointer" onclick="switchTab('${tab}')" title="öffnen">
+            <div style="display:flex;justify-content:space-between;font-size:13.5px"><span>${l}</span><span style="color:var(--muted)">${p.done}/${p.total} ›</span></div>
             <div class="progress"><i style="width:${p.pct}%"></i></div>
           </div>`).join('')}
       </div>
@@ -1050,13 +1081,16 @@ function renderRoute(){
     <div class="card">
       <h2>🧭 Routen-Option wählen</h2>
       <div class="route-picker">
-        ${state.routes.map(r=>`
+        ${state.routes.map(r=>{
+          const t = routeTotals(r.stages);
+          return `
           <div class="route-opt${r.id===state.selectedRoute?' sel':''}" onclick="selectRoute('${r.id}')">
             <span class="star">★</span>
             <span class="emoji">${r.emoji}</span>
             <h3>${esc(r.name)}</h3>
             <p>${esc(r.desc)}</p>
-          </div>`).join('')}
+            <p class="routetotal">ca. ${t.km} km · ~${t.hTxt} Std Fahrzeit</p>
+          </div>`;}).join('')}
       </div>
       <div class="hint">Die gewählte Route ist euer Favorit — alle drei bleiben aber erhalten und editierbar.</div>
     </div>
@@ -1064,12 +1098,14 @@ function renderRoute(){
     <div class="card">
       <h2>${route.emoji} Hinweg: ${esc(route.name)} <span class="spacer"></span><button class="btn small" onclick="addStage('${route.id}')">+ Etappe</button></h2>
       <div>${route.stages.map((s,i)=>renderStage(s, route.id, i, route.stages.length)).join('')}</div>
-      ${route.stages.length===0?'<p class="hint">Noch keine Etappen — füge welche hinzu.</p>':''}
+      ${route.stages.length===0?'<p class="hint">Noch keine Etappen — füge welche hinzu.</p>':
+        `<div class="routetotal">Gesamt Hinweg: ca. ${routeTotals(route.stages).km} km · ~${routeTotals(route.stages).hTxt} Std reine Fahrzeit</div>`}
     </div>
 
     <div class="card">
       <h2>🔙 Rückreise (ab 14.08., Vorschlag) <span class="spacer"></span><button class="btn small" onclick="addStage('return')">+ Etappe</button></h2>
       <div>${state.returnStages.map((s,i)=>renderStage(s, 'return', i, state.returnStages.length)).join('')}</div>
+      ${state.returnStages.length?`<div class="routetotal">Gesamt Rückreise: ca. ${routeTotals(state.returnStages).km} km · ~${routeTotals(state.returnStages).hTxt} Std</div>`:''}
       <div class="hint">Nur ein Vorschlag — Datum & Route der Rückreise sind noch offen, alles anpassbar.</div>
     </div>`;
 }
@@ -1198,9 +1234,12 @@ function renderLogistics(){
       <div class="card">
         <h2>${v.id==='v-camper'?'🚐':'🚗'} ${esc(v.name)} <span class="spacer"></span><button class="btn ghost small" onclick="editVehicle('${v.id}')">✎</button></h2>
         <div class="factrow"><span class="k">Start</span><span class="v">${esc(v.pickup)}</span></div>
-        <div class="factrow"><span class="k">Fahrer</span><span class="v">${v.drivers.map(id=>{const c=crewById(id);return c?esc(c.name):'';}).filter(Boolean).join(', ')||'–'} <button class="btn ghost small" onclick="pickCrew('${v.id}','drivers')">ändern</button></span></div>
         ${v.notes?`<div class="factrow"><span class="k">Notizen</span><span class="v">${esc(v.notes)}</span></div>`:''}
-        <div style="margin:12px 0 4px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Mitfahrer (antippen zum Zuordnen)</div>
+        <div style="margin:12px 0 4px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Fahrer (antippen)</div>
+        <div class="chips">
+          ${state.crew.map(c=>`<span class="chip${v.drivers.includes(c.id)?' on':''}" style="--c:${c.color}" onclick="toggleDriver('${v.id}','${c.id}')"><span class="dot"></span>${v.drivers.includes(c.id)?'🚙 ':''}${esc(c.name)}</span>`).join('')}
+        </div>
+        <div style="margin:14px 0 4px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Mitfahrer (antippen zum Zuordnen)</div>
         <div class="chips">
           ${state.crew.map(c=>`<span class="chip${v.passengers.includes(c.id)?' on':''}" style="--c:${c.color}" onclick="togglePassenger('${v.id}','${c.id}')"><span class="dot"></span>${esc(c.name)}</span>`).join('')}
         </div>
@@ -1234,14 +1273,11 @@ function togglePassenger(vid, cid){
   }
   save(); renderAll();
 }
-function pickCrew(vid, field){
+function toggleDriver(vid, cid){
   const v = state.vehicles.find(x=>x.id===vid);
-  openModal('Fahrer wählen', [
-    {key:'ids', label:'Fahrer (Namen mit Komma trennen)', value:v[field].map(id=>crewById(id)?.name||'').filter(Boolean).join(', '), placeholder:'z. B. Lukas, Max'},
-  ], val=>{
-    const names = val.ids.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
-    v[field] = state.crew.filter(c=>names.includes(c.name.toLowerCase())).map(c=>c.id);
-  });
+  const i = v.drivers.indexOf(cid);
+  if(i>=0) v.drivers.splice(i,1); else v.drivers.push(cid);
+  save(); renderAll();
 }
 
 /* ============================================================
@@ -1302,17 +1338,18 @@ function editItem(ref, id){
 /* ============================================================
    PACKEN & EINKAUF
    ============================================================ */
-function renderCategoryLists(pageId, groups, kind, addCatLabel){
-  document.getElementById(pageId).innerHTML = groups.map(g=>{
-    const p = listProgress(g.items.map(i=>({...i})));
+function renderCategoryLists(pageId, groups, kind, addCatLabel, prefix='', hideAdd=false){
+  document.getElementById(pageId).innerHTML = prefix + groups.map(g=>{
+    const p = listProgress(g.items);
     return `
     <div class="card">
       <h2>${esc(g.name)} <span class="spacer"></span><span style="font-size:12px;color:var(--faint);letter-spacing:0;text-transform:none">${p.done}/${p.total}</span></h2>
       <div class="list">${g.items.map(i=>itemRow(i, kind+':'+g.id)).join('')}</div>
-      <div class="addrow"><input id="add-${kind}-${g.id}" placeholder="Neuer Eintrag…" onkeydown="if(event.key==='Enter')addListItem('${kind}:${g.id}')"><button class="btn" onclick="addListItem('${kind}:${g.id}')">+</button></div>
+      ${hideAdd?'':`<div class="addrow"><input id="add-${kind}-${g.id}" placeholder="Neuer Eintrag…" onkeydown="if(event.key==='Enter')addListItem('${kind}:${g.id}')"><button class="btn" onclick="addListItem('${kind}:${g.id}')">+</button></div>`}
     </div>`;
-  }).join('') + `
-    <button class="btn" style="width:100%" onclick="addCategory('${kind}')">+ ${addCatLabel}</button>`;
+  }).join('') +
+  (groups.length===0 ? '<div class="card"><p class="hint" style="margin:0">Keine Einträge für diesen Filter.</p></div>' : '') +
+  (hideAdd ? '' : `<button class="btn" style="width:100%" onclick="addCategory('${kind}')">+ ${addCatLabel}</button>`);
 }
 function addCategory(kind){
   openModal('Neue Kategorie', [{key:'name',label:'Name der Kategorie',value:''}], v=>{
@@ -1321,17 +1358,30 @@ function addCategory(kind){
     target.push({id:uid(), name:v.name.trim(), items:[]});
   });
 }
-function renderPacking(){ renderCategoryLists('page-packen', state.packing, 'pack', 'Kategorie hinzufügen'); }
+// Packlisten-Filter: nur die einer Person zugeordneten Sachen zeigen
+let packFilter = '';
+function setPackFilter(id){ packFilter = (packFilter===id ? '' : id); renderPacking(); }
+function renderPacking(){
+  const bar = `<div class="card">
+    <h2>👤 Wer packt gerade?</h2>
+    <div class="chips">${state.crew.map(c=>`<span class="chip${packFilter===c.id?' on':''}" style="--c:${c.color}" onclick="setPackFilter('${c.id}')"><span class="dot"></span>${esc(c.name)}</span>`).join('')}</div>
+    <div class="hint">${packFilter ? 'Zeigt nur Sachen, die '+esc(crewById(packFilter)?.name||'?')+' zugeordnet sind — nochmal antippen für alle.' : 'Namen antippen, um nur die zugeordneten Sachen dieser Person zu sehen. Zuordnen: Eintrag antippen → „Wer bringt’s mit".'}</div>
+  </div>`;
+  let groups = state.packing;
+  if(packFilter) groups = state.packing
+    .map(g=>({ ...g, items: g.items.filter(i=>i.who===packFilter) }))
+    .filter(g=>g.items.length);
+  renderCategoryLists('page-packen', groups, 'pack', 'Kategorie hinzufügen', bar, !!packFilter);
+}
 function renderShopping(){ renderCategoryLists('page-einkauf', state.shopping, 'shop', 'Kategorie hinzufügen'); }
 
 /* ============================================================
    BUDGET — geteilte Ausgaben & Ausgleich
    ============================================================ */
-function renderBudget(){
+// Salden (gezahlt minus Anteil) + Greedy-Ausgleichsvorschläge
+function budgetCalc(){
   const ex = state.budget.expenses;
   const total = ex.reduce((s,e)=>s+e.amount,0);
-
-  // Salden: gezahlt minus Anteil
   const bal = {};
   state.crew.forEach(c=>bal[c.id]=0);
   ex.forEach(e=>{
@@ -1341,8 +1391,6 @@ function renderBudget(){
     const share = e.amount / sharers.length;
     sharers.forEach(id=>bal[id] -= share);
   });
-
-  // Ausgleichsvorschläge (greedy)
   const debtors = [], creditors = [];
   state.crew.forEach(c=>{
     const b = Math.round(bal[c.id]*100)/100;
@@ -1352,14 +1400,36 @@ function renderBudget(){
   debtors.sort((a,b)=>b.amt-a.amt); creditors.sort((a,b)=>b.amt-a.amt);
   const settlements = [];
   let di=0, ci=0;
-  const D = debtors.map(d=>({...d})), C = creditors.map(c=>({...c}));
-  while(di<D.length && ci<C.length){
-    const pay = Math.min(D[di].amt, C[ci].amt);
-    settlements.push({from:D[di].id, to:C[ci].id, amt:pay});
-    D[di].amt -= pay; C[ci].amt -= pay;
-    if(D[di].amt < 0.01) di++;
-    if(C[ci].amt < 0.01) ci++;
+  while(di<debtors.length && ci<creditors.length){
+    const pay = Math.min(debtors[di].amt, creditors[ci].amt);
+    settlements.push({from:debtors[di].id, to:creditors[ci].id, amt:pay});
+    debtors[di].amt -= pay; creditors[ci].amt -= pay;
+    if(debtors[di].amt < 0.01) di++;
+    if(creditors[ci].amt < 0.01) ci++;
   }
+  return {total, bal, settlements};
+}
+// Ausgleich als Text teilen (z. B. WhatsApp) — Zwischenablage mit Fallback
+function copySettlement(){
+  const {settlements, total} = budgetCalc();
+  if(!settlements.length){ toast('Nichts auszugleichen ✨'); return; }
+  const txt = '💶 Roadtrip-Ausgleich (Gesamt: '+euro(total)+')\n' +
+    settlements.map(s=>crewById(s.from).name+' → '+crewById(s.to).name+': '+euro(s.amt)).join('\n');
+  const done = ()=>toast('Ausgleich kopiert — ab in die Gruppe 📋');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(done, ()=>fallbackCopy(txt, done));
+  } else fallbackCopy(txt, done);
+}
+function fallbackCopy(txt, done){
+  const ta = document.createElement('textarea');
+  ta.value = txt; ta.style.position='fixed'; ta.style.opacity='0';
+  document.body.appendChild(ta); ta.select();
+  try{ document.execCommand('copy'); done(); }catch(e){ toast('Kopieren nicht möglich'); }
+  ta.remove();
+}
+function renderBudget(){
+  const ex = state.budget.expenses;
+  const {total, bal, settlements} = budgetCalc();
 
   document.getElementById('page-budget').innerHTML = `
     <div class="card">
@@ -1386,7 +1456,7 @@ function renderBudget(){
         <div class="hint">Plus = bekommt Geld zurück · Minus = schuldet</div>
       </div>
       <div class="card">
-        <h2>🤝 Ausgleich</h2>
+        <h2>🤝 Ausgleich ${settlements.length?`<span class="spacer"></span><button class="btn small" onclick="copySettlement()">📋 Kopieren</button>`:''}</h2>
         ${settlements.length===0 ? '<p class="hint" style="margin:0">Alles ausgeglichen ✨</p>' :
           settlements.map(s=>`<div class="settle"><b>${esc(crewById(s.from).name)}</b> <span class="arrow">→</span> <b>${esc(crewById(s.to).name)}</b>: ${euro(s.amt)}</div>`).join('')}
       </div>
@@ -1458,6 +1528,13 @@ function addFestival(){
    ============================================================ */
 function renderAll(){
   mapInfoLabels.length = 0;
+  // Halb getippte Eingaben (Add-Felder, Budget-Formular) über Re-Renders retten
+  const keepVals = {}, offChips = [];
+  document.querySelectorAll('input[id], select[id], textarea[id]').forEach(el=>{
+    if(el.closest('#modalBox') || el.type==='file' || el.type==='hidden') return;
+    if(el.tagName==='SELECT' || el.value) keepVals[el.id] = el.value;
+  });
+  document.querySelectorAll('#exSharers .chip:not(.on)').forEach(el=>offChips.push(el.dataset.id));
   renderNav();
   // Karten auf schmalen Screens initial Richtung Routenmitte scrollen
   requestAnimationFrame(()=>{
@@ -1474,10 +1551,30 @@ function renderAll(){
   renderBudget();
   renderFestival();
   updateSaveInfo();
+  // Gerettete Eingaben wiederherstellen
+  for(const id in keepVals){
+    const el = document.getElementById(id);
+    if(el && (el.tagName==='SELECT' || !el.value)) el.value = keepVals[id];
+  }
+  offChips.forEach(id=>{
+    const el = document.querySelector('#exSharers .chip[data-id="'+id+'"]');
+    if(el) el.classList.remove('on');
+  });
 }
 renderAll();
 // Erstbesuch: Standarddaten direkt persistieren
 if(!state.meta.lastSaved) save();
+// Mehrere offene Tabs synchron halten: schreibt ein anderer Tab, hier nachziehen
+// (das storage-Event feuert nur in den JEWEILS ANDEREN Tabs — keine Schleife)
+window.addEventListener('storage', e=>{
+  if(e.key === STORAGE_KEY && e.newValue){
+    try{
+      state = migrate(JSON.parse(e.newValue));
+      renderAll();
+      toast('Daten aus anderem Tab übernommen 🔄');
+    }catch(err){ console.warn('Tab-Sync fehlgeschlagen', err); }
+  }
+});
 // Countdown minütlich aktualisieren (nur Übersicht neu rendern, wenn aktiv)
 setInterval(()=>{ if(activeTab==='uebersicht') renderOverview(); }, 60000);
 </script>

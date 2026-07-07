@@ -42,6 +42,11 @@ AGENTS.md                   # Diese Datei (CLAUDE.md verweist hierauf)
 - **Rückgängig:** Destruktive Aktionen laufen über `withUndo(msg, fn)` —
   zeigt einen Toast mit „Rückgängig"-Button (eine Stufe). Neue Lösch-Aktionen
   bitte ebenfalls über `withUndo` statt `confirm()`.
+- **Tab-Sync:** Ein `storage`-Event-Listener übernimmt Änderungen aus anderen
+  offenen Tabs desselben Browsers (last-write-wins, kein Merge).
+- **Eingaben-Erhalt:** `renderAll()` rettet Werte von Inputs/Selects mit `id`
+  (außerhalb des Modals) sowie den Zustand der `#exSharers`-Chips über den
+  Re-Render. Neue Formularfelder brauchen deshalb eine `id`.
 - **Migrationen:** Bei Schema-Änderungen `SCHEMA_VERSION` erhöhen und in
   `migrate()` alte Stände konvertieren (fehlende Keys werden bereits defensiv
   aus `defaultState()` ergänzt). Optionale Felder (z. B. `lat`/`lng` an
@@ -80,6 +85,15 @@ AGENTS.md                   # Diese Datei (CLAUDE.md verweist hierauf)
   alles editierbar, `state.selectedRoute` markiert den Favoriten.
 - Budget: geteilte Ausgaben mit wählbaren Teilenden, Salden und
   Greedy-Ausgleichsvorschlägen.
+
+## Sonstige Konventionen
+
+- Druck-Stylesheet (`@media print`): alle Tabs untereinander, hell, ohne
+  Karte/Buttons — Papier-Fallback für Funklöcher. Bei neuen UI-Elementen
+  prüfen, ob sie im Druck sinnvoll sind (sonst dort ausblenden).
+- Budget-Berechnung zentral in `budgetCalc()` (Salden + Greedy-Ausgleich);
+  `copySettlement()` teilt den Ausgleich als Text (Clipboard mit Fallback).
+- Packlisten-Personenfilter: Modul-Variable `packFilter` (nicht persistiert).
 
 ## Verifikation
 
