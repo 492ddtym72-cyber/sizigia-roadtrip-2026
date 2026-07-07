@@ -651,6 +651,9 @@ let state = migrate(_bootRaw);
 // der Gruppen-Stand aus der Cloud — sonst würde der frische Default-State
 // wegen des neueren Zeitstempels die Gruppendaten überschreiben.
 let _virgin = !_bootRaw;
+const LOCAL_ONLY_KEY = STORAGE_KEY + '-local-only';
+let _localOnlyRestore = false;
+try{ _localOnlyRestore = localStorage.getItem(LOCAL_ONLY_KEY) === '1'; }catch(e){}
 
 /* --- Automatische Sicherungen (Snapshots) ---
    Rollierend max. 5 Stände in localStorage: 1× täglich vor der ersten
@@ -669,16 +672,43 @@ function takeSnapshot(reason){
     localStorage.setItem(SNAP_KEY, JSON.stringify(snaps));
   }catch(e){ console.warn('Snapshot fehlgeschlagen', e); }
 }
+function enterLocalOnlyMode(){
+  if(!CLOUD_URL) return;
+  _localOnlyRestore = true;
+  try{ localStorage.setItem(LOCAL_ONLY_KEY, '1'); }catch(e){}
+  clearTimeout(_syncTimer);
+  setSyncStatus('localOnly');
+}
+function leaveLocalOnlyMode(){
+  _localOnlyRestore = false;
+  try{ localStorage.removeItem(LOCAL_ONLY_KEY); }catch(e){}
+}
+function openBackupLocal(data, snapshotReason, logDesc, toastMsg){
+  takeSnapshot(snapshotReason);
+  state = migrate(data);
+  if(CLOUD_URL) enterLocalOnlyMode();
+  logChange(logDesc, null);
+  StorageAdapter.save(state);
+  renderAll();
+  updateSaveInfo(true);
+  setSyncStatus(CLOUD_URL ? 'localOnly' : 'ok');
+  toast(toastMsg, CLOUD_URL ? 'Gruppenstand laden' : null, CLOUD_URL ? loadGroupState : null);
+}
 function restoreSnapshot(idx){
   const snaps = getSnapshots();
   const s = snaps[idx];
   if(!s) return;
-  if(!confirm('Sicherung vom ' + new Date(s.ts).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) + ' Uhr wiederherstellen? Der aktuelle Stand wird vorher gesichert.')) return;
-  takeSnapshot('Vor Wiederherstellung');
-  state = migrate(JSON.parse(s.raw));
-  logChange('hat eine Sicherung wiederhergestellt (' + s.reason + ')');
-  save(); renderAll();
-  toast('Sicherung wiederhergestellt ↩');
+  const when = new Date(s.ts).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  const msg = CLOUD_URL
+    ? 'Sicherung vom ' + when + ' Uhr nur auf diesem Gerät öffnen? Der Gruppenstand bleibt unverändert und der Sync wird hier pausiert, bis du den Gruppenstand wieder lädst.'
+    : 'Sicherung vom ' + when + ' Uhr wiederherstellen? Der aktuelle Stand wird vorher gesichert.';
+  if(!confirm(msg)) return;
+  openBackupLocal(
+    JSON.parse(s.raw),
+    'Vor Wiederherstellung',
+    'hat eine Sicherung lokal geöffnet (' + s.reason + ')',
+    CLOUD_URL ? 'Sicherung lokal geöffnet — Gruppe bleibt unverändert ☁️' : 'Sicherung wiederhergestellt ↩'
+  );
 }
 
 /* --- Rückgängig (eine Stufe) für Lösch-Aktionen --- */
@@ -747,10 +777,14 @@ function setSyncStatus(s){
     syncing:['· ☁️ synchronisiere…','var(--sun)'],
     ok:['· ☁️ synchron mit der Gruppe','var(--mint)'],
     offline:['· ☁️ offline — lokal gespeichert, Sync folgt','var(--faint)'],
+    localOnly:['· ☁️ lokale Sicherung — nicht synchronisiert','var(--sun)'],
   };
   const m = map[s] || ['',''];
   el.textContent = ' ' + m[0];
   el.style.color = m[1];
+  el.style.cursor = s === 'localOnly' ? 'pointer' : '';
+  el.title = s === 'localOnly' ? 'Gruppenstand wieder laden' : '';
+  el.onclick = s === 'localOnly' ? loadGroupState : null;
 }
 async function cloudGet(){
   const r = await fetch(CLOUD_URL, {cache:'no-store'});
@@ -762,7 +796,31 @@ async function cloudPut(){
   if(!r.ok) throw new Error('HTTP ' + r.status);
   _lastPushed = state.meta.lastSaved;
 }
+async function loadGroupState(){
+  if(!CLOUD_URL || _syncing) return;
+  _syncing = true;
+  setSyncStatus('syncing');
+  try{
+    const remote = await cloudGet();
+    if(remote){
+      state = migrate(remote);
+      StorageAdapter.save(state);
+      _lastPushed = state.meta.lastSaved;
+      leaveLocalOnlyMode();
+      renderAll();
+      toast('Gruppenstand geladen ☁️');
+    } else {
+      leaveLocalOnlyMode();
+    }
+    _virgin = false;
+    setSyncStatus('ok');
+  }catch(e){
+    setSyncStatus('offline');
+  }
+  _syncing = false;
+}
 async function syncNow(){
+  if(_localOnlyRestore){ setSyncStatus('localOnly'); return; }
   if(!CLOUD_URL || _syncing) return;
   _syncing = true;
   setSyncStatus('syncing');
@@ -797,6 +855,7 @@ async function syncNow(){
 }
 function scheduleSync(){
   if(!CLOUD_URL) return;
+  if(_localOnlyRestore){ setSyncStatus('localOnly'); return; }
   clearTimeout(_syncTimer);
   _syncTimer = setTimeout(syncNow, 1200);
 }
@@ -821,12 +880,16 @@ function importData(ev){
     try{
       const data = JSON.parse(reader.result);
       if(!data || typeof data !== 'object' || !data.crew || !data.routes) throw new Error('Kein gültiges Roadtrip-Backup');
-      if(!confirm('Backup importieren? Die aktuellen Daten auf diesem Gerät werden überschrieben (eine Sicherung wird vorher angelegt).')) return;
-      takeSnapshot('Vor Import');
-      state = migrate(data);
-      logChange('hat ein Backup importiert (Wiederherstellung: siehe Sicherungen in der Übersicht)');
-      save(); renderAll();
-      toast('Backup importiert ✅');
+      const msg = CLOUD_URL
+        ? 'Backup nur auf diesem Gerät öffnen? Der Gruppenstand bleibt unverändert und der Sync wird hier pausiert, bis du den Gruppenstand wieder lädst.'
+        : 'Backup importieren? Die aktuellen Daten auf diesem Gerät werden überschrieben (eine Sicherung wird vorher angelegt).';
+      if(!confirm(msg)) return;
+      openBackupLocal(
+        data,
+        'Vor Import',
+        'hat ein Backup lokal geöffnet',
+        CLOUD_URL ? 'Backup lokal geöffnet — Gruppe bleibt unverändert ☁️' : 'Backup importiert ✅'
+      );
     }catch(e){
       alert('Import fehlgeschlagen: ' + e.message);
     }
@@ -1250,7 +1313,7 @@ function renderOverview(){
 
     <div class="card">
       <h2>💾 Datensicherung</h2>
-      <p style="font-size:14px;color:var(--muted)">Alle Änderungen werden automatisch lokal gespeichert und mit der Gruppe synchronisiert, sobald Verbindung besteht. Ein JSON-Backup ist der sichere Notausgang: Datei speichern, teilen oder auf einem anderen Gerät laden.</p>
+      <p style="font-size:14px;color:var(--muted)">Alle Änderungen werden automatisch lokal gespeichert und mit der Gruppe synchronisiert, sobald Verbindung besteht. Backups und automatische Sicherungen werden beim Öffnen nur auf diesem Gerät geladen, damit niemand versehentlich alte Daten für alle überschreibt.</p>
       <div class="backup-actions">
         <button class="btn primary" onclick="exportData()">Backup exportieren</button>
         <button class="btn" onclick="document.getElementById('importFile').click()">Backup importieren</button>
@@ -1261,7 +1324,7 @@ function renderOverview(){
         if(!snaps.length) return '';
         return '<div style="margin-top:12px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Automatische Sicherungen auf diesem Gerät</div>' +
           snaps.map((s,i)=>({s,i})).reverse().map(({s,i})=>
-            '<div class="factrow"><span class="k">'+new Date(s.ts).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})+' '+new Date(s.ts).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+'</span><span class="v">'+esc(s.reason)+' <button class="btn ghost small" onclick="restoreSnapshot('+i+')">Wiederherstellen</button></span></div>'
+            '<div class="factrow"><span class="k">'+new Date(s.ts).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})+' '+new Date(s.ts).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+'</span><span class="v">'+esc(s.reason)+' <button class="btn ghost small" onclick="restoreSnapshot('+i+')">Lokal öffnen</button></span></div>'
           ).join('');
       })()}
     </div>`;
@@ -1921,11 +1984,21 @@ if('serviceWorker' in navigator && location.protocol === 'https:'){
 // Mehrere offene Tabs synchron halten: schreibt ein anderer Tab, hier nachziehen
 // (das storage-Event feuert nur in den JEWEILS ANDEREN Tabs — keine Schleife)
 window.addEventListener('storage', e=>{
+  if(e.key === LOCAL_ONLY_KEY){
+    _localOnlyRestore = e.newValue === '1';
+    setSyncStatus(_localOnlyRestore ? 'localOnly' : 'ok');
+    return;
+  }
   if(e.key === STORAGE_KEY && e.newValue){
     try{
       state = migrate(JSON.parse(e.newValue));
       renderAll();
-      toast('Daten aus anderem Tab übernommen 🔄');
+      if(_localOnlyRestore){
+        setSyncStatus('localOnly');
+        toast('Lokale Sicherung aus anderem Tab übernommen — nicht synchronisiert');
+      } else {
+        toast('Daten aus anderem Tab übernommen 🔄');
+      }
     }catch(err){ console.warn('Tab-Sync fehlgeschlagen', err); }
   }
 });

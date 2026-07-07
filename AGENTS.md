@@ -44,12 +44,18 @@ AGENTS.md                   # Diese Datei (CLAUDE.md verweist hierauf)
   (Schutz gegen Uhren-Schiefstand zwischen Geräten). Vor Übernahme eines
   fremden Standes mit ungepushten lokalen Änderungen: Snapshot
   („Vor Cloud-Übernahme"). Status-Badge: `setSyncStatus()` / `#syncBadge`.
-- Backup: Export/Import als JSON über die Header-Buttons. `importData()`
-  validiert grob und ruft `migrate()` auf. `meta.lastExport` steuert den
-  „Backup veraltet"-Hinweis in der Speicherleiste.
+- Backup: Export/Import als JSON im Bereich „Übersicht → Datensicherung".
+  `importData()`
+  validiert grob und ruft `migrate()` auf. Bei aktivem `CLOUD_URL` darf Import
+  **nicht** automatisch in die Gruppe synchronisieren: alte Backups werden nur
+  lokal geöffnet (`LOCAL_ONLY_KEY`, Sync pausiert), bis der Gruppenstand wieder
+  geladen wird. `meta.lastExport` steuert den „Backup veraltet"-Hinweis in der
+  Speicherleiste.
 - **Automatische Snapshots:** rollierend max. 5 Stände unter
   `<STORAGE_KEY>-snapshots` (1× täglich vor der ersten Änderung, vor Import,
-  vor Wiederherstellung). UI: Übersicht → Datensicherung → „Wiederherstellen".
+  vor Wiederherstellung). UI: Übersicht → Datensicherung → „Lokal öffnen".
+  Wiederherstellung ist bei aktivem Cloud-Sync absichtlich local-only und darf
+  keinen alten Stand per `save()`/`scheduleSync()` nach Firebase pushen.
 - **Rückgängig:** Destruktive Aktionen laufen über `withUndo(msg, fn)` —
   zeigt einen Toast mit „Rückgängig"-Button (eine Stufe). Neue Lösch-Aktionen
   bitte ebenfalls über `withUndo` statt `confirm()`.
