@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d16">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Sizigia 2026 · Roadtrip-Planer</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='42' fill='%23ffb257'/><circle cx='58' cy='44' r='38' fill='%230b0d16'/></svg>">
+<style>
+/* ============================================================
+   Sizigia 2026 · Roadtrip-Planer
+   Theme: „Eclipse Night" — tiefer Nachthimmel, Sonnenkorona-Akzente
+   ============================================================ */
+:root{
+  --bg:#0b0d16;
+  --bg-2:#11142200;
+  --card:rgba(255,255,255,.045);
+  --card-solid:#161a2b;
+  --border:rgba(255,255,255,.09);
+  --border-strong:rgba(255,255,255,.18);
+  --text:#eef0fa;
+  --muted:#9aa0b8;
+  --faint:#6a7089;
+  --sun:#ffb257;
+  --sun-deep:#ff8a3d;
+  --coral:#ff6b4a;
+  --sky:#8ea8ff;
+  --mint:#5fd4a8;
+  --danger:#ff5f6b;
+  --radius:16px;
+  --font-display:"Futura","Avenir Next","Century Gothic","Trebuchet MS",sans-serif;
+  --font-body:"Avenir Next","Avenir","Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{
+  font-family:var(--font-body);
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  line-height:1.5;
+  overflow-x:hidden;
+}
+/* Nachthimmel: Korona-Glow + Sterne + Körnung */
+body::before{
+  content:"";position:fixed;inset:0;z-index:-2;pointer-events:none;
+  background:
+    radial-gradient(ellipse 90% 45% at 78% -12%, rgba(255,138,61,.22), transparent 60%),
+    radial-gradient(ellipse 70% 40% at 15% -8%, rgba(120,90,255,.14), transparent 60%),
+    radial-gradient(ellipse 100% 60% at 50% 115%, rgba(45,60,140,.18), transparent 65%);
+}
+body::after{
+  content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:.5;
+  background-image:
+    radial-gradient(1px 1px at 22px 34px, #fff8, transparent 2px),
+    radial-gradient(1px 1px at 187px 121px, #fff5, transparent 2px),
+    radial-gradient(1.5px 1.5px at 311px 58px, #ffd9a88a, transparent 2px),
+    radial-gradient(1px 1px at 421px 233px, #fff6, transparent 2px),
+    radial-gradient(1px 1px at 89px 301px, #cfd8ff70, transparent 2px),
+    radial-gradient(1.5px 1.5px at 512px 342px, #fff4, transparent 2px),
+    radial-gradient(1px 1px at 269px 401px, #ffd9a860, transparent 2px);
+  background-size:560px 460px;
+}
+.wrap{max-width:880px;margin:0 auto;padding:0 16px 96px}
+
+/* ---------- Header ---------- */
+header{padding:26px 0 10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.eclipse{
+  width:44px;height:44px;border-radius:50%;flex:0 0 auto;position:relative;
+  background:radial-gradient(circle at 50% 50%, #05060c 58%, transparent 59%),
+             radial-gradient(circle at 50% 50%, var(--sun) 60%, transparent 61%);
+  box-shadow:0 0 22px 4px rgba(255,178,87,.45), 0 0 60px 12px rgba(255,138,61,.18);
+  animation:pulse 5s ease-in-out infinite;
+}
+@keyframes pulse{0%,100%{box-shadow:0 0 22px 4px rgba(255,178,87,.45),0 0 60px 12px rgba(255,138,61,.18)}50%{box-shadow:0 0 30px 7px rgba(255,178,87,.6),0 0 80px 18px rgba(255,138,61,.28)}}
+.title h1{
+  font-family:var(--font-display);font-size:clamp(22px,5.5vw,32px);
+  letter-spacing:.06em;text-transform:uppercase;font-weight:700;line-height:1.1;
+  background:linear-gradient(100deg,#fff 30%,var(--sun) 75%,var(--coral));
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+}
+.title .sub{color:var(--muted);font-size:13px;letter-spacing:.14em;text-transform:uppercase}
+.header-actions{margin-left:auto;display:flex;gap:8px;align-items:center}
+.savebar{width:100%;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--faint);padding:2px 2px 0}
+.savedot{width:7px;height:7px;border-radius:50%;background:var(--mint);box-shadow:0 0 8px var(--mint);transition:background .3s}
+.savedot.saving{background:var(--sun)}
+
+/* ---------- Navigation ---------- */
+nav{
+  position:sticky;top:0;z-index:50;display:flex;gap:6px;overflow-x:auto;
+  padding:10px 2px;margin:6px -16px 18px;padding-left:16px;padding-right:16px;
+  background:linear-gradient(#0b0d16f2,#0b0d16e0);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  scrollbar-width:none;border-bottom:1px solid var(--border);
+}
+nav::-webkit-scrollbar{display:none}
+.tab{
+  flex:0 0 auto;border:1px solid var(--border);background:var(--card);color:var(--muted);
+  padding:8px 14px;border-radius:999px;font-size:13.5px;font-weight:600;cursor:pointer;
+  font-family:var(--font-body);white-space:nowrap;transition:all .2s;
+}
+.tab:hover{border-color:var(--border-strong);color:var(--text)}
+.tab.active{
+  background:linear-gradient(120deg,var(--sun-deep),var(--coral));color:#1a0d05;border-color:transparent;
+  box-shadow:0 4px 18px -4px rgba(255,138,61,.5);
+}
+
+/* ---------- Allgemeine Bausteine ---------- */
+section.page{display:none;animation:fadein .35s ease}
+section.page.active{display:block}
+@keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.card{
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+  padding:18px;margin-bottom:14px;
+}
+.card h2{
+  font-family:var(--font-display);font-size:15px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--sun);margin-bottom:12px;display:flex;align-items:center;gap:8px;font-weight:700;
+}
+.card h2 .spacer{margin-left:auto}
+.hint{font-size:12.5px;color:var(--faint);margin-top:8px}
+.grid2{display:grid;grid-template-columns:1fr;gap:14px}
+@media(min-width:640px){.grid2{grid-template-columns:1fr 1fr}}
+button{font-family:var(--font-body)}
+.btn{
+  border:1px solid var(--border-strong);background:var(--card);color:var(--text);
+  padding:9px 15px;border-radius:11px;font-size:13.5px;font-weight:600;cursor:pointer;transition:all .15s;
+}
+.btn:hover{background:rgba(255,255,255,.09)}
+.btn:active{transform:scale(.97)}
+.btn.primary{background:linear-gradient(120deg,var(--sun-deep),var(--coral));color:#1a0d05;border-color:transparent}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.small{padding:5px 10px;font-size:12.5px;border-radius:9px}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted)}
+.btn.ghost:hover{color:var(--text);background:var(--card)}
+.btn.danger{color:var(--danger);border-color:rgba(255,95,107,.35)}
+.iconbtn{
+  border:1px solid var(--border);background:var(--card);color:var(--text);cursor:pointer;
+  width:36px;height:36px;border-radius:10px;font-size:16px;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;
+}
+.iconbtn:hover{border-color:var(--border-strong)}
+
+/* Chips (Crew, Votes, Zuordnung) */
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{
+  display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;
+  border:1px solid var(--border);background:var(--card);font-size:13px;font-weight:600;color:var(--muted);
+  cursor:pointer;transition:all .15s;user-select:none;
+}
+.chip .dot{width:8px;height:8px;border-radius:50%;background:var(--c,#888)}
+.chip.on{color:var(--text);border-color:var(--c,#888);background:color-mix(in srgb,var(--c,#888) 16%, transparent)}
+.chip.static{cursor:default}
+
+/* Listen (Packen, Einkauf, Checklisten) */
+.list{display:flex;flex-direction:column}
+.item{
+  display:flex;align-items:center;gap:11px;padding:9px 4px;border-bottom:1px solid rgba(255,255,255,.05);
+}
+.item:last-of-type{border-bottom:none}
+.checkbox{
+  width:22px;height:22px;flex:0 0 auto;border-radius:7px;border:1.5px solid var(--border-strong);
+  background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:14px;color:#1a0d05;transition:all .15s;
+}
+.checkbox.done{background:linear-gradient(120deg,var(--sun-deep),var(--coral));border-color:transparent}
+.item .txt{flex:1;font-size:14.5px;cursor:pointer;min-width:0;overflow-wrap:anywhere}
+.item.done .txt{color:var(--faint);text-decoration:line-through}
+.item .who{
+  font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;flex:0 0 auto;
+  background:color-mix(in srgb,var(--c,#888) 18%, transparent);color:var(--text);
+  border:1px solid color-mix(in srgb,var(--c,#888) 45%, transparent);cursor:pointer;
+}
+.item .del{border:none;background:none;color:var(--faint);cursor:pointer;font-size:15px;padding:4px;flex:0 0 auto}
+.item .del:hover{color:var(--danger)}
+.addrow{display:flex;gap:8px;margin-top:11px}
+.addrow input{flex:1}
+input,select,textarea{
+  font-family:var(--font-body);background:rgba(0,0,0,.28);border:1px solid var(--border-strong);
+  color:var(--text);border-radius:11px;padding:10px 12px;font-size:14.5px;width:100%;outline:none;transition:border .15s;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--sun)}
+input::placeholder,textarea::placeholder{color:var(--faint)}
+select option{background:var(--card-solid);color:var(--text)}
+textarea{resize:vertical;min-height:70px}
+.progress{height:8px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;margin-top:7px}
+.progress i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--sun-deep),var(--coral));transition:width .4s ease}
+
+/* ---------- Übersicht ---------- */
+.countdown{
+  text-align:center;padding:30px 18px 26px;position:relative;overflow:hidden;
+}
+.countdown .label{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:var(--muted)}
+.count-nums{display:flex;justify-content:center;gap:14px;margin:14px 0 6px}
+.count-cell{min-width:72px}
+.count-cell b{
+  display:block;font-family:var(--font-display);font-size:clamp(34px,9vw,52px);font-weight:700;line-height:1;
+  background:linear-gradient(180deg,#fff,var(--sun));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+}
+.count-cell span{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--faint)}
+.factrow{display:flex;gap:10px;align-items:baseline;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:14.5px}
+.factrow:last-child{border-bottom:none}
+.factrow .k{color:var(--faint);font-size:12px;letter-spacing:.08em;text-transform:uppercase;flex:0 0 108px}
+.factrow .v{flex:1;overflow-wrap:anywhere}
+
+/* ---------- Route ---------- */
+.route-picker{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:16px}
+@media(min-width:640px){.route-picker{grid-template-columns:repeat(3,1fr)}}
+.route-opt{
+  border:1px solid var(--border);border-radius:var(--radius);padding:14px;cursor:pointer;
+  background:var(--card);transition:all .2s;position:relative;
+}
+.route-opt:hover{border-color:var(--border-strong)}
+.route-opt.sel{border-color:var(--sun);background:rgba(255,178,87,.07);box-shadow:0 0 24px -8px rgba(255,178,87,.4)}
+.route-opt .emoji{font-size:22px}
+.route-opt h3{font-size:15px;margin:5px 0 3px;font-family:var(--font-display);letter-spacing:.04em}
+.route-opt p{font-size:12.5px;color:var(--muted)}
+.route-opt .star{position:absolute;top:10px;right:12px;font-size:15px;opacity:.25}
+.route-opt.sel .star{opacity:1}
+.stage{
+  position:relative;padding:12px 12px 12px 34px;border:1px solid var(--border);border-radius:14px;
+  background:rgba(255,255,255,.028);margin-bottom:10px;
+}
+.stage::before{
+  content:"";position:absolute;left:14px;top:20px;width:9px;height:9px;border-radius:50%;
+  background:var(--sun);box-shadow:0 0 10px rgba(255,178,87,.7);
+}
+.stage::after{content:"";position:absolute;left:17.5px;top:34px;bottom:10px;width:2px;background:linear-gradient(rgba(255,178,87,.4),transparent)}
+.stage .toprow{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.stage .date{font-size:11.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--sun)}
+.stage .fromto{font-weight:700;font-size:15px}
+.stage .meta{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-top:4px}
+.stage .note{font-size:13px;color:var(--muted);margin-top:5px}
+.stage .stay{font-size:13px;margin-top:5px;color:var(--mint)}
+.stage .actions{position:absolute;top:8px;right:8px;display:flex;gap:2px}
+.stage .actions button{border:none;background:none;color:var(--faint);cursor:pointer;font-size:14px;padding:4px 5px;border-radius:7px}
+.stage .actions button:hover{color:var(--text);background:var(--card)}
+a.maplink{color:var(--sky);font-size:12.5px;text-decoration:none}
+a.maplink:hover{text-decoration:underline}
+
+/* ---------- Spots ---------- */
+.spot{border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.028);padding:14px;margin-bottom:10px}
+.spot .head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.spot h3{font-size:15.5px}
+.spot .region{font-size:12px;color:var(--sun);letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+.spot .desc{font-size:13.5px;color:var(--muted);margin:5px 0 9px}
+.spot .foot{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.votecount{margin-left:auto;font-size:13px;color:var(--muted);font-weight:700}
+
+/* ---------- Budget ---------- */
+.balance{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:14.5px}
+.balance:last-child{border-bottom:none}
+.balance .amt{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums}
+.amt.pos{color:var(--mint)}.amt.neg{color:var(--danger)}
+.expense{display:flex;gap:10px;align-items:center;padding:10px 4px;border-bottom:1px solid rgba(255,255,255,.05)}
+.expense:last-child{border-bottom:none}
+.expense .info{flex:1;min-width:0}
+.expense .desc{font-size:14.5px;font-weight:600}
+.expense .sub{font-size:12px;color:var(--faint)}
+.expense .amt{font-weight:700;font-variant-numeric:tabular-nums;flex:0 0 auto}
+.settle{font-size:14px;padding:7px 0;color:var(--muted)}
+.settle b{color:var(--text)}
+.settle .arrow{color:var(--sun);font-weight:700}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px}
+.formgrid .full{grid-column:1/-1}
+
+/* ---------- Modal ---------- */
+.modal-bg{
+  position:fixed;inset:0;background:rgba(4,5,10,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+  z-index:100;display:none;align-items:flex-end;justify-content:center;padding:0;
+}
+.modal-bg.open{display:flex}
+@media(min-width:640px){.modal-bg{align-items:center;padding:20px}}
+.modal{
+  background:var(--card-solid);border:1px solid var(--border-strong);width:100%;max-width:480px;
+  border-radius:22px 22px 0 0;padding:22px 18px calc(20px + env(safe-area-inset-bottom));max-height:88vh;overflow-y:auto;
+  animation:slideup .28s cubic-bezier(.2,.9,.3,1);
+}
+@media(min-width:640px){.modal{border-radius:20px;padding:24px}}
+@keyframes slideup{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.modal h3{font-family:var(--font-display);letter-spacing:.1em;text-transform:uppercase;font-size:14px;color:var(--sun);margin-bottom:16px}
+.modal .field{margin-bottom:12px}
+.modal .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;letter-spacing:.06em;text-transform:uppercase}
+.modal .btnrow{display:flex;gap:9px;margin-top:18px}
+.modal .btnrow .btn{flex:1}
+
+/* Toast */
+#toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);z-index:200;
+  background:var(--card-solid);border:1px solid var(--border-strong);color:var(--text);
+  padding:11px 20px;border-radius:999px;font-size:13.5px;font-weight:600;opacity:0;transition:all .3s;pointer-events:none;
+  box-shadow:0 8px 30px rgba(0,0,0,.5);max-width:88vw;text-align:center;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+footer{text-align:center;color:var(--faint);font-size:12px;padding:30px 0 10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eclipse" aria-hidden="true"></div>
+    <div class="title">
+      <h1>Sizigia 2026</h1>
+      <div class="sub">Roadtrip-Planer · München → Huesca</div>
+    </div>
+    <div class="header-actions">
+      <button class="iconbtn" onclick="exportData()" title="Backup exportieren (JSON)">⬇︎</button>
+      <button class="iconbtn" onclick="document.getElementById('importFile').click()" title="Backup importieren">⬆︎</button>
+      <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importData(event)">
+    </div>
+    <div class="savebar"><span class="savedot" id="saveDot"></span><span id="saveInfo">–</span></div>
+  </header>
+
+  <nav id="nav"></nav>
+
+  <section class="page" id="page-uebersicht"></section>
+  <section class="page" id="page-route"></section>
+  <section class="page" id="page-spots"></section>
+  <section class="page" id="page-logistik"></section>
+  <section class="page" id="page-packen"></section>
+  <section class="page" id="page-einkauf"></section>
+  <section class="page" id="page-budget"></section>
+  <section class="page" id="page-festival"></section>
+
+  <footer>🌒 Sizigia Eclipse Gathering · 10.–14.08.2026 · Totale Sonnenfinsternis am 12.08.2026<br>Daten werden lokal im Browser gespeichert — regelmäßig Backup exportieren!</footer>
+</div>
+
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="modalBox"></div>
+</div>
+<div id="toast"></div>
+
+<script>
+/* ============================================================
+   DATENHALTUNG
+   - Ein versioniertes State-Objekt, Autosave via StorageAdapter.
+   - StorageAdapter kapselt die Persistenz: aktuell localStorage,
+     später austauschbar gegen Cloud-Sync (gleiche Schnittstelle).
+   ============================================================ */
+const STORAGE_KEY = 'sizigia-roadtrip-2026';
+const SCHEMA_VERSION = 1;
+
+const StorageAdapter = {
+  load(){
+    try{
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    }catch(e){ console.warn('Laden fehlgeschlagen', e); return null; }
+  },
+  save(state){
+    try{
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      return true;
+    }catch(e){ console.warn('Speichern fehlgeschlagen', e); return false; }
+  }
+};
+
+let _uid = 0;
+function uid(){ return 'x' + Date.now().toString(36) + (_uid++).toString(36) + Math.random().toString(36).slice(2,6); }
+
+/* ---------- Standard-Daten (Vorbefüllung) ---------- */
+function defaultState(){
+  const crew = [
+    {id:'c-jakob',     name:'Jakob',     color:'#ffb257'},
+    {id:'c-christoph', name:'Christoph', color:'#ff6b4a'},
+    {id:'c-bernhard',  name:'Bernhard',  color:'#8ea8ff'},
+    {id:'c-max',       name:'Max',       color:'#5fd4a8'},
+    {id:'c-lukas',     name:'Lukas',     color:'#e08cff'},
+    {id:'c-freddi',    name:'Freddi',    color:'#ffd76b'},
+  ];
+  const st = (date, from, to, km, time, stay, note) => ({id:uid(), date, from, to, km, time, stay, note, link:''});
+  const li = (text, who='') => ({id:uid(), text, done:false, who});
+
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    meta: { lastSaved: null, created: new Date().toISOString() },
+    crew,
+    selectedRoute: 'r-kueste',
+    routes: [
+      {
+        id:'r-kueste', emoji:'🌊', name:'Mittelmeerküste',
+        desc:'Gardasee → Ligurien → Côte d’Azur → Costa Brava. Strände, Buchten, warme Abende.',
+        stages:[
+          st('So 02.08.','Innsbruck (Camper-Übernahme)','Gardasee (Riva/Torbole)','280 km','~4 Std','Camping am See','München-Crew stößt in Innsbruck dazu · Brenner-Maut'),
+          st('Mo 03.08.','Gardasee','Ligurien (Sestri Levante)','330 km','~4,5 Std','Camping am Meer','Abstecher Cinque Terre möglich (Zug ab Levanto)'),
+          st('Di 04.08.','Ligurien','Côte d’Azur (Estérel/Fréjus)','330 km','~4 Std','Camping Küste','Küstenstraße Corniche de l’Estérel'),
+          st('Mi 05.08.','Côte d’Azur','Cassis / Calanques','200 km','~2,5 Std','Camping bei Cassis','Baden in den Calanques, früh da sein'),
+          st('Do 06.08.','Cassis','Sète / Cap d’Agde','220 km','~2,5 Std','Camping am Strand','Camargue-Flamingos am Weg'),
+          st('Fr 07.08.','Sète','Cadaqués / Cap de Creus','200 km','~2,5 Std','Camping Costa Brava','Erste Bucht in Spanien 🇪🇸'),
+          st('Sa 08.08.','Costa Brava','Chill-Tag (Cadaqués/Begur)','~60 km','flexibel','wie Vortag','Buchten, Schnorcheln, Sonnenuntergang'),
+          st('So 09.08.','Costa Brava','Huesca (Region)','300 km','~3,5 Std','nahe Festivalgelände','Großeinkauf vor dem Festival! Einlass ab 10.08.'),
+        ]
+      },
+      {
+        id:'r-alpen', emoji:'🏔️', name:'Alpen & Schluchten',
+        desc:'Lago Maggiore → Annecy → Ardèche → Carcassonne → Pyrenäen. Natur, Schluchten, kühler.',
+        stages:[
+          st('So 02.08.','Innsbruck (Camper-Übernahme)','Lago Maggiore','350 km','~4,5 Std','Camping am See','Via San-Bernardino-Route (CH-Vignette!)'),
+          st('Mo 03.08.','Lago Maggiore','Annecy (Franz. Alpen)','350 km','~4,5 Std','Camping am Lac d’Annecy','Türkisblauer See, Bergpanorama'),
+          st('Di 04.08.','Annecy','See-Tag Annecy','0 km','–','wie Vortag','Kajak, Radeln, Baden'),
+          st('Mi 05.08.','Annecy','Ardèche (Vallon-Pont-d’Arc)','300 km','~3,5 Std','Camping an der Ardèche','Pont d’Arc'),
+          st('Do 06.08.','Ardèche','Kanu-Tag Ardèche','0 km','–','wie Vortag','Kanutour unter dem Pont d’Arc (vorher reservieren)'),
+          st('Fr 07.08.','Ardèche','Carcassonne','250 km','~2,5 Std','Camping bei Carcassonne','Mittelalterliche Festungsstadt am Abend'),
+          st('Sa 08.08.','Carcassonne','Aínsa / Ordesa-NP (Pyrenäen)','250 km','~3,5 Std','Camping Pyrenäen','Grenzpass, spektakuläre Berge'),
+          st('So 09.08.','Aínsa','Wanderung Ordesa → Huesca','120 km','~1,5 Std','nahe Festivalgelände','Morgens wandern, abends einkaufen'),
+        ]
+      },
+      {
+        id:'r-mix', emoji:'🌄', name:'Mix: Berge & Meer',
+        desc:'Gardasee → Ligurien → Verdon → Calanques → Costa Brava. Das Beste aus beiden Welten.',
+        stages:[
+          st('So 02.08.','Innsbruck (Camper-Übernahme)','Gardasee (Riva/Torbole)','280 km','~4 Std','Camping am See','München-Crew stößt in Innsbruck dazu'),
+          st('Mo 03.08.','Gardasee','Ligurien (Finale Ligure)','350 km','~4,5 Std','Camping am Meer','Erster Meer-Abend 🌅'),
+          st('Di 04.08.','Ligurien','Gorges du Verdon','250 km','~3,5 Std','Camping Lac de Sainte-Croix','Europas größter Canyon'),
+          st('Mi 05.08.','Verdon','Verdon-Tag','0 km','–','wie Vortag','Kajak/Tretboot auf dem Lac de Sainte-Croix'),
+          st('Do 06.08.','Verdon','Cassis / Calanques','150 km','~2 Std','Camping bei Cassis','Baden in den Calanques'),
+          st('Fr 07.08.','Cassis','Collioure / Côte Vermeille','300 km','~3 Std','Camping Côte Vermeille','Malerisches Künstlerdorf'),
+          st('Sa 08.08.','Collioure','Cadaqués / Costa Brava','60 km','~1,5 Std','Camping Costa Brava','Cap de Creus, Chill-Nachmittag'),
+          st('So 09.08.','Costa Brava','Huesca (Region)','300 km','~3,5 Std','nahe Festivalgelände','Großeinkauf vor dem Festival! Einlass ab 10.08.'),
+        ]
+      }
+    ],
+    returnStages:[
+      st('Fr 14.08.','Huesca','Costa Brava (L’Escala)','300 km','~3 Std','Camping am Meer','Abschluss-Abend am Meer 🌊'),
+      st('Sa 15.08.','Costa Brava','Côte d’Azur (Fréjus)','450 km','~4,5 Std','Camping Küste','Längere Fahr-Etappe'),
+      st('So 16.08.','Côte d’Azur','Gardasee','400 km','~4,5 Std','Camping am See','Letzter gemeinsamer Abend'),
+      st('Mo 17.08.','Gardasee','Innsbruck (Camper-Rückgabe) → München','280 km','~4 Std','–','Camper putzen & zurückgeben, Auto weiter nach München'),
+    ],
+    spots:[
+      {id:uid(), name:'Cinque Terre', region:'Ligurien', detour:'+1 Tag (Zug ab Levanto)', desc:'Fünf bunte Dörfer an der Steilküste. Auto/Camper in Levanto parken, mit dem Zug rein.', link:'https://www.google.com/maps/search/Cinque+Terre', votes:[]},
+      {id:uid(), name:'Calanques de Cassis', region:'Provence', detour:'auf Route Küste/Mix', desc:'Türkise Fjord-Buchten zwischen Marseille und Cassis. Wandern + Baden, früh da sein.', link:'https://www.google.com/maps/search/Calanque+d%27En-Vau', votes:[]},
+      {id:uid(), name:'Pont du Gard', region:'Südfrankreich', detour:'+45 Min', desc:'Römisches Aquädukt, drunter kann man im Fluss baden.', link:'https://www.google.com/maps/search/Pont+du+Gard', votes:[]},
+      {id:uid(), name:'Gorges du Verdon', region:'Provence', detour:'auf Route Mix/Alpen', desc:'Riesiger Canyon mit türkisem Wasser, Kajak auf dem Lac de Sainte-Croix.', link:'https://www.google.com/maps/search/Gorges+du+Verdon', votes:[]},
+      {id:uid(), name:'Carcassonne', region:'Okzitanien', detour:'auf Route Alpen, sonst +1 Std', desc:'Komplett erhaltene mittelalterliche Festungsstadt.', link:'https://www.google.com/maps/search/Cit%C3%A9+de+Carcassonne', votes:[]},
+      {id:uid(), name:'Cadaqués & Cap de Creus', region:'Costa Brava', detour:'auf Route Küste/Mix', desc:'Weißes Fischerdorf (Dalís Heimat) + wilde Felsküste am östlichsten Punkt Spaniens.', link:'https://www.google.com/maps/search/Cap+de+Creus', votes:[]},
+      {id:uid(), name:'Dalí-Museum Figueres', region:'Katalonien', detour:'+30 Min', desc:'Surrealistisches Museum, liegt fast am Weg zwischen Costa Brava und Huesca.', link:'https://www.google.com/maps/search/Dal%C3%AD+Theatre-Museum+Figueres', votes:[]},
+      {id:uid(), name:'Ordesa y Monte Perdido NP', region:'Pyrenäen', detour:'+1,5 Std von Huesca', desc:'Spektakulärer Nationalpark — perfekt für einen Wandertag vor oder nach dem Festival.', link:'https://www.google.com/maps/search/Parque+Nacional+de+Ordesa', votes:[]},
+      {id:uid(), name:'Bardenas Reales', region:'Navarra', detour:'+1,5 Std von Huesca', desc:'Halbwüste wie im Western — cool für den Rückweg oder einen Tagesausflug.', link:'https://www.google.com/maps/search/Bardenas+Reales', votes:[]},
+    ],
+    vehicles:[
+      {
+        id:'v-camper', name:'Camper (Lukas)', pickup:'Übernahme: So 02.08. in Innsbruck', drivers:['c-lukas'], passengers:['c-lukas'],
+        notes:'Einweisung durch Lukas: Gas, Wasser, Abwasser, Strom (CEE), Markise.',
+        docs:[
+          {id:uid(), text:'Fahrzeugschein & Versicherung (Grüne Karte)', done:false},
+          {id:uid(), text:'Vignette Österreich', done:false},
+          {id:uid(), text:'Maut Italien/Frankreich/Spanien einplanen (Camper-Tarif!)', done:false},
+          {id:uid(), text:'Gasflasche voll? Ersatzflasche?', done:false},
+          {id:uid(), text:'Frischwasser auffüllen, Abwasser leeren', done:false},
+          {id:uid(), text:'Warnwesten für alle Insassen, Verbandskasten, Warndreieck', done:false},
+          {id:uid(), text:'Ersatzrad / Pannenset checken', done:false},
+          {id:uid(), text:'CEE-Adapter & Verlängerungskabel für Campingstrom', done:false},
+        ]
+      },
+      {
+        id:'v-auto', name:'Kleinwagen (Bernhard)', pickup:'Start: So 02.08. in München', drivers:['c-bernhard'], passengers:['c-bernhard'],
+        notes:'Treffpunkt mit dem Camper in Innsbruck.',
+        docs:[
+          {id:uid(), text:'Vignette Österreich', done:false},
+          {id:uid(), text:'Crit’Air-Umweltplakette für Frankreich bestellen (dauert ~2 Wochen!)', done:false},
+          {id:uid(), text:'Warnwesten, Verbandskasten, Warndreieck', done:false},
+          {id:uid(), text:'Versicherung / Schutzbrief fürs Ausland checken', done:false},
+          {id:uid(), text:'Reifendruck & Öl checken (lange Strecke)', done:false},
+        ]
+      }
+    ],
+    checklist:[
+      li('Festival-Tickets für alle 6 gekauft & gespeichert'),
+      li('Sonnenfinsternis-Brillen für alle besorgen! (12.08.) 🌒'),
+      li('Personalausweis/Reisepass — alle gültig?'),
+      li('Europäische Krankenversicherungskarte (EHIC) — alle dabei?'),
+      li('EU-Roaming / Datenvolumen checken'),
+      li('Kreditkarten + Bargeld (EUR) besorgen'),
+      li('Offline-Karten runterladen (Google Maps: IT/FR/ES)'),
+      li('Campingplätze für erste Nacht (02.08.) rausgesucht'),
+      li('Festival: Camper-/Anreise-Regeln gelesen'),
+      li('Playlist für die Fahrt 🎶'),
+    ],
+    packing:[
+      {id:'pk-camp', name:'Camping & Schlafen', items:[
+        li('Zelte (wer bringt welches?)'), li('Schlafsäcke'), li('Isomatten / Luftmatratzen'),
+        li('Campingstühle (6×)'), li('Campingtisch'), li('Pavillon / Tarp (Schatten!)'),
+        li('Hammer + extra Heringe'), li('Lichterkette / Campinglampe'), li('Hängematte'),
+      ]},
+      {id:'pk-kueche', name:'Küche', items:[
+        li('Gaskocher + Kartuschen'), li('Töpfe + Pfanne'), li('Geschirr & Besteck (6×)'),
+        li('Scharfes Messer + Schneidebrett'), li('Kühlbox (+ Kühlakkus)'), li('French Press / Kaffeekanne'),
+        li('Spülmittel, Schwamm, Geschirrtuch'), li('Müllsäcke'), li('Dosen-/Flaschenöffner, Korkenzieher'),
+        li('Feuerzeug / Streichhölzer'), li('Wasserkanister (großer Vorrat!)'),
+      ]},
+      {id:'pk-festival', name:'Festival', items:[
+        li('SoFi-Brillen (6×) — WICHTIG! 🌒'), li('Ohrstöpsel'), li('Bauchtasche / kleiner Rucksack'),
+        li('Verkleidung / Glitzer / Outfits'), li('Fahne / Erkennungszeichen fürs Camp'),
+        li('Trinkflaschen (nachfüllbar)'), li('Bandana / Staubschutz'), li('Deko fürs Camp'),
+      ]},
+      {id:'pk-hygiene', name:'Hygiene & Gesundheit', items:[
+        li('Sonnencreme LSF 50 (Aragón = brutal heiß)'), li('Mückenspray'), li('Erste-Hilfe-Set'),
+        li('Persönliche Medikamente'), li('Feuchttücher + Klopapier'), li('Handdesinfektion'),
+        li('Duschzeug (biologisch abbaubar)'), li('Mikrofaser-Handtücher'), li('After-Sun'),
+      ]},
+      {id:'pk-docs', name:'Dokumente & Geld', items:[
+        li('Festival-Tickets (digital + ausgedruckt)'), li('Ausweis / Reisepass'), li('Führerscheine'),
+        li('EHIC-Krankenkassenkarte'), li('Bargeld + Kreditkarte'), li('Fahrzeugpapiere (beide Fahrzeuge)'),
+        li('Kopien wichtiger Dokumente (Cloud + Papier)'),
+      ]},
+      {id:'pk-tech', name:'Technik', items:[
+        li('Powerbanks (groß, mehrere)'), li('Ladekabel + KFZ-Ladegeräte'), li('Bluetooth-Box'),
+        li('Stirnlampen (6×)'), li('Solarpanel (falls vorhanden)'), li('Kamera'),
+        li('Mehrfachstecker + CEE-Camping-Adapter'),
+      ]},
+    ],
+    shopping:[
+      {id:'sh-essen', name:'Essen', items:[
+        li('Nudeln + Reis'), li('Pesto / Saucen'), li('Konserven (Bohnen, Mais, Tomaten)'),
+        li('Müsli / Haferflocken'), li('Brot + Aufstriche'), li('Snacks / Riegel / Nüsse'),
+        li('Gewürze, Öl, Salz'), li('Kaffee + Tee'), li('Obst & Gemüse (unterwegs frisch kaufen)'),
+      ]},
+      {id:'sh-getraenke', name:'Getränke', items:[
+        li('Wasser in Kanistern (Festival!)'), li('Bier 🍻'), li('Softdrinks / Saft'),
+        li('Elektrolyte / Iso'), li('Wein / Sangria für den Abend'),
+      ]},
+      {id:'sh-sonst', name:'Sonstiges', items:[
+        li('Eis / Kühlakkus für die Kühlbox'), li('Alufolie + Frischhaltefolie'), li('Küchenrolle'),
+        li('Zip-Beutel'), li('Grillkohle (Feuerregeln beachten!)'), li('Sonnencreme-Nachschub'),
+      ]},
+    ],
+    budget:{ expenses:[] },
+    festival:[
+      {id:uid(), title:'Sizigia Eclipse Gathering 2026', text:'10.–14.08.2026 · Provinz Huesca (Aragón, Spanien).\nGenauer Standort & Anfahrt: siehe Ticket-/Info-Mail — hier eintragen, sobald bekannt.'},
+      {id:uid(), title:'Totale Sonnenfinsternis · 12.08.2026', text:'Highlight des Festivals: totale Sonnenfinsternis am frühen Abend (in Nordspanien ca. 20:25–20:30 Uhr, Totalität ~1–2 Min — genaue Zeit je nach Standort prüfen!).\nSoFi-Brillen für alle sind Pflicht. 🌒'},
+      {id:uid(), title:'Tickets & Einlass', text:'Status: __ von 6 Tickets gekauft.\nEinlass ab: eintragen.\nTicket-Links / QR-Codes: wo gespeichert?'},
+      {id:uid(), title:'Anreise, Parken & Camper', text:'Camper-/Caravan-Regeln des Festivals checken (eigener Bereich? Aufpreis?).\nLetzter Supermarkt vor dem Gelände: eintragen.\nWasser-Situation vor Ort: eintragen.'},
+      {id:uid(), title:'Hitze & Sicherheit', text:'August in Aragón: oft 35 °C+. Schatten (Tarp!), viel Wasser, Siesta einplanen.\nFeuer-/Grillverbote in Spanien im Sommer beachten.\nNotrufnummer EU-weit: 112.'},
+    ],
+  };
+}
+
+/* ---------- Laden + Migration ---------- */
+function migrate(s){
+  if(!s || typeof s !== 'object') return defaultState();
+  // Fehlende Top-Level-Schlüssel defensiv aus dem Standard ergänzen
+  const def = defaultState();
+  for(const k of Object.keys(def)){
+    if(s[k] === undefined) s[k] = def[k];
+  }
+  s.schemaVersion = SCHEMA_VERSION;
+  return s;
+}
+let state = migrate(StorageAdapter.load());
+
+function save(){
+  state.meta.lastSaved = new Date().toISOString();
+  const dot = document.getElementById('saveDot');
+  dot.classList.add('saving');
+  const ok = StorageAdapter.save(state);
+  setTimeout(()=>dot.classList.remove('saving'), 300);
+  updateSaveInfo(ok);
+}
+function updateSaveInfo(ok=true){
+  const el = document.getElementById('saveInfo');
+  if(!state.meta.lastSaved){ el.textContent = 'Noch nichts gespeichert'; return; }
+  const d = new Date(state.meta.lastSaved);
+  el.textContent = (ok===false ? '⚠️ Speichern fehlgeschlagen! ' : '') +
+    'Zuletzt gespeichert: ' + d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}) + ' ' +
+    d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}) + ' Uhr · lokal auf diesem Gerät';
+}
+
+/* ---------- Export / Import ---------- */
+function exportData(){
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'roadtrip-backup-' + new Date().toISOString().slice(0,10) + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+  toast('Backup exportiert — z. B. in die WhatsApp-Gruppe schicken 📤');
+}
+function importData(ev){
+  const file = ev.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{
+      const data = JSON.parse(reader.result);
+      if(!data || typeof data !== 'object' || !data.crew || !data.routes) throw new Error('Kein gültiges Roadtrip-Backup');
+      if(!confirm('Backup importieren? Die aktuellen Daten auf diesem Gerät werden überschrieben.')) return;
+      state = migrate(data);
+      save(); renderAll();
+      toast('Backup importiert ✅');
+    }catch(e){
+      alert('Import fehlgeschlagen: ' + e.message);
+    }
+  };
+  reader.readAsText(file);
+  ev.target.value = '';
+}
+
+/* ---------- Helfer ---------- */
+function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function crewById(id){ return state.crew.find(c=>c.id===id); }
+function euro(n){ return n.toLocaleString('de-DE',{style:'currency',currency:'EUR'}); }
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+function mapsLink(stage){
+  if(stage.link) return stage.link;
+  if(stage.from && stage.to) return 'https://www.google.com/maps/dir/' + encodeURIComponent(stage.from) + '/' + encodeURIComponent(stage.to);
+  return null;
+}
+
+/* ============================================================
+   MODAL — generischer Editor
+   fields: [{key,label,type:'text'|'number'|'textarea'|'select',options,value,placeholder}]
+   ============================================================ */
+let modalCtx = null;
+function openModal(title, fields, onSave, onDelete){
+  modalCtx = {fields, onSave, onDelete};
+  const box = document.getElementById('modalBox');
+  box.innerHTML = '<h3>' + esc(title) + '</h3>' + fields.map((f,i)=>{
+    let input;
+    if(f.type==='textarea') input = '<textarea id="mf'+i+'" placeholder="'+esc(f.placeholder||'')+'">'+esc(f.value||'')+'</textarea>';
+    else if(f.type==='select') input = '<select id="mf'+i+'">'+f.options.map(o=>'<option value="'+esc(o.value)+'"'+(o.value===f.value?' selected':'')+'>'+esc(o.label)+'</option>').join('')+'</select>';
+    else input = '<input id="mf'+i+'" type="'+(f.type==='number'?'number':'text')+'" '+(f.type==='number'?'step="0.01" inputmode="decimal"':'')+' value="'+esc(f.value||'')+'" placeholder="'+esc(f.placeholder||'')+'">';
+    return '<div class="field"><label>'+esc(f.label)+'</label>'+input+'</div>';
+  }).join('') +
+  '<div class="btnrow">' +
+    (onDelete ? '<button class="btn danger" onclick="modalDelete()">Löschen</button>' : '') +
+    '<button class="btn ghost" onclick="closeModal()">Abbrechen</button>' +
+    '<button class="btn primary" onclick="modalSave()">Speichern</button>' +
+  '</div>';
+  document.getElementById('modalBg').classList.add('open');
+  const first = document.getElementById('mf0');
+  if(first && window.innerWidth > 700) first.focus();
+}
+function modalSave(){
+  const vals = {};
+  modalCtx.fields.forEach((f,i)=>{ vals[f.key] = document.getElementById('mf'+i).value; });
+  modalCtx.onSave(vals);
+  closeModal(); save(); renderAll();
+}
+function modalDelete(){
+  if(!confirm('Wirklich löschen?')) return;
+  modalCtx.onDelete();
+  closeModal(); save(); renderAll();
+}
+function closeModal(){ document.getElementById('modalBg').classList.remove('open'); modalCtx = null; }
+document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+
+/* ============================================================
+   NAVIGATION
+   ============================================================ */
+const TABS = [
+  {id:'uebersicht', label:'🌒 Übersicht'},
+  {id:'route',      label:'🗺️ Route'},
+  {id:'spots',      label:'📍 Spots'},
+  {id:'logistik',   label:'🚐 Logistik'},
+  {id:'packen',     label:'🎒 Packen'},
+  {id:'einkauf',    label:'🛒 Einkauf'},
+  {id:'budget',     label:'💶 Budget'},
+  {id:'festival',   label:'🎪 Festival'},
+];
+let activeTab = sessionStorage.getItem('sizigia-tab') || 'uebersicht';
+function renderNav(){
+  document.getElementById('nav').innerHTML = TABS.map(t =>
+    '<button class="tab'+(t.id===activeTab?' active':'')+'" onclick="switchTab(\''+t.id+'\')">'+t.label+'</button>'
+  ).join('');
+  TABS.forEach(t => document.getElementById('page-'+t.id).classList.toggle('active', t.id===activeTab));
+}
+function switchTab(id){
+  activeTab = id;
+  sessionStorage.setItem('sizigia-tab', id);
+  renderNav();
+  window.scrollTo({top:0});
+}
+
+/* ============================================================
+   ÜBERSICHT
+   ============================================================ */
+function listProgress(items){
+  const flat = items.flatMap(g => g.items ? g.items : [g]);
+  const done = flat.filter(i=>i.done).length;
+  return {done, total:flat.length, pct: flat.length ? Math.round(done/flat.length*100) : 0};
+}
+function renderOverview(){
+  const start = new Date('2026-08-02T08:00:00');
+  const diff = Math.max(0, start - Date.now());
+  const days = Math.floor(diff/86400000), hrs = Math.floor(diff%86400000/3600000), min = Math.floor(diff%3600000/60000);
+  const route = state.routes.find(r=>r.id===state.selectedRoute);
+  const totalKm = route.stages.reduce((s,x)=> s + (parseInt(String(x.km).replace(/\D/g,''))||0), 0);
+  const pPack = listProgress(state.packing), pShop = listProgress(state.shopping), pCheck = listProgress(state.checklist);
+  const pDocs = listProgress(state.vehicles.map(v=>({items:v.docs})));
+
+  document.getElementById('page-uebersicht').innerHTML = `
+    <div class="card countdown">
+      <div class="label">Abfahrt · Sonntag, 2. August 2026</div>
+      <div class="count-nums">
+        <div class="count-cell"><b>${days}</b><span>Tage</span></div>
+        <div class="count-cell"><b>${hrs}</b><span>Std</span></div>
+        <div class="count-cell"><b>${min}</b><span>Min</span></div>
+      </div>
+      <div class="label" style="margin-top:6px">bis zum Roadtrip 🚐🌒</div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h2>👥 Crew <span class="spacer"></span></h2>
+        <div class="chips">${state.crew.map(c=>`<span class="chip static" style="--c:${c.color}" onclick="editCrew('${c.id}')" title="Name bearbeiten"><span class="dot"></span>${esc(c.name)}</span>`).join('')}</div>
+        <div class="hint">Tipp: Auf einen Namen tippen, um ihn zu ändern.</div>
+      </div>
+      <div class="card">
+        <h2>📌 Eckdaten</h2>
+        <div class="factrow"><span class="k">Abfahrt</span><span class="v">So, 02.08.2026 — München & Innsbruck</span></div>
+        <div class="factrow"><span class="k">Fahrzeuge</span><span class="v">🚐 Camper (Lukas, ab Innsbruck) · 🚗 Kleinwagen (Bernhard, ab München)</span></div>
+        <div class="factrow"><span class="k">Festival</span><span class="v">Sizigia Eclipse Gathering · 10.–14.08. · Huesca (ES)</span></div>
+        <div class="factrow"><span class="k">Highlight</span><span class="v">🌒 Totale Sonnenfinsternis am 12.08.2026</span></div>
+        <div class="factrow"><span class="k">Route</span><span class="v">${route.emoji} ${esc(route.name)} · ca. ${totalKm} km Hinweg</span></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>📊 Fortschritt</h2>
+      <div style="display:grid;gap:12px">
+        ${[['🎒 Packliste',pPack],['🛒 Einkauf',pShop],['✅ Checkliste vor Abfahrt',pCheck],['🚐 Fahrzeug-Dokumente',pDocs]].map(([l,p])=>`
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:13.5px"><span>${l}</span><span style="color:var(--muted)">${p.done}/${p.total}</span></div>
+            <div class="progress"><i style="width:${p.pct}%"></i></div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>💾 Datensicherung</h2>
+      <p style="font-size:14px;color:var(--muted)">Alle Eingaben werden automatisch <b style="color:var(--text)">lokal in diesem Browser</b> gespeichert. Damit nichts verloren geht und ihr den Stand teilen könnt: regelmäßig oben rechts <b style="color:var(--text)">⬇︎ Backup exportieren</b> und die Datei in die Gruppe schicken — auf jedem anderen Gerät per <b style="color:var(--text)">⬆︎ Import</b> laden.</p>
+    </div>`;
+}
+function editCrew(id){
+  const c = crewById(id);
+  openModal('Crew-Mitglied bearbeiten', [{key:'name',label:'Name',value:c.name}], v=>{ if(v.name.trim()) c.name = v.name.trim(); });
+}
+
+/* ============================================================
+   ROUTE
+   ============================================================ */
+function renderStage(s, listRef, idx, len){
+  const link = mapsLink(s);
+  return `
+  <div class="stage">
+    <div class="actions">
+      ${idx>0?`<button title="nach oben" onclick="moveStage('${listRef}',${idx},-1)">↑</button>`:''}
+      ${idx<len-1?`<button title="nach unten" onclick="moveStage('${listRef}',${idx},1)">↓</button>`:''}
+      <button title="bearbeiten" onclick="editStage('${listRef}',${idx})">✎</button>
+    </div>
+    <div class="toprow"><span class="date">${esc(s.date)}</span><span class="fromto">${esc(s.from)} → ${esc(s.to)}</span></div>
+    <div class="meta">
+      ${s.km?`<span>📏 ${esc(s.km)}</span>`:''}
+      ${s.time?`<span>⏱ ${esc(s.time)}</span>`:''}
+      ${link?`<a class="maplink" href="${esc(link)}" target="_blank" rel="noopener">🗺️ Karte öffnen</a>`:''}
+    </div>
+    ${s.stay?`<div class="stay">⛺ ${esc(s.stay)}</div>`:''}
+    ${s.note?`<div class="note">${esc(s.note)}</div>`:''}
+  </div>`;
+}
+function getStageList(ref){
+  if(ref==='return') return state.returnStages;
+  return state.routes.find(r=>r.id===ref).stages;
+}
+function renderRoute(){
+  const route = state.routes.find(r=>r.id===state.selectedRoute);
+  document.getElementById('page-route').innerHTML = `
+    <div class="card">
+      <h2>🧭 Routen-Option wählen</h2>
+      <div class="route-picker">
+        ${state.routes.map(r=>`
+          <div class="route-opt${r.id===state.selectedRoute?' sel':''}" onclick="selectRoute('${r.id}')">
+            <span class="star">★</span>
+            <span class="emoji">${r.emoji}</span>
+            <h3>${esc(r.name)}</h3>
+            <p>${esc(r.desc)}</p>
+          </div>`).join('')}
+      </div>
+      <div class="hint">Die gewählte Route ist euer Favorit — alle drei bleiben aber erhalten und editierbar.</div>
+    </div>
+
+    <div class="card">
+      <h2>${route.emoji} Hinweg: ${esc(route.name)} <span class="spacer"></span><button class="btn small" onclick="addStage('${route.id}')">+ Etappe</button></h2>
+      <div>${route.stages.map((s,i)=>renderStage(s, route.id, i, route.stages.length)).join('')}</div>
+      ${route.stages.length===0?'<p class="hint">Noch keine Etappen — füge welche hinzu.</p>':''}
+    </div>
+
+    <div class="card">
+      <h2>🔙 Rückreise (ab 14.08., Vorschlag) <span class="spacer"></span><button class="btn small" onclick="addStage('return')">+ Etappe</button></h2>
+      <div>${state.returnStages.map((s,i)=>renderStage(s, 'return', i, state.returnStages.length)).join('')}</div>
+      <div class="hint">Nur ein Vorschlag — Datum & Route der Rückreise sind noch offen, alles anpassbar.</div>
+    </div>`;
+}
+function selectRoute(id){ state.selectedRoute = id; save(); renderAll(); }
+function stageFields(s={}){
+  return [
+    {key:'date',label:'Datum / Tag',value:s.date||'',placeholder:'z. B. Mo 03.08.'},
+    {key:'from',label:'Von',value:s.from||''},
+    {key:'to',label:'Nach',value:s.to||''},
+    {key:'km',label:'Distanz',value:s.km||'',placeholder:'z. B. 300 km'},
+    {key:'time',label:'Fahrzeit',value:s.time||'',placeholder:'z. B. ~3,5 Std'},
+    {key:'stay',label:'Übernachtung',value:s.stay||'',placeholder:'z. B. Camping am See'},
+    {key:'note',label:'Notizen',type:'textarea',value:s.note||''},
+    {key:'link',label:'Karten-Link (optional, sonst automatisch)',value:s.link||'',placeholder:'https://…'},
+  ];
+}
+function addStage(ref){
+  openModal('Neue Etappe', stageFields(), v=>{
+    getStageList(ref).push({id:uid(), ...v});
+  });
+}
+function editStage(ref, idx){
+  const list = getStageList(ref);
+  const s = list[idx];
+  openModal('Etappe bearbeiten', stageFields(s), v=>Object.assign(s, v), ()=>list.splice(idx,1));
+}
+function moveStage(ref, idx, dir){
+  const list = getStageList(ref);
+  const [s] = list.splice(idx,1);
+  list.splice(idx+dir,0,s);
+  save(); renderAll();
+}
+
+/* ============================================================
+   SPOTS + VOTING
+   ============================================================ */
+function renderSpots(){
+  const spots = [...state.spots].sort((a,b)=>b.votes.length - a.votes.length);
+  document.getElementById('page-spots').innerHTML = `
+    <div class="card">
+      <h2>📍 Spot-Ideen unterwegs <span class="spacer"></span><button class="btn small" onclick="addSpot()">+ Spot</button></h2>
+      <p class="hint" style="margin:0 0 12px">Tippe auf deinen Namen bei einem Spot, um dafür zu stimmen. Sortiert nach Stimmen.</p>
+      ${spots.map(sp=>`
+        <div class="spot">
+          <div class="head">
+            <h3>${esc(sp.name)}</h3>
+            <span class="region">${esc(sp.region)}</span>
+            <span style="margin-left:auto"><button class="btn ghost small" onclick="editSpot('${sp.id}')">✎</button></span>
+          </div>
+          <div class="desc">${esc(sp.desc)}</div>
+          <div class="meta" style="display:flex;gap:14px;font-size:12.5px;color:var(--muted);margin-bottom:9px">
+            ${sp.detour?`<span>🛣️ ${esc(sp.detour)}</span>`:''}
+            ${sp.link?`<a class="maplink" href="${esc(sp.link)}" target="_blank" rel="noopener">🗺️ Karte</a>`:''}
+          </div>
+          <div class="foot">
+            <div class="chips">
+              ${state.crew.map(c=>`<span class="chip${sp.votes.includes(c.id)?' on':''}" style="--c:${c.color}" onclick="toggleVote('${sp.id}','${c.id}')"><span class="dot"></span>${esc(c.name)}</span>`).join('')}
+            </div>
+            <span class="votecount">${sp.votes.length} ⭐</span>
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+function toggleVote(spotId, crewId){
+  const sp = state.spots.find(s=>s.id===spotId);
+  const i = sp.votes.indexOf(crewId);
+  if(i>=0) sp.votes.splice(i,1); else sp.votes.push(crewId);
+  save(); renderAll();
+}
+function spotFields(s={}){
+  return [
+    {key:'name',label:'Name',value:s.name||''},
+    {key:'region',label:'Region',value:s.region||''},
+    {key:'detour',label:'Umweg / Aufwand',value:s.detour||'',placeholder:'z. B. +45 Min'},
+    {key:'desc',label:'Beschreibung',type:'textarea',value:s.desc||''},
+    {key:'link',label:'Karten-Link',value:s.link||'',placeholder:'https://maps.google.com/…'},
+  ];
+}
+function addSpot(){
+  openModal('Neuer Spot', spotFields(), v=>{
+    state.spots.push({id:uid(), votes:[], ...v});
+  });
+}
+function editSpot(id){
+  const sp = state.spots.find(s=>s.id===id);
+  openModal('Spot bearbeiten', spotFields(sp), v=>Object.assign(sp,v), ()=>{
+    state.spots = state.spots.filter(s=>s.id!==id);
+  });
+}
+
+/* ============================================================
+   LOGISTIK
+   ============================================================ */
+function renderLogistics(){
+  document.getElementById('page-logistik').innerHTML = `
+    ${state.vehicles.map(v=>`
+      <div class="card">
+        <h2>${v.id==='v-camper'?'🚐':'🚗'} ${esc(v.name)} <span class="spacer"></span><button class="btn ghost small" onclick="editVehicle('${v.id}')">✎</button></h2>
+        <div class="factrow"><span class="k">Start</span><span class="v">${esc(v.pickup)}</span></div>
+        <div class="factrow"><span class="k">Fahrer</span><span class="v">${v.drivers.map(id=>{const c=crewById(id);return c?esc(c.name):'';}).filter(Boolean).join(', ')||'–'} <button class="btn ghost small" onclick="pickCrew('${v.id}','drivers')">ändern</button></span></div>
+        ${v.notes?`<div class="factrow"><span class="k">Notizen</span><span class="v">${esc(v.notes)}</span></div>`:''}
+        <div style="margin:12px 0 4px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Mitfahrer (antippen zum Zuordnen)</div>
+        <div class="chips">
+          ${state.crew.map(c=>`<span class="chip${v.passengers.includes(c.id)?' on':''}" style="--c:${c.color}" onclick="togglePassenger('${v.id}','${c.id}')"><span class="dot"></span>${esc(c.name)}</span>`).join('')}
+        </div>
+        <div style="margin:16px 0 4px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Dokumente & Vorbereitung</div>
+        <div class="list">${v.docs.map(d=>itemRow(d, `vdoc:${v.id}`)).join('')}</div>
+        <div class="addrow"><input id="add-vdoc-${v.id}" placeholder="Neuer Punkt…" onkeydown="if(event.key==='Enter')addListItem('vdoc:${v.id}')"><button class="btn" onclick="addListItem('vdoc:${v.id}')">+</button></div>
+      </div>`).join('')}
+
+    <div class="card">
+      <h2>✅ Checkliste vor Abfahrt</h2>
+      <div class="list">${state.checklist.map(d=>itemRow(d, 'checklist')).join('')}</div>
+      <div class="addrow"><input id="add-checklist" placeholder="Neuer Punkt…" onkeydown="if(event.key==='Enter')addListItem('checklist')"><button class="btn" onclick="addListItem('checklist')">+</button></div>
+    </div>`;
+}
+function editVehicle(id){
+  const v = state.vehicles.find(x=>x.id===id);
+  openModal('Fahrzeug bearbeiten', [
+    {key:'name',label:'Bezeichnung',value:v.name},
+    {key:'pickup',label:'Start / Übernahme',value:v.pickup},
+    {key:'notes',label:'Notizen',type:'textarea',value:v.notes},
+  ], val=>Object.assign(v,val));
+}
+function togglePassenger(vid, cid){
+  // Eine Person sitzt in genau einem Fahrzeug: woanders austragen
+  const v = state.vehicles.find(x=>x.id===vid);
+  const i = v.passengers.indexOf(cid);
+  if(i>=0){ v.passengers.splice(i,1); }
+  else{
+    state.vehicles.forEach(o=>{ const j=o.passengers.indexOf(cid); if(j>=0) o.passengers.splice(j,1); });
+    v.passengers.push(cid);
+  }
+  save(); renderAll();
+}
+function pickCrew(vid, field){
+  const v = state.vehicles.find(x=>x.id===vid);
+  openModal('Fahrer wählen', [
+    {key:'ids', label:'Fahrer (Namen mit Komma trennen)', value:v[field].map(id=>crewById(id)?.name||'').filter(Boolean).join(', '), placeholder:'z. B. Lukas, Max'},
+  ], val=>{
+    const names = val.ids.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean);
+    v[field] = state.crew.filter(c=>names.includes(c.name.toLowerCase())).map(c=>c.id);
+  });
+}
+
+/* ============================================================
+   GENERISCHE LISTEN (Packen / Einkauf / Checklisten)
+   listRef: 'checklist' | 'vdoc:<vehicleId>' | 'pack:<catId>' | 'shop:<catId>'
+   ============================================================ */
+function resolveList(ref){
+  if(ref==='checklist') return state.checklist;
+  const [kind, id] = ref.split(':');
+  if(kind==='vdoc') return state.vehicles.find(v=>v.id===id).docs;
+  if(kind==='pack') return state.packing.find(c=>c.id===id).items;
+  if(kind==='shop') return state.shopping.find(c=>c.id===id).items;
+  return null;
+}
+function itemRow(item, ref){
+  const who = item.who ? crewById(item.who) : null;
+  return `
+  <div class="item${item.done?' done':''}">
+    <button class="checkbox${item.done?' done':''}" onclick="toggleItem('${ref}','${item.id}')" aria-label="abhaken">${item.done?'✓':''}</button>
+    <span class="txt" onclick="editItem('${ref}','${item.id}')">${esc(item.text)}</span>
+    ${who?`<span class="who" style="--c:${who.color}" onclick="editItem('${ref}','${item.id}')">${esc(who.name)}</span>`:''}
+    <button class="del" onclick="deleteItem('${ref}','${item.id}')" aria-label="löschen">✕</button>
+  </div>`;
+}
+function toggleItem(ref, id){
+  const it = resolveList(ref).find(i=>i.id===id);
+  it.done = !it.done;
+  save(); renderAll();
+}
+function deleteItem(ref, id){
+  const list = resolveList(ref);
+  const idx = list.findIndex(i=>i.id===id);
+  if(idx>=0) list.splice(idx,1);
+  save(); renderAll();
+}
+function addListItem(ref){
+  const input = document.getElementById('add-' + ref.replace(':','-'));
+  const text = input.value.trim();
+  if(!text) return;
+  resolveList(ref).push({id:uid(), text, done:false, who:''});
+  input.value = '';
+  save(); renderAll();
+  // Fokus zurück ins Eingabefeld für schnelles Weitertippen
+  const again = document.getElementById('add-' + ref.replace(':','-'));
+  if(again) again.focus();
+}
+function editItem(ref, id){
+  const it = resolveList(ref).find(i=>i.id===id);
+  openModal('Eintrag bearbeiten', [
+    {key:'text',label:'Text',value:it.text},
+    {key:'who',label:'Wer bringt’s mit / erledigt’s?',type:'select',value:it.who||'',
+      options:[{value:'',label:'– niemand zugeordnet –'}, ...state.crew.map(c=>({value:c.id,label:c.name}))]},
+  ], v=>{ it.text = v.text.trim()||it.text; it.who = v.who; },
+     ()=>{ const l=resolveList(ref); l.splice(l.findIndex(i=>i.id===id),1); });
+}
+
+/* ============================================================
+   PACKEN & EINKAUF
+   ============================================================ */
+function renderCategoryLists(pageId, groups, kind, addCatLabel){
+  document.getElementById(pageId).innerHTML = groups.map(g=>{
+    const p = listProgress(g.items.map(i=>({...i})));
+    return `
+    <div class="card">
+      <h2>${esc(g.name)} <span class="spacer"></span><span style="font-size:12px;color:var(--faint);letter-spacing:0;text-transform:none">${p.done}/${p.total}</span></h2>
+      <div class="list">${g.items.map(i=>itemRow(i, kind+':'+g.id)).join('')}</div>
+      <div class="addrow"><input id="add-${kind}-${g.id}" placeholder="Neuer Eintrag…" onkeydown="if(event.key==='Enter')addListItem('${kind}:${g.id}')"><button class="btn" onclick="addListItem('${kind}:${g.id}')">+</button></div>
+    </div>`;
+  }).join('') + `
+    <button class="btn" style="width:100%" onclick="addCategory('${kind}')">+ ${addCatLabel}</button>`;
+}
+function addCategory(kind){
+  openModal('Neue Kategorie', [{key:'name',label:'Name der Kategorie',value:''}], v=>{
+    if(!v.name.trim()) return;
+    const target = kind==='pack' ? state.packing : state.shopping;
+    target.push({id:uid(), name:v.name.trim(), items:[]});
+  });
+}
+function renderPacking(){ renderCategoryLists('page-packen', state.packing, 'pack', 'Kategorie hinzufügen'); }
+function renderShopping(){ renderCategoryLists('page-einkauf', state.shopping, 'shop', 'Kategorie hinzufügen'); }
+
+/* ============================================================
+   BUDGET — geteilte Ausgaben & Ausgleich
+   ============================================================ */
+function renderBudget(){
+  const ex = state.budget.expenses;
+  const total = ex.reduce((s,e)=>s+e.amount,0);
+
+  // Salden: gezahlt minus Anteil
+  const bal = {};
+  state.crew.forEach(c=>bal[c.id]=0);
+  ex.forEach(e=>{
+    if(bal[e.payer]!==undefined) bal[e.payer] += e.amount;
+    const sharers = e.sharers.filter(id=>bal[id]!==undefined);
+    if(sharers.length===0) return;
+    const share = e.amount / sharers.length;
+    sharers.forEach(id=>bal[id] -= share);
+  });
+
+  // Ausgleichsvorschläge (greedy)
+  const debtors = [], creditors = [];
+  state.crew.forEach(c=>{
+    const b = Math.round(bal[c.id]*100)/100;
+    if(b < -0.01) debtors.push({id:c.id, amt:-b});
+    else if(b > 0.01) creditors.push({id:c.id, amt:b});
+  });
+  debtors.sort((a,b)=>b.amt-a.amt); creditors.sort((a,b)=>b.amt-a.amt);
+  const settlements = [];
+  let di=0, ci=0;
+  const D = debtors.map(d=>({...d})), C = creditors.map(c=>({...c}));
+  while(di<D.length && ci<C.length){
+    const pay = Math.min(D[di].amt, C[ci].amt);
+    settlements.push({from:D[di].id, to:C[ci].id, amt:pay});
+    D[di].amt -= pay; C[ci].amt -= pay;
+    if(D[di].amt < 0.01) di++;
+    if(C[ci].amt < 0.01) ci++;
+  }
+
+  document.getElementById('page-budget').innerHTML = `
+    <div class="card">
+      <h2>💶 Neue Ausgabe</h2>
+      <div class="formgrid">
+        <input id="exDesc" class="full" placeholder="Was? (z. B. Tanken Brenner, Einkauf Lidl)">
+        <input id="exAmount" type="number" step="0.01" inputmode="decimal" placeholder="Betrag €">
+        <select id="exPayer">${state.crew.map(c=>`<option value="${c.id}">${esc(c.name)} hat gezahlt</option>`).join('')}</select>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:7px;letter-spacing:.06em;text-transform:uppercase">Wird geteilt durch (antippen):</div>
+      <div class="chips" id="exSharers">
+        ${state.crew.map(c=>`<span class="chip on" style="--c:${c.color}" data-id="${c.id}" onclick="this.classList.toggle('on')"><span class="dot"></span>${esc(c.name)}</span>`).join('')}
+      </div>
+      <div style="margin-top:13px"><button class="btn primary" style="width:100%" onclick="addExpense()">Ausgabe hinzufügen</button></div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h2>⚖️ Salden ${total>0?`<span class="spacer"></span><span style="font-size:12px;color:var(--faint);letter-spacing:0;text-transform:none">Gesamt: ${euro(total)}</span>`:''}</h2>
+        ${state.crew.map(c=>{
+          const b = bal[c.id];
+          return `<div class="balance"><span class="chip static" style="--c:${c.color}"><span class="dot"></span>${esc(c.name)}</span><span class="amt ${b>0.01?'pos':b<-0.01?'neg':''}">${b>0.01?'+':''}${euro(b)}</span></div>`;
+        }).join('')}
+        <div class="hint">Plus = bekommt Geld zurück · Minus = schuldet</div>
+      </div>
+      <div class="card">
+        <h2>🤝 Ausgleich</h2>
+        ${settlements.length===0 ? '<p class="hint" style="margin:0">Alles ausgeglichen ✨</p>' :
+          settlements.map(s=>`<div class="settle"><b>${esc(crewById(s.from).name)}</b> <span class="arrow">→</span> <b>${esc(crewById(s.to).name)}</b>: ${euro(s.amt)}</div>`).join('')}
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🧾 Alle Ausgaben</h2>
+      ${ex.length===0 ? '<p class="hint" style="margin:0">Noch keine Ausgaben erfasst.</p>' :
+        [...ex].reverse().map(e=>{
+          const payer = crewById(e.payer);
+          return `
+          <div class="expense">
+            <div class="info">
+              <div class="desc">${esc(e.desc)}</div>
+              <div class="sub">${payer?esc(payer.name):'?'} · geteilt durch ${e.sharers.length} · ${new Date(e.date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})}</div>
+            </div>
+            <span class="amt">${euro(e.amount)}</span>
+            <button class="del" onclick="deleteExpense('${e.id}')" aria-label="löschen">✕</button>
+          </div>`;
+        }).join('')}
+    </div>`;
+}
+function addExpense(){
+  const desc = document.getElementById('exDesc').value.trim();
+  const amount = parseFloat(String(document.getElementById('exAmount').value).replace(',','.'));
+  const payer = document.getElementById('exPayer').value;
+  const sharers = [...document.querySelectorAll('#exSharers .chip.on')].map(el=>el.dataset.id);
+  if(!desc){ toast('Beschreibung fehlt'); return; }
+  if(!amount || amount<=0){ toast('Gültigen Betrag eingeben'); return; }
+  if(sharers.length===0){ toast('Mindestens eine Person auswählen'); return; }
+  state.budget.expenses.push({id:uid(), date:new Date().toISOString(), desc, amount, payer, sharers});
+  save(); renderAll();
+  toast('Ausgabe gespeichert 💶');
+}
+function deleteExpense(id){
+  if(!confirm('Ausgabe löschen?')) return;
+  state.budget.expenses = state.budget.expenses.filter(e=>e.id!==id);
+  save(); renderAll();
+}
+
+/* ============================================================
+   FESTIVAL
+   ============================================================ */
+function renderFestival(){
+  document.getElementById('page-festival').innerHTML =
+    state.festival.map(f=>`
+      <div class="card">
+        <h2>${esc(f.title)} <span class="spacer"></span><button class="btn ghost small" onclick="editFestival('${f.id}')">✎</button></h2>
+        <p style="font-size:14.5px;color:var(--muted);white-space:pre-wrap">${esc(f.text)}</p>
+      </div>`).join('') +
+    `<button class="btn" style="width:100%" onclick="addFestival()">+ Info-Block hinzufügen</button>`;
+}
+function editFestival(id){
+  const f = state.festival.find(x=>x.id===id);
+  openModal('Info bearbeiten', [
+    {key:'title',label:'Titel',value:f.title},
+    {key:'text',label:'Text',type:'textarea',value:f.text},
+  ], v=>Object.assign(f,v), ()=>{ state.festival = state.festival.filter(x=>x.id!==id); });
+}
+function addFestival(){
+  openModal('Neuer Info-Block', [
+    {key:'title',label:'Titel',value:''},
+    {key:'text',label:'Text',type:'textarea',value:''},
+  ], v=>{ if(v.title.trim()) state.festival.push({id:uid(), title:v.title.trim(), text:v.text}); });
+}
+
+/* ============================================================
+   RENDER-ROOT
+   ============================================================ */
+function renderAll(){
+  renderNav();
+  renderOverview();
+  renderRoute();
+  renderSpots();
+  renderLogistics();
+  renderPacking();
+  renderShopping();
+  renderBudget();
+  renderFestival();
+  updateSaveInfo();
+}
+renderAll();
+// Erstbesuch: Standarddaten direkt persistieren
+if(!state.meta.lastSaved) save();
+// Countdown minütlich aktualisieren (nur Übersicht neu rendern, wenn aktiv)
+setInterval(()=>{ if(activeTab==='uebersicht') renderOverview(); }, 60000);
+</script>
+</body>
+</html>
