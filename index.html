@@ -186,6 +186,27 @@ textarea{resize:vertical;min-height:70px}
 .progress{height:8px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;margin-top:7px}
 .progress i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,var(--sun-deep),var(--coral));transition:width .4s ease}
 
+/* ---------- Karte (Inline-SVG, offline) ---------- */
+.mapwrap{border:1px solid var(--border);border-radius:14px;overflow-x:auto;background:#0a1020;margin-bottom:4px}
+.mapwrap svg{display:block;width:100%;min-width:520px;height:auto}
+.map-pt{cursor:pointer}
+.map-pt:hover circle,.map-pt:hover rect{filter:brightness(1.2)}
+.sea-label{fill:#2f3a66;font-size:13px;letter-spacing:.28em;text-transform:uppercase;font-family:var(--font-display);font-weight:700}
+.city-label{fill:#8891b8;font-size:10px;font-family:var(--font-body)}
+.layerchips{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}
+.lchip{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;border:1px solid var(--border);background:var(--card);font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;user-select:none;transition:all .15s}
+.lchip .swatch{width:15px;height:3px;border-radius:2px;background:var(--c,#888);flex:0 0 auto}
+.lchip.on{color:var(--text);border-color:var(--border-strong);background:rgba(255,255,255,.08)}
+.lchip.static{cursor:default}
+.pickmap svg{cursor:crosshair;min-width:0}
+.pickmap .mapwrap{overflow:hidden}
+.pickhint{font-size:12px;color:var(--faint);margin-top:6px}
+.spotnum{
+  display:inline-flex;align-items:center;justify-content:center;width:21px;height:21px;flex:0 0 auto;
+  border-radius:6px;background:var(--coral);color:#1a0d05;font-size:12px;font-weight:800;transform:rotate(45deg);
+}
+.spotnum b{transform:rotate(-45deg)}
+
 /* ---------- Übersicht ---------- */
 .countdown{
   text-align:center;padding:30px 18px 26px;position:relative;overflow:hidden;
@@ -292,6 +313,11 @@ a.maplink:hover{text-decoration:underline}
   box-shadow:0 8px 30px rgba(0,0,0,.5);max-width:88vw;text-align:center;
 }
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.actionable{pointer-events:auto}
+#toast button{
+  border:none;background:linear-gradient(120deg,var(--sun-deep),var(--coral));color:#1a0d05;
+  font-weight:700;font-size:12.5px;padding:5px 12px;border-radius:999px;cursor:pointer;margin-left:10px;
+}
 
 footer{text-align:center;color:var(--faint);font-size:12px;padding:30px 0 10px}
 </style>
@@ -550,7 +576,51 @@ function migrate(s){
 }
 let state = migrate(StorageAdapter.load());
 
+/* --- Automatische Sicherungen (Snapshots) ---
+   Rollierend max. 5 Stände in localStorage: 1× täglich vor der ersten
+   Änderung des Tages sowie vor Import/Wiederherstellung. */
+const SNAP_KEY = STORAGE_KEY + '-snapshots';
+function getSnapshots(){
+  try{ return JSON.parse(localStorage.getItem(SNAP_KEY) || '[]'); }catch(e){ return []; }
+}
+function takeSnapshot(reason){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return;
+    const snaps = getSnapshots();
+    snaps.push({ts:new Date().toISOString(), reason, raw});
+    while(snaps.length>5) snaps.shift();
+    localStorage.setItem(SNAP_KEY, JSON.stringify(snaps));
+  }catch(e){ console.warn('Snapshot fehlgeschlagen', e); }
+}
+function restoreSnapshot(idx){
+  const snaps = getSnapshots();
+  const s = snaps[idx];
+  if(!s) return;
+  if(!confirm('Sicherung vom ' + new Date(s.ts).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}) + ' Uhr wiederherstellen? Der aktuelle Stand wird vorher gesichert.')) return;
+  takeSnapshot('Vor Wiederherstellung');
+  state = migrate(JSON.parse(s.raw));
+  save(); renderAll();
+  toast('Sicherung wiederhergestellt ↩');
+}
+
+/* --- Rückgängig (eine Stufe) für Lösch-Aktionen --- */
+let _undoJson = null;
+function withUndo(msg, fn){
+  _undoJson = JSON.stringify(state);
+  fn(); save(); renderAll();
+  toast(msg, 'Rückgängig', ()=>{
+    state = migrate(JSON.parse(_undoJson));
+    _undoJson = null;
+    save(); renderAll();
+    toast('Wiederhergestellt ↩');
+  });
+}
+
 function save(){
+  // Tagessicherung: 1× pro Tag den Stand VOR der ersten Änderung aufheben
+  const snaps = getSnapshots(), today = new Date().toDateString();
+  if(!snaps.some(s=>new Date(s.ts).toDateString()===today)) takeSnapshot('Tagessicherung');
   state.meta.lastSaved = new Date().toISOString();
   const dot = document.getElementById('saveDot');
   dot.classList.add('saving');
@@ -562,9 +632,16 @@ function updateSaveInfo(ok=true){
   const el = document.getElementById('saveInfo');
   if(!state.meta.lastSaved){ el.textContent = 'Noch nichts gespeichert'; return; }
   const d = new Date(state.meta.lastSaved);
-  el.textContent = (ok===false ? '⚠️ Speichern fehlgeschlagen! ' : '') +
+  let txt = (ok===false ? '⚠️ Speichern fehlgeschlagen! ' : '') +
     'Zuletzt gespeichert: ' + d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'}) + ' ' +
-    d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}) + ' Uhr · lokal auf diesem Gerät';
+    d.toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'}) + ' Uhr · lokal';
+  const le = state.meta.lastExport;
+  if(!le) txt += ' · noch kein Backup exportiert';
+  else{
+    const days = Math.floor((Date.now() - new Date(le)) / 86400000);
+    if(days >= 7) txt += ' · letztes Backup vor ' + days + ' Tagen';
+  }
+  el.textContent = txt;
 }
 
 /* ---------- Export / Import ---------- */
@@ -575,6 +652,8 @@ function exportData(){
   a.download = 'roadtrip-backup-' + new Date().toISOString().slice(0,10) + '.json';
   a.click();
   URL.revokeObjectURL(a.href);
+  state.meta.lastExport = new Date().toISOString();
+  save();
   toast('Backup exportiert — z. B. in die WhatsApp-Gruppe schicken 📤');
 }
 function importData(ev){
@@ -585,7 +664,8 @@ function importData(ev){
     try{
       const data = JSON.parse(reader.result);
       if(!data || typeof data !== 'object' || !data.crew || !data.routes) throw new Error('Kein gültiges Roadtrip-Backup');
-      if(!confirm('Backup importieren? Die aktuellen Daten auf diesem Gerät werden überschrieben.')) return;
+      if(!confirm('Backup importieren? Die aktuellen Daten auf diesem Gerät werden überschrieben (eine Sicherung wird vorher angelegt).')) return;
+      takeSnapshot('Vor Import');
       state = migrate(data);
       save(); renderAll();
       toast('Backup importiert ✅');
@@ -601,15 +681,190 @@ function importData(ev){
 function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function crewById(id){ return state.crew.find(c=>c.id===id); }
 function euro(n){ return n.toLocaleString('de-DE',{style:'currency',currency:'EUR'}); }
-function toast(msg){
+let _toastAction = null;
+function toast(msg, actionLabel, actionFn){
   const t = document.getElementById('toast');
-  t.textContent = msg; t.classList.add('show');
-  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove('show'), 2600);
+  t.innerHTML = esc(msg) + (actionLabel ? '<button onclick="runToastAction()">'+esc(actionLabel)+'</button>' : '');
+  t.classList.toggle('actionable', !!actionLabel);
+  _toastAction = actionFn || null;
+  t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(()=>t.classList.remove('show'), actionLabel ? 6000 : 2600);
+}
+function runToastAction(){
+  if(_toastAction){ _toastAction(); _toastAction = null; }
+  document.getElementById('toast').classList.remove('show');
 }
 function mapsLink(stage){
   if(stage.link) return stage.link;
   if(stage.from && stage.to) return 'https://www.google.com/maps/dir/' + encodeURIComponent(stage.from) + '/' + encodeURIComponent(stage.to);
   return null;
+}
+
+/* ============================================================
+   KARTE — Inline-SVG, komplett offline (keine Tiles/CDNs).
+   Vereinfachte Westeuropa-Küste + equirektangulare Projektion.
+   Positionen: gespeichertes lat/lng am Objekt, sonst automatische
+   Erkennung über das GEO-Ortslexikon (Textabgleich, letzter Treffer
+   im String gewinnt = Zielort).
+   ============================================================ */
+const MAP = (()=>{ const m={lonMin:-4.5,lonMax:14.5,latMin:39.8,latMax:49.2,W:700};
+  m.kx=m.W/(m.lonMax-m.lonMin); m.ky=m.kx/Math.cos(44.5*Math.PI/180);
+  m.H=Math.round((m.latMax-m.latMin)*m.ky); return m; })();
+function project(lat,lng){ return {x:(lng-MAP.lonMin)*MAP.kx, y:(MAP.latMax-lat)*MAP.ky}; }
+function unproject(x,y){ return {lat:MAP.latMax-y/MAP.ky, lng:MAP.lonMin+x/MAP.kx}; }
+
+const GEO = {
+  'münchen':[48.14,11.57],'innsbruck':[47.27,11.39],'gardasee':[45.88,10.85],'riva':[45.885,10.84],
+  'sestri':[44.27,9.40],'finale ligure':[44.17,8.34],'genua':[44.41,8.93],'cinque terre':[44.13,9.71],'levanto':[44.17,9.61],
+  'côte d’azur':[43.50,6.85],"côte d'azur":[43.50,6.85],'fréjus':[43.43,6.74],'estérel':[43.45,6.90],'nizza':[43.70,7.27],
+  'cassis':[43.21,5.54],'calanque':[43.20,5.45],'marseille':[43.30,5.37],'toulon':[43.12,5.93],
+  'sète':[43.40,3.70],'montpellier':[43.61,3.88],'camargue':[43.52,4.42],
+  'cadaqués':[42.29,3.28],'cap de creus':[42.32,3.32],'begur':[41.95,3.21],'costa brava':[41.97,3.17],
+  'huesca':[42.14,-0.41],'zaragoza':[41.65,-0.88],'barcelona':[41.39,2.17],
+  'maggiore':[45.92,8.55],'comer see':[46.02,9.26],'annecy':[45.90,6.13],
+  'ardèche':[44.40,4.39],'vallon':[44.40,4.39],'carcassonne':[43.21,2.35],
+  'aínsa':[42.42,0.14],'ordesa':[42.65,-0.06],'verdon':[43.76,6.26],'sainte-croix':[43.76,6.20],
+  'collioure':[42.53,3.08],'escala':[42.12,3.13],'figueres':[42.27,2.96],'bardenas':[42.19,-1.47],
+  'pont du gard':[43.95,4.54],'perpignan':[42.70,2.90],
+};
+function geoLookup(text){
+  const t=String(text||'').toLowerCase();
+  let best=null, bestIdx=-1;
+  for(const k in GEO){ const i=t.lastIndexOf(k); if(i>bestIdx){ bestIdx=i; best=GEO[k]; } }
+  return best;
+}
+// Position eines Objekts: manuell gesetzt (lat/lng) schlägt Automatik
+function pointOf(o, text){
+  if(o && o.lat!=null && o.lng!=null && o.lat!=='' && o.lng!=='') return {lat:+o.lat, lng:+o.lng};
+  const g = geoLookup(text);
+  return g ? {lat:g[0], lng:g[1]} : null;
+}
+
+// Küstenlinie [lon,lat], grob vereinfacht: Bretagne → Biskaya → Spanien →
+// Mittelmeerbogen (E-Küste Spanien, S-Frankreich, W-Italien) → Kartenrand
+const COAST=[[-2.0,49.2],[-2.6,48.65],[-3.6,48.7],[-4.5,48.4],[-4.5,47.9],[-3.9,47.7],[-2.5,47.28],[-2.2,47.1],
+[-1.8,46.6],[-1.15,46.15],[-1.1,45.8],[-1.15,45.55],[-1.25,44.6],[-1.45,43.65],[-1.6,43.4],[-2.0,43.32],
+[-2.95,43.42],[-4.0,43.45],[-4.5,43.4],[-4.5,39.8],[0.0,39.8],[0.2,40.15],[0.5,40.55],[0.9,40.85],[1.25,41.1],
+[2.17,41.38],[2.8,41.7],[3.2,41.9],[3.1,42.15],[3.28,42.29],[3.05,42.45],[3.04,42.7],[3.0,43.0],[3.25,43.2],
+[3.7,43.4],[4.1,43.5],[4.55,43.4],[4.85,43.33],[5.05,43.33],[5.35,43.21],[5.54,43.2],[5.93,43.08],[6.15,43.03],
+[6.68,43.15],[6.95,43.48],[7.27,43.68],[7.6,43.77],[8.1,43.9],[8.5,44.2],[8.93,44.4],[9.3,44.31],[9.7,44.1],
+[9.83,44.05],[10.1,43.95],[10.25,43.8],[10.3,43.53],[10.5,42.95],[10.75,42.8],[11.1,42.4],[11.75,42.1],
+[12.25,41.72],[12.9,41.4],[13.1,41.25],[13.6,41.2],[14.05,40.8],[14.5,40.7],[14.5,49.2]];
+const ISLANDS=[
+  [[8.6,42.35],[8.65,42.7],[9.35,43.0],[9.45,42.65],[9.55,42.1],[9.2,41.4],[8.8,41.55],[8.72,41.93]],           // Korsika
+  [[8.2,40.85],[8.15,40.58],[8.4,40.3],[8.42,39.8],[9.65,39.8],[9.8,40.5],[9.65,41.0],[9.23,41.25],[8.9,40.95]], // Sardinien (angeschnitten)
+  [[2.4,39.8],[2.75,39.87],[3.17,39.95],[3.45,39.8]],                                                            // Mallorca (angeschnitten)
+];
+function svgPath(pts, close=true){
+  return 'M'+pts.map(p=>{const q=project(p[1],p[0]);return q.x.toFixed(1)+','+q.y.toFixed(1);}).join('L')+(close?'Z':'');
+}
+function baseMapSvg(inner, pickerId){
+  const cities=[['München',48.14,11.57],['Innsbruck',47.27,11.39],['Huesca',42.14,-0.41],['Barcelona',41.39,2.17],['Marseille',43.30,5.37]];
+  const sea1=project(41.2,6.6), sea2=project(45.8,-3.3);
+  return `<div class="mapwrap"><svg viewBox="0 0 ${MAP.W} ${MAP.H}" xmlns="http://www.w3.org/2000/svg"${pickerId?` id="${pickerId}"`:''}>
+    <rect width="${MAP.W}" height="${MAP.H}" fill="#080d1a"/>
+    <path d="${svgPath(COAST)}" fill="#1f2745" stroke="#3d4a78" stroke-width="1.3"/>
+    ${ISLANDS.map(i=>`<path d="${svgPath(i)}" fill="#1f2745" stroke="#3d4a78" stroke-width="1"/>`).join('')}
+    <text x="${sea1.x}" y="${sea1.y}" class="sea-label">Mittelmeer</text>
+    <text x="${sea2.x}" y="${sea2.y}" class="sea-label">Atlantik</text>
+    ${cities.map(c=>{const q=project(c[1],c[2]);return `<circle cx="${q.x.toFixed(1)}" cy="${q.y.toFixed(1)}" r="2.2" fill="#5a6488"/><text x="${(q.x+5).toFixed(1)}" y="${(q.y+3.5).toFixed(1)}" class="city-label">${c[0]}</text>`;}).join('')}
+    ${inner}
+  </svg></div>`;
+}
+
+// Klick-Infos: Labels werden pro Render gesammelt, Marker referenzieren den Index
+let mapInfoLabels=[];
+function mapInfo(i){ toast(mapInfoLabels[i]); }
+function lineSvg(pts, color, {dashed, glow, faint}={}){
+  if(pts.length<2) return '';
+  const d='M'+pts.map(p=>{const q=project(p.lat,p.lng);return q.x.toFixed(1)+','+q.y.toFixed(1);}).join('L');
+  return (glow?`<path d="${d}" fill="none" stroke="${color}" stroke-width="7" stroke-opacity=".2" stroke-linejoin="round" stroke-linecap="round"/>`:'')+
+    `<path d="${d}" fill="none" stroke="${color}" stroke-width="${faint?1.8:2.4}" ${dashed?'stroke-dasharray="6 5"':''} stroke-linejoin="round" stroke-linecap="round" stroke-opacity="${faint?.4:(glow?1:.85)}"/>`;
+}
+function markerSvg(p, {num, color, kind, label}){
+  const q=project(p.lat,p.lng), idx=mapInfoLabels.push(label)-1;
+  const on=`class="map-pt" onclick="mapInfo(${idx})"`;
+  if(kind==='start') return `<g ${on}><circle cx="${q.x}" cy="${q.y}" r="6" fill="#fff" stroke="${color}" stroke-width="3"/></g>`;
+  if(kind==='dot')   return `<g ${on}><circle cx="${q.x}" cy="${q.y}" r="4.5" fill="${color}" stroke="#0a1020" stroke-width="1.4"/></g>`;
+  if(kind==='spot')  return `<g ${on}><rect x="${q.x-8}" y="${q.y-8}" width="16" height="16" rx="3.5" transform="rotate(45 ${q.x} ${q.y})" fill="${color}" stroke="#0a1020" stroke-width="1.6"/><text x="${q.x}" y="${q.y+3.5}" text-anchor="middle" font-size="10" font-weight="800" fill="#1a0d05">${num}</text></g>`;
+  return `<g ${on}><circle cx="${q.x}" cy="${q.y}" r="10" fill="${color}" stroke="#0a1020" stroke-width="1.6"/><text x="${q.x}" y="${q.y+3.8}" text-anchor="middle" font-size="11" font-weight="800" fill="#10131f">${num}</text></g>`;
+}
+// Etappenliste → Kartenpunkte (Startpunkt der 1. Etappe + alle Ziele, Duplikate kollabiert)
+function routePts(stages){
+  const pts=[];
+  stages.forEach((s,i)=>{
+    if(i===0){ const p0=pointOf(null, s.from); if(p0) pts.push({...p0, stage:i, start:true, label:'Start: '+s.from}); }
+    const p=pointOf(s, s.to);
+    if(!p) return;
+    const prev=pts[pts.length-1];
+    if(prev && Math.abs(prev.lat-p.lat)<1e-4 && Math.abs(prev.lng-p.lng)<1e-4) return;
+    pts.push({...p, stage:i, label:(s.date?s.date+' · ':'')+s.from+' → '+s.to});
+  });
+  return pts;
+}
+const ROUTE_COLORS={'r-kueste':'#54c8ff','r-alpen':'#5fd4a8','r-mix':'#ff8a5c'};
+let mapLayers={alle:false, rueck:true, spots:true};
+function toggleMapLayer(k){ mapLayers[k]=!mapLayers[k]; renderRoute(); }
+function spotMarkers(sorted, withNum){
+  return sorted.map((sp,i)=>{
+    const p=pointOf(sp, sp.name);
+    if(!p) return '';
+    return markerSvg(p,{num:i+1, color:'#ff6b4a', kind:'spot', label:'📍 '+sp.name+' ('+sp.votes.length+' ⭐)'});
+  }).join('');
+}
+function buildRouteMap(){
+  const sel=state.routes.find(r=>r.id===state.selectedRoute);
+  let inner='';
+  if(mapLayers.alle) state.routes.filter(r=>r.id!==sel.id).forEach(r=>{
+    inner+=lineSvg(routePts(r.stages), ROUTE_COLORS[r.id]||'#888', {dashed:true, faint:true});
+  });
+  if(mapLayers.spots) inner+=spotMarkers(sortedSpots(), false);
+  if(mapLayers.rueck){
+    const pts=routePts(state.returnStages);
+    inner+=lineSvg(pts,'#b18cff',{dashed:true});
+    inner+=pts.map(p=>markerSvg(p,{color:'#b18cff', kind:'dot', label:'Rückreise · '+p.label})).join('');
+  }
+  const pts=routePts(sel.stages);
+  inner+=lineSvg(pts,'#ffb257',{glow:true});
+  inner+=pts.map(p=>markerSvg(p, p.start ? {color:'#ffb257', kind:'start', label:p.label}
+                                         : {num:p.stage+1, color:'#ffb257', kind:'', label:p.label})).join('');
+  return baseMapSvg(inner);
+}
+function buildSpotsMap(sorted){
+  const sel=state.routes.find(r=>r.id===state.selectedRoute);
+  let inner=lineSvg(routePts(sel.stages),'#ffb257',{faint:true});
+  inner+=spotMarkers(sorted, true);
+  return baseMapSvg(inner);
+}
+
+/* --- Kartenauswahl im Modal (Position durch Antippen setzen) --- */
+function pickMapField(i, val, autoPos){
+  const cur = val || null;
+  let marker='';
+  if(cur){ const q=project(cur.lat,cur.lng); marker=`<g id="pickmarker${i}"><circle cx="${q.x}" cy="${q.y}" r="9" fill="none" stroke="#ffb257" stroke-width="2"/><circle cx="${q.x}" cy="${q.y}" r="3.5" fill="#ffb257"/></g>`; }
+  else if(autoPos){ const q=project(autoPos.lat,autoPos.lng); marker=`<g id="pickmarker${i}" opacity=".65"><circle cx="${q.x}" cy="${q.y}" r="9" fill="none" stroke="#8ea8ff" stroke-width="2" stroke-dasharray="3 3"/><circle cx="${q.x}" cy="${q.y}" r="3" fill="#8ea8ff"/></g>`; }
+  return `<input type="hidden" id="mf${i}" value="${cur?cur.lat.toFixed(4)+','+cur.lng.toFixed(4):''}">
+    <div class="pickmap" onclick="pickMapClick(event,${i})">${baseMapSvg(marker,'picksvg'+i)}</div>
+    <div class="pickhint">${cur?'📍 Position manuell gesetzt.':(autoPos?'Position automatisch erkannt (blau gestrichelt).':'Keine Position erkannt.')} Karte antippen zum Setzen · <a href="#" style="color:var(--sky)" onclick="event.preventDefault();pickMapClear(${i})">Zurücksetzen auf Automatik</a></div>`;
+}
+function pickMapClick(ev, i){
+  const svg=document.getElementById('picksvg'+i);
+  const r=svg.getBoundingClientRect();
+  const x=(ev.clientX-r.left)/r.width*MAP.W, y=(ev.clientY-r.top)/r.height*MAP.H;
+  const p=unproject(x,y);
+  document.getElementById('mf'+i).value=p.lat.toFixed(4)+','+p.lng.toFixed(4);
+  const old=document.getElementById('pickmarker'+i); if(old) old.remove();
+  const q=project(p.lat,p.lng);
+  svg.insertAdjacentHTML('beforeend',`<g id="pickmarker${i}"><circle cx="${q.x}" cy="${q.y}" r="9" fill="none" stroke="#ffb257" stroke-width="2"/><circle cx="${q.x}" cy="${q.y}" r="3.5" fill="#ffb257"/></g>`);
+}
+function pickMapClear(i){
+  document.getElementById('mf'+i).value='';
+  const old=document.getElementById('pickmarker'+i); if(old) old.remove();
+}
+// Gespeicherte Werte aus dem Modal aufs Objekt anwenden
+function applyPos(target, posStr){
+  if(posStr){ const [la,ln]=posStr.split(',').map(Number); if(isFinite(la)&&isFinite(ln)){ target.lat=la; target.lng=ln; return; } }
+  delete target.lat; delete target.lng;
 }
 
 /* ============================================================
@@ -624,6 +879,7 @@ function openModal(title, fields, onSave, onDelete){
     let input;
     if(f.type==='textarea') input = '<textarea id="mf'+i+'" placeholder="'+esc(f.placeholder||'')+'">'+esc(f.value||'')+'</textarea>';
     else if(f.type==='select') input = '<select id="mf'+i+'">'+f.options.map(o=>'<option value="'+esc(o.value)+'"'+(o.value===f.value?' selected':'')+'>'+esc(o.label)+'</option>').join('')+'</select>';
+    else if(f.type==='map') input = pickMapField(i, f.value, f.auto);
     else input = '<input id="mf'+i+'" type="'+(f.type==='number'?'number':'text')+'" '+(f.type==='number'?'step="0.01" inputmode="decimal"':'')+' value="'+esc(f.value||'')+'" placeholder="'+esc(f.placeholder||'')+'">';
     return '<div class="field"><label>'+esc(f.label)+'</label>'+input+'</div>';
   }).join('') +
@@ -643,9 +899,9 @@ function modalSave(){
   closeModal(); save(); renderAll();
 }
 function modalDelete(){
-  if(!confirm('Wirklich löschen?')) return;
-  modalCtx.onDelete();
-  closeModal(); save(); renderAll();
+  const fn = modalCtx.onDelete;
+  closeModal();
+  withUndo('Gelöscht', fn);
 }
 function closeModal(){ document.getElementById('modalBg').classList.remove('open'); modalCtx = null; }
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
@@ -735,6 +991,14 @@ function renderOverview(){
     <div class="card">
       <h2>💾 Datensicherung</h2>
       <p style="font-size:14px;color:var(--muted)">Alle Eingaben werden automatisch <b style="color:var(--text)">lokal in diesem Browser</b> gespeichert. Damit nichts verloren geht und ihr den Stand teilen könnt: regelmäßig oben rechts <b style="color:var(--text)">⬇︎ Backup exportieren</b> und die Datei in die Gruppe schicken — auf jedem anderen Gerät per <b style="color:var(--text)">⬆︎ Import</b> laden.</p>
+      ${(()=>{
+        const snaps = getSnapshots();
+        if(!snaps.length) return '';
+        return '<div style="margin-top:12px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Automatische Sicherungen auf diesem Gerät</div>' +
+          snaps.map((s,i)=>({s,i})).reverse().map(({s,i})=>
+            '<div class="factrow"><span class="k">'+new Date(s.ts).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})+' '+new Date(s.ts).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+'</span><span class="v">'+esc(s.reason)+' <button class="btn ghost small" onclick="restoreSnapshot('+i+')">Wiederherstellen</button></span></div>'
+          ).join('');
+      })()}
     </div>`;
 }
 function editCrew(id){
@@ -772,6 +1036,18 @@ function renderRoute(){
   const route = state.routes.find(r=>r.id===state.selectedRoute);
   document.getElementById('page-route').innerHTML = `
     <div class="card">
+      <h2>🗺️ Karte</h2>
+      ${buildRouteMap()}
+      <div class="layerchips">
+        <span class="lchip static on" style="--c:#ffb257"><span class="swatch"></span>${esc(route.name)} (gewählt)</span>
+        <span class="lchip${mapLayers.alle?' on':''}" style="--c:#54c8ff" onclick="toggleMapLayer('alle')"><span class="swatch"></span>Alle Routen vergleichen</span>
+        <span class="lchip${mapLayers.rueck?' on':''}" style="--c:#b18cff" onclick="toggleMapLayer('rueck')"><span class="swatch"></span>Rückreise</span>
+        <span class="lchip${mapLayers.spots?' on':''}" style="--c:#ff6b4a" onclick="toggleMapLayer('spots')"><span class="swatch"></span>Spots</span>
+      </div>
+      <div class="hint">Marker antippen für Details. Nummern = Etappen-Tage. Positionen lassen sich beim Bearbeiten einer Etappe per Fingertipp auf die Karte feinjustieren.</div>
+    </div>
+
+    <div class="card">
       <h2>🧭 Routen-Option wählen</h2>
       <div class="route-picker">
         ${state.routes.map(r=>`
@@ -799,6 +1075,8 @@ function renderRoute(){
 }
 function selectRoute(id){ state.selectedRoute = id; save(); renderAll(); }
 function stageFields(s={}){
+  const stored = (s.lat!=null && s.lng!=null) ? {lat:+s.lat, lng:+s.lng} : null;
+  const auto = stored ? null : (()=>{ const g=geoLookup(s.to); return g?{lat:g[0],lng:g[1]}:null; })();
   return [
     {key:'date',label:'Datum / Tag',value:s.date||'',placeholder:'z. B. Mo 03.08.'},
     {key:'from',label:'Von',value:s.from||''},
@@ -808,17 +1086,25 @@ function stageFields(s={}){
     {key:'stay',label:'Übernachtung',value:s.stay||'',placeholder:'z. B. Camping am See'},
     {key:'note',label:'Notizen',type:'textarea',value:s.note||''},
     {key:'link',label:'Karten-Link (optional, sonst automatisch)',value:s.link||'',placeholder:'https://…'},
+    {key:'pos',label:'Ziel-Position auf der Karte',type:'map',value:stored,auto},
   ];
 }
 function addStage(ref){
   openModal('Neue Etappe', stageFields(), v=>{
-    getStageList(ref).push({id:uid(), ...v});
+    const {pos, ...rest} = v;
+    const s = {id:uid(), ...rest};
+    applyPos(s, pos);
+    getStageList(ref).push(s);
   });
 }
 function editStage(ref, idx){
   const list = getStageList(ref);
   const s = list[idx];
-  openModal('Etappe bearbeiten', stageFields(s), v=>Object.assign(s, v), ()=>list.splice(idx,1));
+  openModal('Etappe bearbeiten', stageFields(s), v=>{
+    const {pos, ...rest} = v;
+    Object.assign(s, rest);
+    applyPos(s, pos);
+  }, ()=>list.splice(idx,1));
 }
 function moveStage(ref, idx, dir){
   const list = getStageList(ref);
@@ -830,15 +1116,24 @@ function moveStage(ref, idx, dir){
 /* ============================================================
    SPOTS + VOTING
    ============================================================ */
+function sortedSpots(){
+  return [...state.spots].sort((a,b)=>b.votes.length - a.votes.length);
+}
 function renderSpots(){
-  const spots = [...state.spots].sort((a,b)=>b.votes.length - a.votes.length);
+  const spots = sortedSpots();
   document.getElementById('page-spots').innerHTML = `
+    <div class="card">
+      <h2>🗺️ Spots auf der Karte</h2>
+      ${buildSpotsMap(spots)}
+      <div class="hint">Rauten = Spots (Nummern wie in der Liste unten) · Linie = gewählte Route. Position eines Spots per ✎ → Karte antippen setzen.</div>
+    </div>
     <div class="card">
       <h2>📍 Spot-Ideen unterwegs <span class="spacer"></span><button class="btn small" onclick="addSpot()">+ Spot</button></h2>
       <p class="hint" style="margin:0 0 12px">Tippe auf deinen Namen bei einem Spot, um dafür zu stimmen. Sortiert nach Stimmen.</p>
-      ${spots.map(sp=>`
+      ${spots.map((sp,i)=>`
         <div class="spot">
           <div class="head">
+            <span class="spotnum"><b>${i+1}</b></span>
             <h3>${esc(sp.name)}</h3>
             <span class="region">${esc(sp.region)}</span>
             <span style="margin-left:auto"><button class="btn ghost small" onclick="editSpot('${sp.id}')">✎</button></span>
@@ -864,22 +1159,32 @@ function toggleVote(spotId, crewId){
   save(); renderAll();
 }
 function spotFields(s={}){
+  const stored = (s.lat!=null && s.lng!=null) ? {lat:+s.lat, lng:+s.lng} : null;
+  const auto = stored ? null : (()=>{ const g=geoLookup(s.name); return g?{lat:g[0],lng:g[1]}:null; })();
   return [
     {key:'name',label:'Name',value:s.name||''},
     {key:'region',label:'Region',value:s.region||''},
     {key:'detour',label:'Umweg / Aufwand',value:s.detour||'',placeholder:'z. B. +45 Min'},
     {key:'desc',label:'Beschreibung',type:'textarea',value:s.desc||''},
     {key:'link',label:'Karten-Link',value:s.link||'',placeholder:'https://maps.google.com/…'},
+    {key:'pos',label:'Position auf der Karte',type:'map',value:stored,auto},
   ];
 }
 function addSpot(){
   openModal('Neuer Spot', spotFields(), v=>{
-    state.spots.push({id:uid(), votes:[], ...v});
+    const {pos, ...rest} = v;
+    const sp = {id:uid(), votes:[], ...rest};
+    applyPos(sp, pos);
+    state.spots.push(sp);
   });
 }
 function editSpot(id){
   const sp = state.spots.find(s=>s.id===id);
-  openModal('Spot bearbeiten', spotFields(sp), v=>Object.assign(sp,v), ()=>{
+  openModal('Spot bearbeiten', spotFields(sp), v=>{
+    const {pos, ...rest} = v;
+    Object.assign(sp, rest);
+    applyPos(sp, pos);
+  }, ()=>{
     state.spots = state.spots.filter(s=>s.id!==id);
   });
 }
@@ -969,8 +1274,9 @@ function toggleItem(ref, id){
 function deleteItem(ref, id){
   const list = resolveList(ref);
   const idx = list.findIndex(i=>i.id===id);
-  if(idx>=0) list.splice(idx,1);
-  save(); renderAll();
+  if(idx<0) return;
+  const label = list[idx].text;
+  withUndo('„' + (label.length>28 ? label.slice(0,28)+'…' : label) + '" gelöscht', ()=>list.splice(idx,1));
 }
 function addListItem(ref){
   const input = document.getElementById('add-' + ref.replace(':','-'));
@@ -1116,9 +1422,9 @@ function addExpense(){
   toast('Ausgabe gespeichert 💶');
 }
 function deleteExpense(id){
-  if(!confirm('Ausgabe löschen?')) return;
-  state.budget.expenses = state.budget.expenses.filter(e=>e.id!==id);
-  save(); renderAll();
+  withUndo('Ausgabe gelöscht', ()=>{
+    state.budget.expenses = state.budget.expenses.filter(e=>e.id!==id);
+  });
 }
 
 /* ============================================================
@@ -1151,7 +1457,14 @@ function addFestival(){
    RENDER-ROOT
    ============================================================ */
 function renderAll(){
+  mapInfoLabels.length = 0;
   renderNav();
+  // Karten auf schmalen Screens initial Richtung Routenmitte scrollen
+  requestAnimationFrame(()=>{
+    document.querySelectorAll('.mapwrap').forEach(w=>{
+      if(w.scrollWidth > w.clientWidth) w.scrollLeft = (w.scrollWidth - w.clientWidth) * .55;
+    });
+  });
   renderOverview();
   renderRoute();
   renderSpots();

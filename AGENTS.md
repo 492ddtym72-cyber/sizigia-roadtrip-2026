@@ -34,10 +34,18 @@ AGENTS.md                   # Diese Datei (CLAUDE.md verweist hierauf)
   **Geplanter Ausbau:** Cloud-Sync (z. B. Firebase/Supabase) durch Austausch
   des Adapters — App-Code darf Persistenz nur über den Adapter berühren.
 - Backup: Export/Import als JSON über die Header-Buttons. `importData()`
-  validiert grob und ruft `migrate()` auf.
+  validiert grob und ruft `migrate()` auf. `meta.lastExport` steuert den
+  „Backup veraltet"-Hinweis in der Speicherleiste.
+- **Automatische Snapshots:** rollierend max. 5 Stände unter
+  `<STORAGE_KEY>-snapshots` (1× täglich vor der ersten Änderung, vor Import,
+  vor Wiederherstellung). UI: Übersicht → Datensicherung → „Wiederherstellen".
+- **Rückgängig:** Destruktive Aktionen laufen über `withUndo(msg, fn)` —
+  zeigt einen Toast mit „Rückgängig"-Button (eine Stufe). Neue Lösch-Aktionen
+  bitte ebenfalls über `withUndo` statt `confirm()`.
 - **Migrationen:** Bei Schema-Änderungen `SCHEMA_VERSION` erhöhen und in
   `migrate()` alte Stände konvertieren (fehlende Keys werden bereits defensiv
-  aus `defaultState()` ergänzt).
+  aus `defaultState()` ergänzt). Optionale Felder (z. B. `lat`/`lng` an
+  Etappen/Spots) brauchen keine Migration.
 
 ## Architektur (in `index.html`)
 
@@ -51,6 +59,15 @@ AGENTS.md                   # Diese Datei (CLAUDE.md verweist hierauf)
   laufen über `resolveList(ref)` mit Refs wie `pack:<catId>`, `shop:<catId>`,
   `vdoc:<vehicleId>`, `checklist`.
 - Editieren über das generische Modal: `openModal(title, fields, onSave, onDelete?)`.
+  Feldtypen: `text` (Default), `number`, `textarea`, `select`, `map`
+  (Positionswahl per Fingertipp, liefert `"lat,lng"`-String → `applyPos()`).
+- **Karte:** Inline-SVG, komplett offline — bewusst KEINE Tiles/Leaflet/CDN.
+  Equirektangulare Projektion (`MAP`, `project()`/`unproject()`), vereinfachte
+  Küste (`COAST`, `ISLANDS`, Format `[lon,lat]`). Positionen kommen aus
+  gespeichertem `lat`/`lng` am Objekt oder automatisch via `GEO`-Ortslexikon
+  (`geoLookup`: Substring-Abgleich, letzter Treffer im String gewinnt = Ziel).
+  Neue vorbefüllte Orte ⇒ Eintrag in `GEO` ergänzen. Marker-Klicks laufen über
+  das `mapInfoLabels`-Array (wird in `renderAll()` geleert).
 - Design-Tokens als CSS-Variablen in `:root` (Theme „Eclipse Night": dunkler
   Nachthimmel, Sonnenkorona-Akzente `--sun`/`--coral`).
 
