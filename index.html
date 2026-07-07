@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#0b0d16">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="robots" content="noindex, nofollow">
 <title>Sizigia 2026 · Roadtrip-Planer</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='42' fill='%23ffb257'/><circle cx='58' cy='44' r='38' fill='%230b0d16'/></svg>">
 <style>
@@ -356,7 +357,7 @@ footer{text-align:center;color:var(--faint);font-size:12px;padding:30px 0 10px}
       <button class="iconbtn" onclick="document.getElementById('importFile').click()" title="Backup importieren">⬆︎</button>
       <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importData(event)">
     </div>
-    <div class="savebar"><span class="savedot" id="saveDot"></span><span id="saveInfo">–</span></div>
+    <div class="savebar"><span class="savedot" id="saveDot"></span><span id="saveInfo">–</span><span id="syncBadge"></span></div>
   </header>
 
   <nav id="nav"></nav>
@@ -387,6 +388,12 @@ footer{text-align:center;color:var(--faint);font-size:12px;padding:30px 0 10px}
    ============================================================ */
 const STORAGE_KEY = 'sizigia-roadtrip-2026';
 const SCHEMA_VERSION = 1;
+
+/* CLOUD-SYNC (optional):
+   REST-URL einer Firebase Realtime Database inkl. geheimem Pfad + ".json",
+   z. B. 'https://xyz-default-rtdb.europe-west1.firebasedatabase.app/planner/a1b2c3.json'
+   null = reiner Lokal-Modus (localStorage), Datei funktioniert unverändert offline. */
+let CLOUD_URL = null;
 
 const StorageAdapter = {
   load(){
@@ -641,12 +648,19 @@ function save(){
   // Tagessicherung: 1× pro Tag den Stand VOR der ersten Änderung aufheben
   const snaps = getSnapshots(), today = new Date().toDateString();
   if(!snaps.some(s=>new Date(s.ts).toDateString()===today)) takeSnapshot('Tagessicherung');
-  state.meta.lastSaved = new Date().toISOString();
+  // Monoton steigender Zeitstempel: schützt Last-write-wins vor Uhren-
+  // Schiefstand zwischen Geräten (lokale Änderung basiert immer auf dem
+  // aktuellen Stand und muss ihn daher überstimmen)
+  const prev = state.meta.lastSaved;
+  let ts = new Date().toISOString();
+  if(prev && ts <= prev) ts = new Date(new Date(prev).getTime() + 1000).toISOString();
+  state.meta.lastSaved = ts;
   const dot = document.getElementById('saveDot');
   dot.classList.add('saving');
   const ok = StorageAdapter.save(state);
   setTimeout(()=>dot.classList.remove('saving'), 300);
   updateSaveInfo(ok);
+  scheduleSync();
 }
 function updateSaveInfo(ok=true){
   const el = document.getElementById('saveInfo');
@@ -662,6 +676,72 @@ function updateSaveInfo(ok=true){
     if(days >= 7) txt += ' · letztes Backup vor ' + days + ' Tagen';
   }
   el.textContent = txt;
+}
+
+/* ============================================================
+   CLOUD-SYNC-ENGINE
+   Local-first: localStorage bleibt Quelle für sofortiges Rendern,
+   die Cloud hält alle Geräte auf demselben Stand.
+   - Konflikte: Last-write-wins über meta.lastSaved (ISO-Vergleich).
+     Vor Übernahme eines fremden Standes werden ungepushte lokale
+     Änderungen als Snapshot gesichert.
+   - Offline: fetch schlägt fehl → Status „offline", lokal geht alles
+     weiter; erneuter Versuch per Intervall/online-Event.
+   ============================================================ */
+let _syncTimer = null, _syncing = false, _lastPushed = null;
+function setSyncStatus(s){
+  const el = document.getElementById('syncBadge');
+  if(!el) return;
+  if(!CLOUD_URL){ el.textContent = ''; return; }
+  const map = {
+    syncing:['· ☁️ synchronisiere…','var(--sun)'],
+    ok:['· ☁️ synchron mit der Gruppe','var(--mint)'],
+    offline:['· ☁️ offline — lokal gespeichert, Sync folgt','var(--faint)'],
+  };
+  const m = map[s] || ['',''];
+  el.textContent = ' ' + m[0];
+  el.style.color = m[1];
+}
+async function cloudGet(){
+  const r = await fetch(CLOUD_URL, {cache:'no-store'});
+  if(!r.ok) throw new Error('HTTP ' + r.status);
+  return r.json();
+}
+async function cloudPut(){
+  const r = await fetch(CLOUD_URL, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(state)});
+  if(!r.ok) throw new Error('HTTP ' + r.status);
+  _lastPushed = state.meta.lastSaved;
+}
+async function syncNow(){
+  if(!CLOUD_URL || _syncing) return;
+  _syncing = true;
+  setSyncStatus('syncing');
+  try{
+    const remote = await cloudGet(); // null bei leerer Datenbank
+    const rT = (remote && remote.meta && remote.meta.lastSaved) || '';
+    const lT = state.meta.lastSaved || '';
+    if(rT && rT > lT){
+      if(lT && _lastPushed !== lT) takeSnapshot('Vor Cloud-Übernahme');
+      state = migrate(remote);
+      StorageAdapter.save(state);
+      _lastPushed = state.meta.lastSaved;
+      renderAll();
+      toast('Neuer Stand aus der Gruppe übernommen ☁️');
+    } else if(lT && lT > rT){
+      await cloudPut();
+    } else {
+      _lastPushed = lT;
+    }
+    setSyncStatus('ok');
+  }catch(e){
+    setSyncStatus('offline');
+  }
+  _syncing = false;
+}
+function scheduleSync(){
+  if(!CLOUD_URL) return;
+  clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(syncNow, 1200);
 }
 
 /* ---------- Export / Import ---------- */
@@ -1577,6 +1657,13 @@ window.addEventListener('storage', e=>{
 });
 // Countdown minütlich aktualisieren (nur Übersicht neu rendern, wenn aktiv)
 setInterval(()=>{ if(activeTab==='uebersicht') renderOverview(); }, 60000);
+// Cloud-Sync starten (falls konfiguriert): sofort, alle 25 s, bei Fokus & online
+if(CLOUD_URL){
+  syncNow();
+  setInterval(syncNow, 25000);
+  window.addEventListener('online', syncNow);
+  document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) syncNow(); });
+}
 </script>
 </body>
 </html>

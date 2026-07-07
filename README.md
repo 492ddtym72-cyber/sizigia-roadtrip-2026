@@ -19,8 +19,13 @@ gespeichert. Damit nichts verloren geht und alle den gleichen Stand haben:
 2. Datei in die Gruppe schicken (WhatsApp, Signal, …)
 3. Auf anderen Geräten oben rechts **⬆︎ importieren**
 
-Cloud-Sync (alle sehen live denselben Stand) ist vorbereitet und kommt später —
-siehe `AGENTS.md`.
+### Cloud-Sync (alle sehen denselben Stand)
+
+Ist `CLOUD_URL` in `index.html` gesetzt (Firebase Realtime Database), synchron­isieren
+sich alle Geräte automatisch: Änderungen werden ~1 s nach dem Tippen hochgeladen,
+alle 25 s sowie beim Öffnen/Fokussieren abgeglichen. Offline funktioniert alles
+weiter (lokal), synchronisiert wird sobald wieder Netz da ist — Status steht
+oben in der Speicherleiste. Details: `AGENTS.md`.
 
 ## Für Entwickler & KI-Agenten
 

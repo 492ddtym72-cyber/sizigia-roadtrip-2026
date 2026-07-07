@@ -29,10 +29,17 @@ AGENTS.md                   # Diese Datei (CLAUDE.md verweist hierauf)
 
 - Ein einziges State-Objekt (`state`) mit `schemaVersion` (aktuell `1`),
   definiert in `defaultState()` in `index.html`.
-- **`StorageAdapter`** (`load()` / `save(state)`) kapselt die Persistenz.
-  Aktuell: `localStorage` unter dem Key `sizigia-roadtrip-2026`.
-  **Geplanter Ausbau:** Cloud-Sync (z. B. Firebase/Supabase) durch Austausch
-  des Adapters — App-Code darf Persistenz nur über den Adapter berühren.
+- **`StorageAdapter`** (`load()` / `save(state)`) kapselt die lokale Persistenz:
+  `localStorage` unter dem Key `sizigia-roadtrip-2026`.
+- **Cloud-Sync (optional, local-first):** Konstante `CLOUD_URL` oben im Script —
+  REST-URL einer Firebase Realtime Database inkl. geheimem Pfad + `.json`;
+  `null` = reiner Lokal-Modus. Engine: `syncNow()` (GET/PUT via `fetch`, kein
+  SDK/CDN), debounced über `scheduleSync()` nach jedem `save()`, plus Polling
+  (25 s), `online`- und `visibilitychange`-Trigger. Konflikte: Last-write-wins
+  über `meta.lastSaved`; `save()` erzeugt dafür **monoton steigende** Zeitstempel
+  (Schutz gegen Uhren-Schiefstand zwischen Geräten). Vor Übernahme eines
+  fremden Standes mit ungepushten lokalen Änderungen: Snapshot
+  („Vor Cloud-Übernahme"). Status-Badge: `setSyncStatus()` / `#syncBadge`.
 - Backup: Export/Import als JSON über die Header-Buttons. `importData()`
   validiert grob und ruft `migrate()` auf. `meta.lastExport` steuert den
   „Backup veraltet"-Hinweis in der Speicherleiste.
