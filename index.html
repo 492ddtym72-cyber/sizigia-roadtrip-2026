@@ -405,7 +405,7 @@ const SCHEMA_VERSION = 1;
    REST-URL einer Firebase Realtime Database inkl. geheimem Pfad + ".json",
    z. B. 'https://xyz-default-rtdb.europe-west1.firebasedatabase.app/planner/a1b2c3.json'
    null = reiner Lokal-Modus (localStorage), Datei funktioniert unverändert offline. */
-let CLOUD_URL = null;
+let CLOUD_URL = 'https://roadtrip-to-sizigia-eclipse-default-rtdb.firebaseio.com/planner/3f58a0fd9c8ef88dc5a5aa36.json';
 
 const StorageAdapter = {
   load(){
@@ -606,15 +606,35 @@ function defaultState(){
 /* ---------- Laden + Migration ---------- */
 function migrate(s){
   if(!s || typeof s !== 'object') return defaultState();
+  // Firebase RTDB speichert leere Arrays/Objekte NICHT — bei einem bereits
+  // benutzten State (meta.lastSaved existiert) fehlende, leerbare Container
+  // als leer wiederherstellen statt mit Defaults zu befüllen.
+  if(s.meta && s.meta.lastSaved){
+    ['checklist','returnStages','spots','festival','log'].forEach(k=>{ if(s[k] === undefined) s[k] = []; });
+    if(s.budget === undefined) s.budget = {expenses:[]};
+  }
   // Fehlende Top-Level-Schlüssel defensiv aus dem Standard ergänzen
   const def = defaultState();
   for(const k of Object.keys(def)){
     if(s[k] === undefined) s[k] = def[k];
   }
+  // Verschachtelte Pflicht-Arrays normalisieren (ebenfalls Firebase-Schutz)
+  (s.routes||[]).forEach(r=>{ r.stages = r.stages || []; });
+  (s.spots||[]).forEach(sp=>{ sp.votes = sp.votes || []; });
+  (s.vehicles||[]).forEach(v=>{ v.drivers=v.drivers||[]; v.passengers=v.passengers||[]; v.docs=v.docs||[]; });
+  (s.packing||[]).forEach(c=>{ c.items = c.items || []; });
+  (s.shopping||[]).forEach(c=>{ c.items = c.items || []; });
+  s.budget.expenses = s.budget.expenses || [];
+  s.budget.expenses.forEach(e=>{ e.sharers = e.sharers || []; });
   s.schemaVersion = SCHEMA_VERSION;
   return s;
 }
-let state = migrate(StorageAdapter.load());
+const _bootRaw = StorageAdapter.load();
+let state = migrate(_bootRaw);
+// Frisches Gerät (noch nie lokal gespeichert): beim ersten Sync gewinnt IMMER
+// der Gruppen-Stand aus der Cloud — sonst würde der frische Default-State
+// wegen des neueren Zeitstempels die Gruppendaten überschreiben.
+let _virgin = !_bootRaw;
 
 /* --- Automatische Sicherungen (Snapshots) ---
    Rollierend max. 5 Stände in localStorage: 1× täglich vor der ersten
@@ -734,7 +754,13 @@ async function syncNow(){
     const remote = await cloudGet(); // null bei leerer Datenbank
     const rT = (remote && remote.meta && remote.meta.lastSaved) || '';
     const lT = state.meta.lastSaved || '';
-    if(rT && rT > lT){
+    if(_virgin && remote){
+      // Neues Gerät tritt der Gruppe bei: Cloud-Stand übernehmen, Zeitstempel egal
+      state = migrate(remote);
+      StorageAdapter.save(state);
+      _lastPushed = state.meta.lastSaved;
+      renderAll();
+    } else if(rT && rT > lT){
       if(lT && _lastPushed !== lT) takeSnapshot('Vor Cloud-Übernahme');
       state = migrate(remote);
       StorageAdapter.save(state);
@@ -746,6 +772,7 @@ async function syncNow(){
     } else {
       _lastPushed = lT;
     }
+    _virgin = false;
     setSyncStatus('ok');
   }catch(e){
     setSyncStatus('offline');

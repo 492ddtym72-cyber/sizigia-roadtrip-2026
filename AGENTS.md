@@ -7,10 +7,9 @@ Huesca, Spanien), Abfahrt 02.08.2026. Totale Sonnenfinsternis am 12.08.2026.
 Diese Datei ist die Anlaufstelle für **alle KI-Agenten** (Claude, Codex, Gemini, …)
 und Menschen, die am Projekt arbeiten.
 
-> **⚠️ Laufende Aufgabe:** In [HANDOFF.md](HANDOFF.md) steht der aktuelle
-> Zwischenstand (Firebase-Cloud-Sync-Einrichtung) mit exakten nächsten
-> Schritten — zuerst dort nachsehen. Wenn die Aufgabe erledigt ist,
-> HANDOFF.md entsprechend aktualisieren oder löschen.
+> **Status & Betriebs-Infos:** [HANDOFF.md](HANDOFF.md) — Live-URL, Firebase-
+> Projekt, Deploy-Befehle, Sync-Stolperfallen und Backlog. Bei laufenden
+> Aufgaben wird dort der Zwischenstand gepflegt.
 
 ## Projektstruktur
 
