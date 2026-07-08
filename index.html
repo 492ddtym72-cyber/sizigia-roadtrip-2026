@@ -463,6 +463,11 @@ a.maplink:hover{text-decoration:underline}
 .lineup-stage-text{flex:1;min-width:0}
 .lineup-stage h3{font-family:var(--font-display);letter-spacing:.03em;font-size:16px;color:#fff;margin:0;text-shadow:0 1px 6px rgba(0,0,0,.2)}
 .lineup-stage-meta{font-size:11.5px;color:rgba(255,255,255,.78);font-weight:700;white-space:nowrap;margin-top:2px}
+.lineup-live{margin-top:3px;display:flex;flex-direction:column;gap:1px;max-width:100%}
+.lineup-live-row{font-size:11.5px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.lineup-live-row i{font-style:normal;font-weight:600;opacity:.75;margin-right:3px}
+.lineup-live-row.next{opacity:.75}
+.lineup-live-row b{font-weight:800}
 .lineup-stage .genre{font-size:11px;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-top:1px}
 .lineup-stage-chevron{flex:0 0 auto;color:#fff;font-size:13px;transition:transform .18s;opacity:.85}
 .lineup-stage[open] .lineup-stage-chevron{transform:rotate(180deg)}
@@ -3075,22 +3080,22 @@ const STAGE_SCHEDULES = {
     ]},
     {day:'Dienstag', date:'11.08.', sets:[
       ['00:30','Menog'],['02:00','Beyond b2b Danger'],['03:30','Anny'],['05:00','Psynonima'],['06:30','Ametrina'],
-      ['break'],
+      ['08:00','break'],
       ['11:00','Chaac'],['13:00','3LMT'],['14:00','Cronocops'],['15:00','Gorovich'],['16:30','Dekel'],
       ['18:30','Freedom Fighters'],['20:30','Render'],['22:00','Djantrix'],['23:30','Fungus Funk'],
     ]},
     {day:'Mittwoch', date:'12.08. · Sonnenfinsternis', sets:[
       ['01:00','Ingrained Instincts'],['02:30','Digital Hippie'],['04:00','Shove'],['05:30','Goa Jonas'],
-      ['break'],
+      ['08:00','break'],
       ['11:00','Kulle f2f Psygroo'],['13:00','E-Clip'],['14:30','Emok'],['15:30','Emok f2f Phaxe'],
       ['16:30','Phaxe'],['17:30','Bumbling Loons'],
-      ['eclipse'],
+      ['19:00','eclipse'],
       ['20:45','Astrix'],['22:30','Tristan'],
     ]},
     {day:'Donnerstag', date:'13.08.', sets:[
       ['00:00','Regan'],['01:00','Regan f2f Dickster'],['02:00','Dickster'],['03:00','IAMAI'],
       ['04:30','Daksinamurti'],['06:00','Originz & Rajax'],
-      ['break'],
+      ['08:00','break'],
       ['11:00','Khromata'],['12:30','Kokmok'],['14:00','Ritmo'],['15:30','Liquid Soul'],
       ['16:30','Liquid Soul f2f Ace Ventura'],['17:30','Ace Ventura'],['18:30','Rising Dust'],
       ['20:00','Out Of Orbit'],['21:30','Swarup'],['23:00','Giuseppe'],
@@ -3113,29 +3118,29 @@ const STAGE_SCHEDULES = {
     ]},
     {day:'Dienstag', date:'11.08.', sets:[
       ['01:30','Krumelur'],['03:00','Sumiruna'],['04:30','Golanski'],['06:00','Ne Yam'],
-      ['break'],
+      ['07:30','break'],
       ['11:00','Bitz Pliz'],['13:00','Ori'],['15:00','Aynix.x'],['16:30','JOSSIE TELCH'],
       ['18:30','Evil Oil Man'],['20:30','Mngrm'],['22:00','BOUNDLESS'],['00:00','Tsu'],
     ]},
     {day:'Mittwoch', date:'12.08. · Sonnenfinsternis', sets:[
       ['01:30','Hellquist'],['03:00','Kromagon'],['05:00','Emiri'],
-      ['break'],
+      ['07:00','break'],
       ['11:00','Technocalor'],['13:00','L-Xir'],['14:30','raxon'],['16:30','Moonclipse'],
-      ['eclipse'],
+      ['18:30','eclipse'],
       ['21:00','Extrawelt'],['22:30','Eitan Reiter'],['00:00','Victor Ruiz'],
     ]},
     {day:'Donnerstag', date:'13.08.', sets:[
       ['01:30','Tao Andra'],['03:00','Bioterranean'],['05:00','Lara S'],
-      ['break'],
+      ['07:00','break'],
       ['11:00','Axon'],['13:00','One Million Toys'],['14:30','Jedidiah'],['16:30','Miles From Mars'],
       ['18:00','Union Jack'],['19:00','Art Of Trance'],['20:00','Merkaba'],['21:30','Sleek'],
       ['23:00','Fernanda Pistelli'],
     ]},
     {day:'Freitag', date:'14.08.', sets:[
       ['00:30','Michael Banel'],['02:00','Aaron King'],['04:00','Kozy'],['06:00','Orgnz'],
-      ['break'],
+      ['08:00','break'],
       ['13:00','Sorry 4 Tomorrow'],['15:00','Nanoplex'],['17:00','Ivana'],['19:00','Kasey Taylor'],
-      ['closing'],
+      ['22:00','closing'],
     ]},
   ],
   'Lumina': [
@@ -3151,8 +3156,8 @@ const STAGE_SCHEDULES = {
     {day:'Mittwoch', date:'12.08. · Sonnenfinsternis', sets:[
       ['02:00','CONSORZIO OCHIROSSI'],['05:00','MATILDOUTZ'],['08:00','IMAGO'],['11:00','MAIKY'],
       ['13:00','I.M.D'],['15:00','NIXE'],
-      ['surprise'],
-      ['eclipse'],
+      ['18:00','surprise'],
+      ['19:00','eclipse'],
       ['21:30','DESERT DWELLERS'],['0:00','BAYAWAKA'],
     ]},
     {day:'Donnerstag', date:'13.08.', sets:[
@@ -3164,7 +3169,7 @@ const STAGE_SCHEDULES = {
       ['02:00','LORIKEET'],['04:00','SÚLFUR'],['08:00','PSYGROO'],['10:00','AZALEH'],
       ['13:00','EITAN REITER & GOROVICH (Downtempo)'],['14:30','DEKEL (Downtempo)'],
       ['16:00','JAMES MONRO (Downtempo)'],['17:30','GRIFFIN KLOUD'],
-      ['closing'],
+      ['19:00','closing'],
     ]},
   ],
 };
@@ -3192,19 +3197,68 @@ function scheduleActLinks(actText){
   parts.forEach(p=>{ const u=ALL_STAGE_IG[p.toLowerCase()]; if(u) out.push(...u); });
   return out;
 }
+// Sonder-Einträge im Zeitplan (Pausen etc.) — Wert = Anzeigetext, 'eclipse' bekommt eigenes Styling
+const SCHEDULE_MARKERS = {
+  break:'Bühnenpause',
+  surprise:'🎁 Surprise Set',
+  eclipse:'🌑 Sonnenfinsternis-Pause',
+  closing:'🏁 Abschluss der Bühne',
+};
 function renderStageTimetable(days){
   return `<div class="tt-list">${days.map(d=>`
     <div class="tt-day">
       <div class="tt-day-head">${esc(d.day)} <span>${esc(d.date)}</span></div>
-      ${d.sets.map(s=>{
-        if(s[0]==='break') return `<div class="tt-break">Bühnenpause</div>`;
-        if(s[0]==='surprise') return `<div class="tt-break">🎁 Surprise Set</div>`;
-        if(s[0]==='eclipse') return `<div class="tt-eclipse">🌑 Pause für die Sonnenfinsternis</div>`;
-        if(s[0]==='closing') return `<div class="tt-break">🏁 Abschluss der Bühne</div>`;
-        const igs = scheduleActLinks(s[1]).map(u=>`<a href="${esc(u)}" target="_blank" rel="noopener" class="ig-link" aria-label="Instagram">${igIcon()}</a>`).join('');
-        return `<div class="tt-row"><span class="tt-time">${esc(s[0])}</span><span class="tt-act">${esc(s[1])}${igs}</span></div>`;
+      ${d.sets.map(([time,val])=>{
+        if(SCHEDULE_MARKERS[val]){
+          return `<div class="${val==='eclipse'?'tt-eclipse':'tt-break'}">${SCHEDULE_MARKERS[val]}</div>`;
+        }
+        const igs = scheduleActLinks(val).map(u=>`<a href="${esc(u)}" target="_blank" rel="noopener" class="ig-link" aria-label="Instagram">${igIcon()}</a>`).join('');
+        return `<div class="tt-row"><span class="tt-time">${esc(time)}</span><span class="tt-act">${esc(val)}${igs}</span></div>`;
       }).join('')}
     </div>`).join('')}
+  </div>`;
+}
+// Chronologische Liste aller Zeitpunkte einer Bühne (Jahr fix auf 2026 laut Festival-Termin)
+function parseScheduleDateTime(dateStr, timeStr){
+  const m = dateStr.match(/(\d{1,2})\.(\d{1,2})\./);
+  const [hh,mm] = timeStr.split(':').map(Number);
+  return new Date(2026, +m[2]-1, +m[1], hh, mm||0, 0, 0);
+}
+function stageTimeline(days){
+  const out=[];
+  days.forEach(d=>d.sets.forEach(([time,val])=>out.push({dt:parseScheduleDateTime(d.date,time), val})));
+  return out.sort((a,b)=>a.dt-b.dt);
+}
+// Aktueller Live-Status einer Bühne: vor Festivalstart die ersten zwei Einträge als Vorschau,
+// während der Laufzeit "jetzt"/"als Nächstes", danach (>20 Std. nach letztem Slot) nichts mehr.
+function stageNowNext(name){
+  const days = STAGE_SCHEDULES[name];
+  if(!days) return null;
+  const timeline = stageTimeline(days);
+  if(!timeline.length) return null;
+  const now = new Date();
+  if(now < timeline[0].dt) return {state:'upcoming', first:timeline[0], second:timeline[1]};
+  const last = timeline[timeline.length-1];
+  if((now - last.dt)/36e5 > 20) return {state:'ended'};
+  let current=timeline[0], next=null;
+  for(const entry of timeline){
+    if(entry.dt <= now) current = entry; else { next = entry; break; }
+  }
+  return {state:'live', current, next};
+}
+function lineupLiveHtml(name){
+  const info = stageNowNext(name);
+  if(!info || info.state==='ended') return '';
+  const label = v => esc(SCHEDULE_MARKERS[v] || v);
+  if(info.state==='upcoming'){
+    return `<div class="lineup-live">
+      ${info.first?`<span class="lineup-live-row"><i>Startet mit</i> <b>${label(info.first.val)}</b></span>`:''}
+      ${info.second?`<span class="lineup-live-row next"><i>danach</i> <b>${label(info.second.val)}</b></span>`:''}
+    </div>`;
+  }
+  return `<div class="lineup-live">
+    ${info.current?`<span class="lineup-live-row now"><i>🔴 Jetzt</i> <b>${label(info.current.val)}</b></span>`:''}
+    ${info.next?`<span class="lineup-live-row next"><i>als Nächstes</i> <b>${label(info.next.val)}</b></span>`:''}
   </div>`;
 }
 function lineupCard(){
@@ -3213,7 +3267,8 @@ function lineupCard(){
     <h2 class="lineup-title">Line-up</h2>
     ${stages.map(([name,v])=>{
       const days = STAGE_SCHEDULES[name];
-      const setCount = days ? days.reduce((n,d)=>n+d.sets.filter(s=>/^\d/.test(s[0])).length,0) : 0;
+      const setCount = days ? days.reduce((n,d)=>n+d.sets.filter(([,val])=>!SCHEDULE_MARKERS[val]).length,0) : 0;
+      const live = days ? lineupLiveHtml(name) : '';
       return `
       <details class="lineup-stage" style="--accent:${v.color}">
         <summary>
@@ -3221,7 +3276,7 @@ function lineupCard(){
           <div class="lineup-stage-text">
             <h3>${esc(name)}</h3>
             ${v.genre?`<div class="genre">${esc(v.genre)}</div>`:''}
-            <div class="lineup-stage-meta">${days?`${setCount} Sets · ${days.length} Tage`:`${v.artists.length} Artists`}</div>
+            ${live || `<div class="lineup-stage-meta">${days?`${setCount} Sets · ${days.length} Tage`:`${v.artists.length} Artists`}</div>`}
           </div>
           <span class="lineup-stage-chevron" aria-hidden="true">▾</span>
         </summary>
