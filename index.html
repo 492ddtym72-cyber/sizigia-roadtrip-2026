@@ -436,13 +436,31 @@ a.maplink:hover{text-decoration:underline}
 
 /* ---------- Festival Line-up ---------- */
 .lineup-stage{border:1px solid var(--border);border-left:3px solid var(--c,var(--sun));border-radius:14px;padding:14px;margin-bottom:10px;background:rgba(255,255,255,.028)}
+.lineup-stage-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .lineup-stage h3{font-family:var(--font-display);letter-spacing:.05em;font-size:16px;color:var(--c,var(--sun))}
 .lineup-stage .genre{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin:1px 0 11px}
+.lineup-schedule-btn{
+  margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;
+  background:color-mix(in srgb,var(--c,var(--sun)) 16%,transparent);border:1px solid color-mix(in srgb,var(--c,var(--sun)) 45%,transparent);
+  color:var(--c,var(--sun));font-size:12px;font-weight:700;cursor:pointer;
+}
+.lineup-schedule-btn:hover{background:color-mix(in srgb,var(--c,var(--sun)) 26%,transparent)}
 .lineup-tags{display:flex;flex-wrap:wrap;gap:6px}
 .lineup-tag{padding:4px 10px;border-radius:999px;background:var(--card);border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--text);max-width:100%}
 .ig-link{display:inline-flex;margin-left:5px;color:var(--muted);vertical-align:-2px}
 .ig-link:hover{color:var(--sky)}
 .ig-link svg{width:12px;height:12px;display:block}
+/* Zeitplan-Popup */
+.tt-list{max-height:58vh;overflow-y:auto;margin:0 -4px 14px;padding:2px 4px}
+.tt-day{margin-bottom:15px}
+.tt-day:last-child{margin-bottom:0}
+.tt-day-head{font-family:var(--font-display);font-size:13px;letter-spacing:.09em;text-transform:uppercase;color:var(--sun);font-weight:800;margin-bottom:6px;display:flex;align-items:baseline;gap:8px}
+.tt-day-head span{color:var(--faint);font-size:11px;letter-spacing:.02em;text-transform:none;font-weight:600}
+.tt-row{display:flex;gap:12px;padding:4px 0;font-size:13.5px;border-bottom:1px solid rgba(255,255,255,.045)}
+.tt-time{flex:0 0 48px;color:var(--muted);font-variant-numeric:tabular-nums;font-weight:700}
+.tt-act{color:var(--text)}
+.tt-break{margin:6px 0;padding:4px 0;font-size:11px;color:var(--faint);text-transform:uppercase;letter-spacing:.08em;border-top:1px dashed rgba(255,255,255,.14);border-bottom:1px dashed rgba(255,255,255,.14);text-align:center}
+.tt-eclipse{margin:6px 0;padding:7px 10px;font-size:12px;color:#e3d2ff;background:rgba(177,140,255,.16);border:1px solid rgba(177,140,255,.4);border-radius:10px;text-align:center;font-weight:700}
 
 /* ---------- Spots ---------- */
 .spot{border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.028);padding:14px;margin-bottom:10px}
@@ -3020,6 +3038,130 @@ const LINEUP_IG = {
 function igIcon(){
   return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.4" cy="6.6" r="1.1" fill="currentColor" stroke="none"/></svg>';
 }
+// Zeitpläne je Bühne — bislang nur für Origen veröffentlicht (offizielles Stage-Timetable).
+// 'break' = reguläre Bühnenpause, 'eclipse' = Pause für die Sonnenfinsternis am 12.08.
+const STAGE_SCHEDULES = {
+  'Origen': [
+    {day:'Montag', date:'10.08.', sets:[
+      ['17:00','1200MIC by Riktam'],['18:00','GMS'],['19:00','Starlab'],['20:30','Avalon'],
+      ['22:00','Killerwatts'],['23:00','Amplify f2f Hypnoise'],
+    ]},
+    {day:'Dienstag', date:'11.08.', sets:[
+      ['00:30','Menog'],['02:00','Beyond b2b Danger'],['03:30','Anny'],['05:00','Psynonima'],['06:30','Ametrina'],
+      ['break'],
+      ['11:00','Chaac'],['13:00','3LMT'],['14:00','Cronocops'],['15:00','Gorovich'],['16:30','Dekel'],
+      ['18:30','Freedom Fighters'],['20:30','Render'],['22:00','Djantrix'],['23:30','Fungus Funk'],
+    ]},
+    {day:'Mittwoch', date:'12.08. · Sonnenfinsternis', sets:[
+      ['01:00','Ingrained Instincts'],['02:30','Digital Hippie'],['04:00','Shove'],['05:30','Goa Jonas'],
+      ['break'],
+      ['11:00','Kulle f2f Psygroo'],['13:00','E-Clip'],['14:30','Emok'],['15:30','Emok f2f Phaxe'],
+      ['16:30','Phaxe'],['17:30','Bumbling Loons'],
+      ['eclipse'],
+      ['20:45','Astrix'],['22:30','Tristan'],
+    ]},
+    {day:'Donnerstag', date:'13.08.', sets:[
+      ['00:00','Regan'],['01:00','Regan f2f Dickster'],['02:00','Dickster'],['03:00','IAMAI'],
+      ['04:30','Daksinamurti'],['06:00','Originz & Rajax'],
+      ['break'],
+      ['11:00','Khromata'],['12:30','Kokmok'],['14:00','Ritmo'],['15:30','Liquid Soul'],
+      ['16:30','Liquid Soul f2f Ace Ventura'],['17:30','Ace Ventura'],['18:30','Rising Dust'],
+      ['20:00','Out Of Orbit'],['21:30','Swarup'],['23:00','Giuseppe'],
+    ]},
+    {day:'Freitag', date:'14.08.', sets:[
+      ['00:00','Giuseppe f2f Farebi Jalebi'],['01:00','Farebi Jalebi'],['02:00','Arjuna'],['03:30','Sator Arepo'],
+      ['05:00','Insane Creatures'],['06:30','Atbloom'],['08:00','Smkng Chkrs'],['09:30','Lunatica'],
+      ['11:00','Vegan Cake'],['12:30','Atmos'],['14:00','James Monro'],['15:30','Hypnoxock'],
+      ['17:00','Anoebis'],['18:30','Cesar Mimesis'],['19:30','Filteria'],
+      ['20:30','Green Nuns Of The Revolution by Dick Trevor'],['22:00','Prana'],['23:00','Tsuyoshi Suzuki'],
+      ['0:00','Celli'],
+    ]},
+    {day:'Abschluss', date:'15.08.', sets:[
+      ['01:30','Etnica & Pleiadians'],
+    ]},
+  ],
+  'Ombra Sonora': [
+    {day:'Montag', date:'10.08.', sets:[
+      ['21:00','Okapi'],['22:30','TRIFORCE'],['0:00','Captain Pastek'],
+    ]},
+    {day:'Dienstag', date:'11.08.', sets:[
+      ['01:30','Krumelur'],['03:00','Sumiruna'],['04:30','Golanski'],['06:00','Ne Yam'],
+      ['break'],
+      ['11:00','Bitz Pliz'],['13:00','Ori'],['15:00','Aynix.x'],['16:30','JOSSIE TELCH'],
+      ['18:30','Evil Oil Man'],['20:30','Mngrm'],['22:00','BOUNDLESS'],['00:00','Tsu'],
+    ]},
+    {day:'Mittwoch', date:'12.08. · Sonnenfinsternis', sets:[
+      ['01:30','Hellquist'],['03:00','Kromagon'],['05:00','Emiri'],
+      ['break'],
+      ['11:00','Technocalor'],['13:00','L-Xir'],['14:30','raxon'],['16:30','Moonclipse'],
+      ['eclipse'],
+      ['21:00','Extrawelt'],['22:30','Eitan Reiter'],['00:00','Victor Ruiz'],
+    ]},
+    {day:'Donnerstag', date:'13.08.', sets:[
+      ['01:30','Tao Andra'],['03:00','Bioterranean'],['05:00','Lara S'],
+      ['break'],
+      ['11:00','Axon'],['13:00','One Million Toys'],['14:30','Jedidiah'],['16:30','Miles From Mars'],
+      ['18:00','Union Jack'],['19:00','Art Of Trance'],['20:00','Merkaba'],['21:30','Sleek'],
+      ['23:00','Fernanda Pistelli'],
+    ]},
+    {day:'Freitag', date:'14.08.', sets:[
+      ['00:30','Michael Banel'],['02:00','Aaron King'],['04:00','Kozy'],['06:00','Orgnz'],
+      ['break'],
+      ['13:00','Sorry 4 Tomorrow'],['15:00','Nanoplex'],['17:00','Ivana'],['19:00','Kasey Taylor'],
+      ['closing'],
+    ]},
+  ],
+  'Lumina': [
+    {day:'Montag', date:'10.08.', sets:[
+      ['11:00','WA JIMA TAPES'],['14:00','KINO DOSCUN'],['17:00','LO.RENZO'],['19:00','KALYA SCINTILLA'],
+      ['21:00','TRIBONE'],['23:00','DARWIN'],
+    ]},
+    {day:'Dienstag', date:'11.08.', sets:[
+      ['02:00','DELA MOON'],['05:00','MENTAL'],['08:00','SOMETHING BLUE'],['10:00','DEACON'],
+      ['12:00','YUSUF LEMONE'],['14:00','PULLI'],['16:00','R3NATA'],['18:00','UREM'],
+      ['20:00','JOSKO'],['23:00','NESS'],
+    ]},
+    {day:'Mittwoch', date:'12.08. · Sonnenfinsternis', sets:[
+      ['02:00','CONSORZIO OCHIROSSI'],['05:00','MATILDOUTZ'],['08:00','IMAGO'],['11:00','MAIKY'],
+      ['13:00','I.M.D'],['15:00','NIXE'],
+      ['surprise'],
+      ['eclipse'],
+      ['21:30','DESERT DWELLERS'],['0:00','BAYAWAKA'],
+    ]},
+    {day:'Donnerstag', date:'13.08.', sets:[
+      ['02:00','NUEQ'],['04:00','VALLOU'],['07:00','TIKAL'],['10:00','RAFAEL ARAGON'],
+      ['12:00','FLAVE'],['14:00','SAHRA BASS'],['16:00','FRIDA DARKO B2B ATRIC'],['18:00','FABIAN KROOSS'],
+      ['20:00','OLIVER KOLETZKI'],['22:00','CIOZ'],['0:00','JORKE'],
+    ]},
+    {day:'Freitag', date:'14.08.', sets:[
+      ['02:00','LORIKEET'],['04:00','SÚLFUR'],['08:00','PSYGROO'],['10:00','AZALEH'],
+      ['13:00','EITAN REITER & GOROVICH (Downtempo)'],['14:30','DEKEL (Downtempo)'],
+      ['16:00','JAMES MONRO (Downtempo)'],['17:30','GRIFFIN KLOUD'],
+      ['closing'],
+    ]},
+  ],
+};
+function openStageSchedule(name){
+  const days = STAGE_SCHEDULES[name];
+  if(!days){ toast('Für diese Bühne ist noch kein Zeitplan veröffentlicht'); return; }
+  modalCtx = null;
+  const rows = days.map(d=>`
+    <div class="tt-day">
+      <div class="tt-day-head">${esc(d.day)} <span>${esc(d.date)}</span></div>
+      ${d.sets.map(s=>{
+        if(s[0]==='break') return `<div class="tt-break">Bühnenpause</div>`;
+        if(s[0]==='surprise') return `<div class="tt-break">🎁 Surprise Set</div>`;
+        if(s[0]==='eclipse') return `<div class="tt-eclipse">🌑 Pause für die Sonnenfinsternis</div>`;
+        if(s[0]==='closing') return `<div class="tt-break">🏁 Abschluss der Bühne</div>`;
+        return `<div class="tt-row"><span class="tt-time">${esc(s[0])}</span><span class="tt-act">${esc(s[1])}</span></div>`;
+      }).join('')}
+    </div>`).join('');
+  document.getElementById('modalBox').innerHTML = `
+    <h3>🕐 ${esc(name)} · Zeitplan</h3>
+    <div class="tt-list">${rows}</div>
+    <div class="btnrow"><button class="btn ghost" onclick="closeModal()">Schließen</button></div>`;
+  document.getElementById('modalBg').classList.add('open');
+}
 function lineupCard(){
   const stages = Object.entries(LINEUP);
   const uniqueCount = new Set(stages.flatMap(([,v])=>v.artists.map(a=>a.trim().toLowerCase()))).size;
@@ -3029,7 +3171,10 @@ function lineupCard(){
     <p class="hint" style="margin:0 0 14px">${uniqueCount} bestätigte Artists · ${stages.length} Bühnen</p>
     ${stages.map(([name,v])=>`
       <div class="lineup-stage" style="--c:${v.color}">
-        <h3>${esc(name)}</h3>
+        <div class="lineup-stage-head">
+          <h3>${esc(name)}</h3>
+          ${STAGE_SCHEDULES[name]?`<button type="button" class="lineup-schedule-btn" onclick="openStageSchedule('${name}')">🕐 Zeitplan</button>`:''}
+        </div>
         ${v.genre?`<div class="genre">${esc(v.genre)}</div>`:''}
         <div class="lineup-tags">${v.artists.map(a=>{
           const links = (LINEUP_IG[name]||{})[a] || [];
@@ -3037,7 +3182,7 @@ function lineupCard(){
           return `<span class="lineup-tag">${esc(a)}${igs}</span>`;
         }).join('')}</div>
       </div>`).join('')}
-    <div class="hint">Stand 08.07.2026 laut offizieller Sizigia-Seite und FestivalMates: ${uniqueCount} bestätigte Artists insgesamt (${slotCount} Bühnen-Nennungen, einige Acts spielen auf mehreren Bühnen). Tageszeiten/Slots sind noch nicht veröffentlicht.</div>
+    <div class="hint">Stand 08.07.2026 laut offizieller Sizigia-Seite und FestivalMates: ${uniqueCount} bestätigte Artists insgesamt (${slotCount} Bühnen-Nennungen, einige Acts spielen auf mehreren Bühnen). „🕐 Zeitplan" bei jeder Bühne zeigt die offiziellen Timetables.</div>
   </div>`;
 }
 function renderFestival(){
