@@ -8,6 +8,11 @@
 - **Live-App:** https://492ddtym72-cyber.github.io/sizigia-roadtrip-2026/
   (GitHub Pages, Repo `492ddtym72-cyber/sizigia-roadtrip-2026`, `git push`
   auf `main` deployt automatisch; `gh` CLI ist authentifiziert.)
+- **Laptop-unabhängig:** Die öffentliche App wird von GitHub Pages gehostet
+  und läuft weiter, auch wenn dieses MacBook aus ist. Künftige KI-Agenten
+  können das Repo direkt auf GitHub ändern; nach einem Push auf `main` ist die
+  Änderung für alle sichtbar. Für geteilte App-Daten nutzt die Live-App
+  Firebase Realtime Database, nicht den lokalen Rechner.
 - **Cloud-Sync aktiv:** `CLOUD_URL` in `index.html` zeigt auf die Firebase
   Realtime Database des Projekts `roadtrip-to-sizigia-eclipse`
   (Instanz `roadtrip-to-sizigia-eclipse-default-rtdb`, Region us-central1,
