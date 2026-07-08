@@ -441,6 +441,9 @@ a.maplink:hover{text-decoration:underline}
 .lineup-stage .genre{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin:1px 0 11px}
 .lineup-tags{display:flex;flex-wrap:wrap;gap:6px}
 .lineup-tag{padding:4px 10px;border-radius:999px;background:var(--card);border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--text);max-width:100%}
+.ig-link{display:inline-flex;margin-left:5px;color:var(--muted);vertical-align:-2px}
+.ig-link:hover{color:var(--sky)}
+.ig-link svg{width:12px;height:12px;display:block}
 
 /* ---------- Spots ---------- */
 .spot{border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.028);padding:14px;margin-bottom:10px}
@@ -545,7 +548,7 @@ a.maplink:hover{text-decoration:underline}
   body{background:#fff}
   body::before,body::after{display:none}
   .eclipse,nav,.header-actions,.header-tools,.addrow,.del,.iconbtn,#toast,.modal-bg,
-  .mapwrap,.layerchips,.actions,.hint,button:not(.checkbox),#page-verlauf{display:none!important}
+  .mapwrap,.layerchips,.actions,.hint,.ig-link,button:not(.checkbox),#page-verlauf{display:none!important}
   section.page{display:block!important}
   section.page::before{
     content:attr(data-title);display:block;font-size:19px;font-weight:800;margin:24px 0 10px;
@@ -2867,6 +2870,139 @@ const LINEUP = {
     "YUSUF LEMONE", "WA JIMA TAPES"
   ]},
 };
+// Instagram-Links je Artist (nur "confirmed_profile"-Treffer aus der Recherche —
+// unsichere/mehrdeutige Zuordnungen bewusst weggelassen). Manche Acts (b2b) haben 2 Links.
+const LINEUP_IG = {
+  'Origen': {
+    '3LMT': ["https://www.instagram.com/element.3lmt/"],
+    'ACE VENTURA': ["https://www.instagram.com/dj_aceventura/"],
+    'Ametrina': ["https://www.instagram.com/ametrina.music/"],
+    'Amplify': ["https://www.instagram.com/amplify_psy_official/"],
+    'Anny': ["https://www.instagram.com/djanny_anna/"],
+    'Anoebis': ["https://www.instagram.com/joske.anoebis.goa/"],
+    'Arjuna': ["https://www.instagram.com/arjuna_parvati/"],
+    'ASTRIX': ["https://www.instagram.com/astrixofficial/"],
+    'Atbloom': ["https://www.instagram.com/atbloom_official/"],
+    'Atmos': ["https://www.instagram.com/atmotech_recording_atmos/"],
+    'Avalon': ["https://www.instagram.com/aval0nofficial/"],
+    'Beyond b2b Danger': ["https://www.instagram.com/beyond_psytrance/"],
+    'Chaac': ["https://www.instagram.com/dj_chaac/"],
+    'Cronocops': ["https://www.instagram.com/cronocops/"],
+    'Daksinamurti': ["https://www.instagram.com/daksinamurti_sangoma/"],
+    'Dekel': ["https://www.instagram.com/dekel_official/"],
+    'Dickster': ["https://www.instagram.com/dicksterofficial/"],
+    'Digital Hippie': ["https://www.instagram.com/digitalhippieofficial/"],
+    'Djantrix': ["https://www.instagram.com/djantrix_official/"],
+    'E-Clip': ["https://www.instagram.com/eclipmusic/"],
+    'Emok': ["https://www.instagram.com/dj.emok/"],
+    'Etnica': ["https://www.instagram.com/etnica.pleiadians.official/"],
+    'Farebi Jalebi': ["https://www.instagram.com/farebi.jalebi/"],
+    'Filteria': ["https://www.instagram.com/filteriaofficial/"],
+    'Freedom Fighters': ["https://www.instagram.com/djfreedomfighters/"],
+    'Fungus Funk': ["https://www.instagram.com/fungusfunk/"],
+    'Giuseppe': ["https://www.instagram.com/dj_giuseppe_parvatirecords/"],
+    'GMS': ["https://www.instagram.com/this_is_gms_official/"],
+    'Goa Jonas': ["https://www.instagram.com/goa_jonas/"],
+    'Gorovich': ["https://www.instagram.com/gorovich_official/"],
+    'Green Nuns Of The Revolution by Dick Trevor': ["https://www.instagram.com/greennunsoftherevolution/"],
+    'Hypnoise': ["https://www.instagram.com/hypnoiseofficial/"],
+    'Hypnoxock': ["https://www.instagram.com/hypnoxock_live/"],
+    'IAMAI': ["https://www.instagram.com/iamai.ourminds/"],
+    'Ingrained Instincts': ["https://www.instagram.com/ingrained_instincts/"],
+    'James Monro': ["https://www.instagram.com/jimmytheplate/"],
+    'Khromata': ["https://www.instagram.com/khromata/"],
+    'Killerwatts': ["https://www.instagram.com/killerwatts_nanorecords/"],
+    'Kokmok': ["https://www.instagram.com/didkokmok/"],
+    'Kulle': ["https://www.instagram.com/kulle.mentalsessions/"],
+    'Liquid Soul': ["https://www.instagram.com/liquidsoul_official/"],
+    'Lunatica': ["https://www.instagram.com/lunatica_and_lupin/"],
+    'Menog': ["https://www.instagram.com/menog_music/"],
+    'Originz': ["https://www.instagram.com/originzsangoma/"],
+    'Out Of Orbit': ["https://www.instagram.com/outoforbitofficial/"],
+    'Phaxe': ["https://www.instagram.com/phaxe432/"],
+    'Pleiadians': ["https://www.instagram.com/etnica.pleiadians.official/"],
+    'Psygroo': ["https://www.instagram.com/psygroo_own_spirit/"],
+    'Psynonima': ["https://www.instagram.com/djane_psynonima/"],
+    'Rajax': ["https://www.instagram.com/rajax_outrance/"],
+    'Regan': ["https://www.instagram.com/regan_nano/"],
+    'Render': ["https://www.instagram.com/render_psytrance/"],
+    'RISING DUST': ["https://www.instagram.com/rising_dust/"],
+    'Ritmo': ["https://www.instagram.com/ritmomusic/"],
+    'Sator Arepo': ["https://www.instagram.com/sator_arepo_deviantforce/"],
+    'Shove': ["https://www.instagram.com/shove/"],
+    'Starlab': ["https://www.instagram.com/starlabmusic/"],
+    'Tristan': ["https://www.instagram.com/djtristanofficial/"],
+    'Tsuyoshi Suzuki': ["https://www.instagram.com/tsuyoshi_suzuki_official/"],
+    'Vegan Cake': ["https://www.instagram.com/vegancakemusic/"],
+  },
+  'Ombra Sonora': {
+    'Aaron King': ["https://www.instagram.com/aaronking.music/"],
+    'Aynix.x': ["https://www.instagram.com/aynix.x/"],
+    'Bioterranean': ["https://www.instagram.com/bioterranean/"],
+    'BOUNDLESS': ["https://www.instagram.com/boundlessgroove/"],
+    'Cajarana': ["https://www.instagram.com/_andre_cajarana_/"],
+    'Captain Pastek': ["https://www.instagram.com/captain.pastek/"],
+    'Emiri': ["https://www.instagram.com/emirijyanaiyo/"],
+    'Emok': ["https://www.instagram.com/dj.emok/"],
+    'Evil Oil Man': ["https://www.instagram.com/evil_oil_man/"],
+    'Extrawelt': ["https://www.instagram.com/extrawelt/"],
+    'Fernanda Pistelli': ["https://www.instagram.com/fepistelli/"],
+    'Golanski': ["https://www.instagram.com/bayawaka.golanski/"],
+    'Hellquist': ["https://www.instagram.com/hellquistmusic/"],
+    'Iamai': ["https://www.instagram.com/iamai.ourminds/"],
+    'Ivana': ["https://www.instagram.com/ivana__music/"],
+    'JOSSIE TELCH': ["https://www.instagram.com/jossietelch/"],
+    'Kozy': ["https://www.instagram.com/kozy_alpaka/"],
+    'Kromagon': ["https://www.instagram.com/nikroma.kromagon/"],
+    'Krumelur': ["https://www.instagram.com/i_am_krumelur/"],
+    'Lara S': ["https://www.instagram.com/lara_s.musik/"],
+    'L-Xir': ["https://www.instagram.com/l_xir_music/"],
+    'Marycroft': ["https://www.instagram.com/marycroft_macedo/"],
+    'Merkaba': ["https://www.instagram.com/kalyascintilla.merkaba/"],
+    'Michael Banel': ["https://www.instagram.com/michael.banel/"],
+    'Miles From Mars': ["https://www.instagram.com/milesfromars/"],
+    'Mngrm': ["https://www.instagram.com/mngrm_official/"],
+    'Ne Yam': ["https://www.instagram.com/neyamproject/"],
+    'One Million Toys': ["https://www.instagram.com/one_million_toys/"],
+    'raxon': ["https://www.instagram.com/raxon/"],
+    'Sumiruna': ["https://www.instagram.com/sumiruna_/"],
+    'Tao Andra': ["https://www.instagram.com/taoandra/"],
+    'Technocalor': ["https://www.instagram.com/technocalormusic/"],
+    'TRIFORCE': ["https://www.instagram.com/triforcemusic/"],
+    'Tsu': ["https://www.instagram.com/dj_tsu_/"],
+    'Victor Ruiz': ["https://www.instagram.com/victorruizdj/"],
+  },
+  'Lumina': {
+    'AZALEH': ["https://www.instagram.com/azalehmusic/"],
+    'BAYAWAKA': ["https://www.instagram.com/bayawaka.golanski/"],
+    'CIOZ': ["https://www.instagram.com/cioz_/"],
+    'DEACON': ["https://www.instagram.com/deacon.za/"],
+    'DEKEL': ["https://www.instagram.com/dekel_official/"],
+    'DELA MOON': ["https://www.instagram.com/delamoonmusic/"],
+    'DESERT DWELLERS': ["https://www.instagram.com/desert_dwellers_music/"],
+    'FABIAN KROOSS': ["https://www.instagram.com/fabian.krooss/"],
+    'FLAVE': ["https://www.instagram.com/flave.live/"],
+    'FRIDA DARKO B2B ATRIC': ["https://www.instagram.com/frida.darko/", "https://www.instagram.com/at.ric/"],
+    'I.M.D': ["https://www.instagram.com/i.m.d_music/"],
+    'JAMES MONRO': ["https://www.instagram.com/jimmytheplate/"],
+    'KALYA SCINTILLA': ["https://www.instagram.com/kalyascintilla.merkaba/"],
+    'KINO DOSCUN': ["https://www.instagram.com/kinodoscun/"],
+    'LO.RENZO': ["https://www.instagram.com/lo.renzo_music/"],
+    'NIXE': ["https://www.instagram.com/nixe.music/"],
+    'NUEQ': ["https://www.instagram.com/nueqmusic/"],
+    'OLIVER KOLETZKI': ["https://www.instagram.com/oliverkoletzki/"],
+    'PSYGROO': ["https://www.instagram.com/psygroo_own_spirit/"],
+    'RAFAEL ARAGON': ["https://www.instagram.com/rafaelaragondj/"],
+    'SAHRA BASS': ["https://www.instagram.com/sahrabass_music/"],
+    'TRIBONE': ["https://www.instagram.com/tribone_akudra/"],
+    'UREM': ["https://www.instagram.com/urem_music/"],
+    'YUSUF LEMONE': ["https://www.instagram.com/yusuflemone/"],
+    'WA JIMA TAPES': ["https://www.instagram.com/wajima_tapes/"],
+  },
+};
+function igIcon(){
+  return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.4" cy="6.6" r="1.1" fill="currentColor" stroke="none"/></svg>';
+}
 function lineupCard(){
   const stages = Object.entries(LINEUP);
   const uniqueCount = new Set(stages.flatMap(([,v])=>v.artists.map(a=>a.trim().toLowerCase()))).size;
@@ -2878,7 +3014,11 @@ function lineupCard(){
       <div class="lineup-stage" style="--c:${v.color}">
         <h3>${esc(name)}</h3>
         ${v.genre?`<div class="genre">${esc(v.genre)}</div>`:''}
-        <div class="lineup-tags">${v.artists.map(a=>`<span class="lineup-tag">${esc(a)}</span>`).join('')}</div>
+        <div class="lineup-tags">${v.artists.map(a=>{
+          const links = (LINEUP_IG[name]||{})[a] || [];
+          const igs = links.map(u=>`<a href="${esc(u)}" target="_blank" rel="noopener" class="ig-link" aria-label="Instagram von ${esc(a)}">${igIcon()}</a>`).join('');
+          return `<span class="lineup-tag">${esc(a)}${igs}</span>`;
+        }).join('')}</div>
       </div>`).join('')}
     <div class="hint">Stand 08.07.2026 laut offizieller Sizigia-Seite und FestivalMates: ${uniqueCount} bestätigte Artists insgesamt (${slotCount} Bühnen-Nennungen, einige Acts spielen auf mehreren Bühnen). Tageszeiten/Slots sind noch nicht veröffentlicht.</div>
   </div>`;
