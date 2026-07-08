@@ -167,39 +167,41 @@ nav{display:none}
    (bewusst ohne Glow/Farbverläufe über die ganze Kachel — sonst wirkt's wie Stock-Gradient) ---------- */
 .home-tile-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .home-tile{
-  position:relative;min-height:100px;border:1px solid var(--border);border-radius:16px;
-  background:var(--card-solid);
+  position:relative;min-height:100px;border:1px solid rgba(255,255,255,.14);border-radius:16px;
+  background:linear-gradient(155deg, color-mix(in srgb, var(--accent,#8ea8ff) 40%, #171b2c), color-mix(in srgb, var(--accent,#8ea8ff) 10%, #10131f) 78%);
   padding:13px;display:flex;flex-direction:column;justify-content:center;gap:9px;overflow:hidden;cursor:pointer;
-  transition:border-color .15s,transform .15s,background .15s;
+  box-shadow:inset 0 1px rgba(255,255,255,.09),0 8px 20px rgba(0,0,0,.18);
+  transition:border-color .15s,transform .15s,filter .15s;
 }
-.home-tile:hover{border-color:var(--border-strong);transform:translateY(-1px);background:#1a1f30}
-.home-tile::after{
-  content:"";position:absolute;left:13px;right:13px;bottom:0;height:2px;border-radius:2px 2px 0 0;
-  background:var(--accent,var(--sun));opacity:.65;
-}
+.home-tile:hover{border-color:rgba(255,255,255,.28);filter:brightness(1.07);transform:translateY(-1px)}
 .home-tile-icon{
   position:relative;z-index:2;display:flex;align-items:center;justify-content:center;flex:0 0 auto;
   width:32px;height:32px;border-radius:9px;
-  background:color-mix(in srgb, var(--accent,var(--sun)) 20%, transparent);
-  color:var(--accent,var(--sun));
+  background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.22);color:#fff;
 }
-.home-tile-icon svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
-.home-tile b{position:relative;z-index:2;font-size:14.5px;color:var(--text);text-align:left;font-weight:700}
+.home-tile-icon svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.home-tile b{position:relative;z-index:2;font-size:14.5px;color:#fff;text-align:left;font-weight:700;text-shadow:0 1px 6px rgba(0,0,0,.2)}
+.home-grid-tile b{font-family:var(--font-display);font-size:14px;letter-spacing:.03em}
 .home-latest-tile{
   --accent:var(--sun);grid-column:1/-1;min-height:88px;gap:5px;justify-content:center;align-items:flex-start;text-align:left;padding-left:20px;
 }
-.home-latest-tile::after{left:0;right:auto;top:14px;bottom:14px;height:auto;width:3px;border-radius:0 3px 3px 0}
-.home-latest-tile b{font-size:14px}
+.home-latest-tile::after{
+  content:"";position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0;
+  background:var(--sun);opacity:.9;
+}
+.home-latest-tile b{font-family:var(--font-display);font-size:15.5px;letter-spacing:.01em}
 .home-latest-text{
-  position:relative;z-index:2;color:var(--muted);font-size:12.5px;line-height:1.35;
+  position:relative;z-index:2;color:rgba(238,240,250,.78);font-size:12.5px;line-height:1.35;
   display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
 }
 .home-latest-meta{position:relative;z-index:2;color:var(--faint);font-size:10.5px;font-weight:750}
 .home-latest-kicker{position:relative;z-index:2;color:var(--sun);font-size:10px;letter-spacing:.16em;text-transform:uppercase;font-weight:900}
 .home-reminder-tile{
   --accent:var(--coral);grid-column:1/-1;min-height:auto;text-align:left;gap:10px;padding:14px;
+  background:linear-gradient(135deg,#3d2142,#1c2748 55%,#141a2c);
+  border-color:rgba(255,138,107,.28);
 }
-.home-reminder-tile b{font-size:15.5px}
+.home-reminder-tile b{font-family:var(--font-display);font-size:16px;letter-spacing:.02em}
 .home-reminder-head{position:relative;z-index:2;display:flex;align-items:center;gap:9px;width:100%}
 .home-reminder-badges{position:relative;z-index:2;display:flex;gap:7px;flex-wrap:wrap}
 .hr-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px 4px 8px;border-radius:999px;font-size:12px;font-weight:800;border:1px solid transparent}
@@ -1914,7 +1916,7 @@ function renderHomeDashboard(route, tot, recent){
       </div>
       <div class="home-tile-grid">
         ${HOME_TILES.map(t=>`
-          <button class="home-tile" style="--accent:${t.accent}" onclick="switchTab('${t.id}')">
+          <button class="home-tile home-grid-tile" style="--accent:${t.accent}" onclick="switchTab('${t.id}')">
             <span class="home-tile-icon" aria-hidden="true">${homeIconSvg(t.icon)}</span>
             <b>${esc(t.label)}</b>
           </button>`).join('')}
