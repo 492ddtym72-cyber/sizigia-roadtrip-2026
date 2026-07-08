@@ -463,12 +463,14 @@ a.maplink:hover{text-decoration:underline}
 .lineup-stage-text{flex:1;min-width:0}
 .lineup-stage h3{font-family:var(--font-display);letter-spacing:.03em;font-size:16px;color:#fff;margin:0;text-shadow:0 1px 6px rgba(0,0,0,.2)}
 .lineup-stage-meta{font-size:11.5px;color:rgba(255,255,255,.78);font-weight:700;white-space:nowrap;margin-top:2px}
-.lineup-live{margin-top:3px;display:flex;flex-direction:column;gap:1px;max-width:100%}
-.lineup-live-row{font-size:11.5px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.lineup-live-row i{font-style:normal;font-weight:600;opacity:.75;margin-right:3px}
-.lineup-live-time{font-variant-numeric:tabular-nums;font-weight:700;opacity:.85;margin-right:3px}
-.lineup-live-row.next{opacity:.75}
-.lineup-live-row b{font-weight:800}
+/* Grid statt Flex, damit Uhrzeit und Artist über beide Zeilen sauber ausgerichtet sind,
+   egal wie lang das Label ("Jetzt" vs. "danach"/"Startet mit") ist. */
+.lineup-live{margin-top:3px;display:grid;grid-template-columns:max-content max-content minmax(0,1fr);column-gap:6px;row-gap:1px;max-width:100%;font-size:11.5px;color:#fff}
+.lineup-live-row{display:contents}
+.lineup-live-row i{font-style:normal;font-weight:600;opacity:.75}
+.lineup-live-time{font-variant-numeric:tabular-nums;font-weight:700;opacity:.85}
+.lineup-live-row b{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lineup-live-row.next i,.lineup-live-row.next .lineup-live-time,.lineup-live-row.next b{opacity:.7}
 .lineup-stage .genre{font-size:11px;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-top:1px}
 .lineup-stage-chevron{flex:0 0 auto;color:#fff;font-size:13px;transition:transform .18s;opacity:.85}
 .lineup-stage[open] .lineup-stage-chevron{transform:rotate(180deg)}
@@ -3255,12 +3257,12 @@ function lineupLiveHtml(name){
   if(!info || info.state==='ended') return '';
   const label = v => esc(SCHEDULE_MARKERS[v] || v);
   const row = (tag, entry, cls) => entry
-    ? `<span class="lineup-live-row ${cls}"><i>${tag}</i> <span class="lineup-live-time">${fmtScheduleTime(entry.dt)}</span> <b>${label(entry.val)}</b></span>`
+    ? `<span class="lineup-live-row ${cls}"><i>${tag}</i><span class="lineup-live-time">${fmtScheduleTime(entry.dt)}</span><b>${label(entry.val)}</b></span>`
     : '';
   if(info.state==='upcoming'){
     return `<div class="lineup-live">${row('Startet mit', info.first, '')}${row('danach', info.second, 'next')}</div>`;
   }
-  return `<div class="lineup-live">${row('🔴 Jetzt', info.current, 'now')}${row('als Nächstes', info.next, 'next')}</div>`;
+  return `<div class="lineup-live">${row('🔴 Jetzt', info.current, 'now')}${row('danach', info.next, 'next')}</div>`;
 }
 function lineupCard(){
   const stages = Object.entries(LINEUP);
