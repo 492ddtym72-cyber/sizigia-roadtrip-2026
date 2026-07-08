@@ -173,8 +173,7 @@ nav{display:none}
 .home-icon svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .home-watermark{position:absolute;right:9px;bottom:7px;width:66px;height:66px;color:rgba(255,255,255,.16);z-index:1}
 .home-watermark svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.55;stroke-linecap:round;stroke-linejoin:round}
-.home-tile b{position:relative;z-index:2;font-size:14px;color:#fff;text-shadow:0 1px 12px rgba(0,0,0,.42)}
-.home-tile small{position:relative;z-index:2;font-size:10.5px;color:rgba(238,240,250,.78)}
+.home-tile b{position:relative;z-index:2;font-size:15px;color:#fff;text-shadow:0 1px 12px rgba(0,0,0,.42)}
 .home-live{border:1px solid var(--border);border-radius:18px;background:rgba(255,255,255,.04);padding:13px}
 .home-live b{display:block;color:var(--sun);font-size:13.5px}
 .home-live span{display:block;color:var(--muted);font-size:12px;margin-top:3px}
@@ -1339,13 +1338,13 @@ const TABS = [
   {id:'verlauf',    label:'Aktivität'},
 ];
 const HOME_TILES = [
-  {id:'spots', label:'Stopps', sub:'Ideen & Voting', icon:'pin', a:'#28334f', b:'#171c2e', accent:'rgba(255,107,74,.30)'},
-  {id:'logistik', label:'Fahrzeuge', sub:'Sitze & Dokumente', icon:'van', a:'#20395b', b:'#141b2d', accent:'rgba(142,168,255,.30)'},
-  {id:'packen', label:'Packen', sub:'Listen & Zuständigkeit', icon:'bag', a:'#332746', b:'#171827', accent:'rgba(224,140,255,.28)'},
-  {id:'einkauf', label:'Einkaufen', sub:'Vorräte & Wasser', icon:'cart', a:'#1f4039', b:'#141b27', accent:'rgba(95,212,168,.30)'},
-  {id:'budget', label:'Ausgaben', sub:'Salden & Ausgleich', icon:'money', a:'#403927', b:'#171827', accent:'rgba(255,215,107,.31)'},
-  {id:'festival', label:'Festival', sub:'Infos & Anreise', icon:'tent', a:'#463222', b:'#181827', accent:'rgba(255,178,87,.28)'},
-  {id:'verlauf', label:'Aktivität', sub:'Verlauf & Undo', icon:'activity', a:'#263150', b:'#151827', accent:'rgba(142,168,255,.24)'},
+  {id:'spots', label:'Stopps', icon:'pin', a:'#28334f', b:'#171c2e', accent:'rgba(255,107,74,.30)'},
+  {id:'logistik', label:'Fahrzeuge', icon:'van', a:'#20395b', b:'#141b2d', accent:'rgba(142,168,255,.30)'},
+  {id:'packen', label:'Packen', icon:'bag', a:'#332746', b:'#171827', accent:'rgba(224,140,255,.28)'},
+  {id:'einkauf', label:'Einkaufen', icon:'cart', a:'#1f4039', b:'#141b27', accent:'rgba(95,212,168,.30)'},
+  {id:'budget', label:'Ausgaben', icon:'money', a:'#403927', b:'#171827', accent:'rgba(255,215,107,.31)'},
+  {id:'festival', label:'Festival', icon:'tent', a:'#463222', b:'#181827', accent:'rgba(255,178,87,.28)'},
+  {id:'verlauf', label:'Aktivität', icon:'activity', a:'#263150', b:'#151827', accent:'rgba(142,168,255,.24)'},
 ];
 let activeTab = sessionStorage.getItem('sizigia-tab') || 'uebersicht';
 function renderNav(){
@@ -1415,7 +1414,6 @@ function renderHomeDashboard(route, tot, pCheck){
             <span class="home-icon">${homeIconSvg(t.icon)}</span>
             <span class="home-watermark" aria-hidden="true">${homeIconSvg(t.icon)}</span>
             <b>${esc(t.label)}</b>
-            <small>${esc(t.sub)}</small>
           </button>`).join('')}
       </div>
       <div class="home-live">
