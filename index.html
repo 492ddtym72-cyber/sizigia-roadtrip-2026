@@ -87,7 +87,8 @@ header{
   -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
 }
 .title .sub{color:var(--muted);font-size:12px;letter-spacing:.15em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cloud-wrap{position:relative;justify-self:end;align-self:start;margin-top:5px}
+.header-tools{display:flex;align-items:flex-start;justify-content:flex-end;gap:8px;align-self:start;justify-self:end;margin-top:5px}
+.cloud-wrap{position:relative}
 .cloud-status{
   position:relative;width:40px;height:40px;border:1px solid var(--border);border-radius:14px;
   display:grid;place-items:center;color:var(--mint);background:rgba(255,255,255,.045);
@@ -96,6 +97,8 @@ header{
 }
 .cloud-status:hover{border-color:var(--border-strong);background:rgba(255,255,255,.065)}
 .cloud-status svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.profile-status{color:#e8edff}
+.profile-status:hover{color:var(--sun)}
 .cloud-status[data-status="syncing"]{color:var(--sun);border-color:rgba(255,178,87,.35)}
 .cloud-status[data-status="offline"]{color:var(--danger);border-color:rgba(255,95,107,.32)}
 .cloud-status[data-status="localOnly"]{color:var(--sun-deep);border-color:rgba(255,138,61,.38)}
@@ -136,9 +139,9 @@ nav::-webkit-scrollbar{display:none}
 @media(max-width:520px){
   header{grid-template-columns:34px minmax(0,1fr) auto;gap:10px;padding-top:18px}
   .eclipse{width:34px;height:34px}
-  .title h1{font-size:clamp(22px,7vw,26px)}
-  .title .sub{font-size:10.5px;letter-spacing:.13em}
-  .cloud-wrap{margin-top:0}
+  .title h1{font-size:clamp(20px,6.1vw,23px);letter-spacing:.045em}
+  .title .sub{font-size:10px;letter-spacing:.11em}
+  .header-tools{margin-top:0;gap:7px}
   .cloud-status{width:36px;height:36px;border-radius:13px}
   .cloud-status svg{width:21px;height:21px}
   nav{flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;gap:8px;padding-top:10px;padding-bottom:11px}
@@ -185,50 +188,21 @@ nav{display:none}
 .home-watermark{position:absolute;right:9px;bottom:7px;width:66px;height:66px;color:rgba(255,255,255,.16);z-index:1}
 .home-watermark svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.55;stroke-linecap:round;stroke-linejoin:round}
 .home-tile b{position:relative;z-index:2;font-size:15px;color:#fff;text-shadow:0 1px 12px rgba(0,0,0,.42)}
-.home-live{border:1px solid var(--border);border-radius:18px;background:rgba(255,255,255,.04);padding:13px}
-.home-live b{display:block;color:var(--sun);font-size:13.5px}
-.home-live span{display:block;color:var(--muted);font-size:12px;margin-top:3px}
-.home-below{display:grid;gap:12px;margin-top:2px}
-.home-tripline{
-  display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;padding:15px 16px;border:1px solid var(--border);
-  border-radius:20px;background:linear-gradient(135deg,rgba(255,255,255,.06),rgba(255,255,255,.025));
+.home-latest-tile{--tile-a:#253655;--tile-b:#141927;--tile-accent:rgba(142,168,255,.22);grid-column:1/-1;min-height:100px;gap:6px}
+.home-latest-tile b{font-size:14px}
+.home-latest-text{
+  position:relative;z-index:2;color:rgba(238,240,250,.78);font-size:12.5px;line-height:1.35;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
 }
-.home-tripline .label{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:800}
-.home-tripline b{display:block;font-family:var(--font-display);font-size:24px;line-height:1.05;color:var(--text);margin-top:3px}
-.home-tripline span{font-size:12px;color:var(--muted)}
-.home-days{display:flex;align-items:baseline;gap:5px;color:var(--sun)}
-.home-days strong{font-family:var(--font-display);font-size:34px;line-height:1}
-.home-days small{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:800}
-.home-clean-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:12px}
-.home-panel{
-  border:1px solid var(--border);border-radius:20px;background:rgba(255,255,255,.04);
-  padding:15px;min-width:0;
+.home-latest-meta{position:relative;z-index:2;color:var(--faint);font-size:10.5px;font-weight:750}
+.backup-card .backup-actions{margin-top:13px}
+.backup-snapshot{
+  display:grid;grid-template-columns:94px minmax(0,1fr);gap:10px;align-items:center;
+  padding:9px 0;border-top:1px solid rgba(255,255,255,.06);font-size:13px;
 }
-.home-panel h2{font-family:var(--font-display);font-size:13px;letter-spacing:.15em;text-transform:uppercase;color:var(--sun);margin:0 0 11px}
-.home-facts{display:grid;gap:8px}
-.home-fact{display:grid;grid-template-columns:86px minmax(0,1fr);gap:10px;font-size:13px;border-top:1px solid rgba(255,255,255,.055);padding-top:8px}
-.home-fact:first-child{border-top:0;padding-top:0}
-.home-fact .k{color:var(--faint);font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;font-weight:800}
-.home-fact .v{color:var(--text)}
-.home-crew{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
-.home-crew .chip{font-size:12px;padding:4px 9px}
-.home-progress-list{display:grid;gap:10px}
-.home-progress-row{cursor:pointer}
-.home-progress-row .top{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;font-weight:750;color:var(--text)}
-.home-progress-row .top span:last-child{color:var(--muted);font-weight:700}
-.home-admin{
-  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;
-  border:1px solid var(--border);border-radius:20px;background:rgba(255,255,255,.035);padding:14px 15px;
-}
-.home-admin b{display:block;color:var(--sun);font-size:13.5px}
-.home-admin span{display:block;color:var(--muted);font-size:12px;margin-top:3px}
-.home-admin .backup-actions{margin:0;justify-content:flex-end}
-.home-admin .btn{white-space:nowrap}
-.home-activity-line{
-  display:flex;align-items:center;gap:10px;justify-content:space-between;border:1px solid var(--border);
-  border-radius:18px;background:rgba(255,255,255,.03);padding:11px 13px;font-size:12.5px;color:var(--muted);
-}
-.home-activity-line b{color:var(--text);font-weight:700}
+.backup-snapshot:first-child{border-top:0;padding-top:0}
+.backup-snapshot .k{color:var(--faint);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;font-weight:850}
+.backup-snapshot .v{display:flex;align-items:center;justify-content:space-between;gap:10px;color:var(--text)}
 .section-return{display:flex;align-items:center;gap:10px;margin-bottom:14px}
 .section-return button{
   width:38px;height:38px;border-radius:13px;border:1px solid var(--border);background:var(--card);color:var(--sun);
@@ -237,15 +211,16 @@ nav{display:none}
 .section-return span{font-size:13px;color:var(--muted);font-weight:700}
 @media(min-width:760px){
   .home-tile-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .home-latest-tile{grid-column:span 2}
 }
 @media(max-width:640px){
   .route-hero{min-height:168px}
   .home-tile-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   .home-tile{min-height:104px}
-  .home-clean-grid,.home-admin,.home-tripline{grid-template-columns:1fr}
-  .home-admin .backup-actions{justify-content:stretch}
-  .home-admin .backup-actions .btn{flex:1}
-  .home-fact{grid-template-columns:76px minmax(0,1fr)}
+  .backup-actions{justify-content:stretch}
+  .backup-actions .btn{flex:1}
+  .backup-snapshot{grid-template-columns:1fr}
+  .backup-snapshot .v{align-items:flex-start;flex-direction:column}
 }
 
 /* ---------- Allgemeine Bausteine ---------- */
@@ -480,7 +455,7 @@ a.maplink:hover{text-decoration:underline}
 @media print{
   body{background:#fff}
   body::before,body::after{display:none}
-  .eclipse,nav,.header-actions,.cloud-wrap,.addrow,.del,.iconbtn,#toast,.modal-bg,
+  .eclipse,nav,.header-actions,.header-tools,.addrow,.del,.iconbtn,#toast,.modal-bg,
   .mapwrap,.layerchips,.actions,.hint,button:not(.checkbox),#page-verlauf{display:none!important}
   section.page{display:block!important}
   section.page::before{
@@ -505,15 +480,20 @@ a.maplink:hover{text-decoration:underline}
       <h1>Sizigia 2026</h1>
       <div class="sub">Roadtrip-Planer · München → Huesca</div>
     </div>
-    <div class="cloud-wrap">
-      <button class="cloud-status" id="cloudStatus" type="button" data-status="ok" onclick="toggleCloudDetails()" aria-expanded="false" aria-controls="cloudDetails" aria-label="Cloud-Sync Status">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 18H8.2a4.2 4.2 0 0 1-.7-8.35 5.9 5.9 0 0 1 11.1 1.95A3.2 3.2 0 0 1 17.5 18Z"/></svg>
-        <span class="savedot" id="saveDot"></span>
+    <div class="header-tools">
+      <button class="cloud-status profile-status" id="profileStatus" type="button" onclick="askWho()" aria-label="Profil wählen" title="Profil wählen">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></svg>
       </button>
-      <div class="cloud-details" id="cloudDetails" hidden>
-        <div class="cloud-details-title">Cloud-Sync</div>
-        <span id="syncBadge">–</span>
-        <span id="saveInfo">–</span>
+      <div class="cloud-wrap">
+        <button class="cloud-status" id="cloudStatus" type="button" data-status="ok" onclick="toggleCloudDetails()" aria-expanded="false" aria-controls="cloudDetails" aria-label="Cloud-Sync Status">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.5 18H8.2a4.2 4.2 0 0 1-.7-8.35 5.9 5.9 0 0 1 11.1 1.95A3.2 3.2 0 0 1 17.5 18Z"/></svg>
+          <span class="savedot" id="saveDot"></span>
+        </button>
+        <div class="cloud-details" id="cloudDetails" hidden>
+          <div class="cloud-details-title">Cloud-Sync</div>
+          <span id="syncBadge">–</span>
+          <span id="saveInfo">–</span>
+        </div>
       </div>
     </div>
   </header>
@@ -836,7 +816,7 @@ function restoreSnapshot(idx){
     JSON.parse(s.raw),
     'Vor Wiederherstellung',
     'hat eine Sicherung lokal geöffnet (' + s.reason + ')',
-    CLOUD_URL ? 'Sicherung lokal geöffnet — Gruppe bleibt unverändert ☁️' : 'Sicherung wiederhergestellt ↩'
+    CLOUD_URL ? 'Sicherung lokal geöffnet — Gruppe bleibt unverändert' : 'Sicherung wiederhergestellt'
   );
 }
 
@@ -965,7 +945,7 @@ async function loadGroupState(){
       _lastPushed = state.meta.lastSaved;
       leaveLocalOnlyMode();
       renderAll();
-      toast('Gruppenstand geladen ☁️');
+      toast('Gruppenstand geladen');
     } else {
       leaveLocalOnlyMode();
     }
@@ -997,7 +977,7 @@ async function syncNow(){
       StorageAdapter.save(state);
       _lastPushed = state.meta.lastSaved;
       renderAll();
-      toast('Neuer Stand aus der Gruppe übernommen ☁️');
+      toast('Neuer Stand aus der Gruppe übernommen');
     } else if(lT && lT > rT){
       await cloudPut();
     } else {
@@ -1045,7 +1025,7 @@ function importData(ev){
         data,
         'Vor Import',
         'hat ein Backup lokal geöffnet',
-        CLOUD_URL ? 'Backup lokal geöffnet — Gruppe bleibt unverändert ☁️' : 'Backup importiert ✅'
+        CLOUD_URL ? 'Backup lokal geöffnet — Gruppe bleibt unverändert' : 'Backup importiert'
       );
     }catch(e){
       alert('Import fehlgeschlagen: ' + e.message);
@@ -1066,12 +1046,15 @@ function esc(s){ return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','
    ============================================================ */
 const WHO_KEY = STORAGE_KEY + '-whoami';
 function whoami(){ return localStorage.getItem(WHO_KEY) || null; }
-function setWhoami(id){ localStorage.setItem(WHO_KEY, id); renderAll(); toast('Alles klar, ' + (crewById(id)?.name || '') + ' 👋'); }
+function setWhoami(id){ localStorage.setItem(WHO_KEY, id); renderAll(); toast('Profil gewählt: ' + (crewById(id)?.name || '')); }
 function askWho(){
   openModal('Wer bist du?', [
     {key:'who', label:'Damit der Verlauf weiß, wer was ändert (nur auf diesem Gerät gespeichert)', type:'select',
      value:whoami() || state.crew[0].id, options:state.crew.map(c=>({value:c.id, label:c.name}))}
-  ], v=>{ localStorage.setItem(WHO_KEY, v.who); });
+  ], v=>{
+    localStorage.setItem(WHO_KEY, v.who);
+    toast('Profil gewählt: ' + (crewById(v.who)?.name || ''));
+  }, null, {skipSave:true});
 }
 function logChange(desc, undo=null, who=whoami()){
   if(!Array.isArray(state.log)) state.log = [];
@@ -1334,8 +1317,8 @@ function applyPos(target, posStr){
    fields: [{key,label,type:'text'|'number'|'textarea'|'select',options,value,placeholder}]
    ============================================================ */
 let modalCtx = null;
-function openModal(title, fields, onSave, onDelete){
-  modalCtx = {fields, onSave, onDelete};
+function openModal(title, fields, onSave, onDelete, opts={}){
+  modalCtx = {fields, onSave, onDelete, ...opts};
   const box = document.getElementById('modalBox');
   box.innerHTML = '<h3>' + esc(title) + '</h3>' + fields.map((f,i)=>{
     let input;
@@ -1357,8 +1340,11 @@ function openModal(title, fields, onSave, onDelete){
 function modalSave(){
   const vals = {};
   modalCtx.fields.forEach((f,i)=>{ vals[f.key] = document.getElementById('mf'+i).value; });
+  const skipSave = !!modalCtx.skipSave;
   modalCtx.onSave(vals);
-  closeModal(); save(); renderAll();
+  closeModal();
+  if(!skipSave) save();
+  renderAll();
 }
 function modalDelete(){
   const fn = modalCtx.onDelete;
@@ -1380,7 +1366,7 @@ const TABS = [
   {id:'einkauf',    label:'Einkaufen'},
   {id:'budget',     label:'Ausgaben'},
   {id:'festival',   label:'Festival'},
-  {id:'verlauf',    label:'Aktivität'},
+  {id:'verlauf',    label:'Verlauf'},
 ];
 const HOME_TILES = [
   {id:'spots', label:'Stopps', icon:'pin', a:'#28334f', b:'#171c2e', accent:'rgba(255,107,74,.30)'},
@@ -1389,7 +1375,6 @@ const HOME_TILES = [
   {id:'einkauf', label:'Einkaufen', icon:'cart', a:'#1f4039', b:'#141b27', accent:'rgba(95,212,168,.30)'},
   {id:'budget', label:'Ausgaben', icon:'money', a:'#403927', b:'#171827', accent:'rgba(255,215,107,.31)'},
   {id:'festival', label:'Festival', icon:'tent', a:'#463222', b:'#181827', accent:'rgba(255,178,87,.28)'},
-  {id:'verlauf', label:'Aktivität', icon:'activity', a:'#263150', b:'#151827', accent:'rgba(142,168,255,.24)'},
 ];
 let activeTab = sessionStorage.getItem('sizigia-tab') || 'uebersicht';
 function renderNav(){
@@ -1416,6 +1401,18 @@ function homeIconSvg(kind){
   };
   return icons[kind] || icons.activity;
 }
+function renderLatestActivityTile(recent){
+  const desc = recent ? recent.desc : 'Noch keine Änderungen protokolliert.';
+  const meta = recent ? fmtLogTs(recent.ts) : 'Verlauf öffnen';
+  return `
+    <button class="home-tile home-latest-tile" onclick="switchTab('verlauf')" aria-label="Letzte Änderung öffnen">
+      <span class="home-icon">${homeIconSvg('activity')}</span>
+      <span class="home-watermark" aria-hidden="true">${homeIconSvg('activity')}</span>
+      <b>Letzte Änderung</b>
+      <span class="home-latest-text">${esc(desc)}</span>
+      <span class="home-latest-meta">${esc(meta)}</span>
+    </button>`;
+}
 
 /* ============================================================
    ÜBERSICHT
@@ -1435,7 +1432,7 @@ function routeTotals(stages){
   });
   return {km, hTxt: String(Math.round(h*10)/10).replace('.',',')};
 }
-function renderHomeDashboard(route, tot, pCheck){
+function renderHomeDashboard(route, tot, recent){
   return `
     <div class="home-dashboard">
       <div class="route-hero" onclick="switchTab('route')" role="button" tabindex="0" aria-label="Route planen" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchTab('route')}">
@@ -1453,10 +1450,7 @@ function renderHomeDashboard(route, tot, pCheck){
             <span class="home-watermark" aria-hidden="true">${homeIconSvg(t.icon)}</span>
             <b>${esc(t.label)}</b>
           </button>`).join('')}
-      </div>
-      <div class="home-live">
-        <b>Heute im Blick</b>
-        <span>${pCheck.done}/${pCheck.total} Punkte der Checkliste erledigt · Backups bleiben beim Öffnen lokal geschützt.</span>
+        ${renderLatestActivityTile(recent)}
       </div>
     </div>`;
 }
@@ -1464,78 +1458,10 @@ function sectionBackButton(){
   return `<div class="section-return"><button onclick="switchTab('uebersicht')" aria-label="Zur Übersicht">←</button><span>Zur Übersicht</span></div>`;
 }
 function renderOverview(){
-  const start = new Date('2026-08-02T08:00:00');
-  const diff = Math.max(0, start - Date.now());
-  const days = Math.floor(diff/86400000), hrs = Math.floor(diff%86400000/3600000), min = Math.floor(diff%3600000/60000);
-  const eclDays = Math.max(0, Math.ceil((new Date('2026-08-12T20:26:00') - Date.now())/86400000));
   const route = state.routes.find(r=>r.id===state.selectedRoute);
   const tot = routeTotals(route.stages);
-  const pPack = listProgress(state.packing), pShop = listProgress(state.shopping), pCheck = listProgress(state.checklist);
-  const pDocs = listProgress(state.vehicles.map(v=>({items:v.docs})));
   const recent = [...(state.log||[])].reverse()[0];
-
-  document.getElementById('page-uebersicht').innerHTML = renderHomeDashboard(route, tot, pCheck) + `
-    <div class="home-below">
-      <div class="home-tripline">
-        <div>
-          <div class="label">Abfahrt · Sonntag, 2. August 2026</div>
-          <b>${days} Tage · ${hrs} Std · ${min} Min</b>
-          <span>Totale Sonnenfinsternis in ${eclDays} Tagen</span>
-        </div>
-        <div class="home-days"><strong>${days}</strong><small>Tage</small></div>
-      </div>
-
-      <div class="home-clean-grid">
-        <div class="home-panel">
-          <h2>Wichtige Infos</h2>
-          <div class="home-facts">
-            <div class="home-fact"><span class="k">Route</span><span class="v">${esc(route.name)} · ca. ${tot.km} km · ~${tot.hTxt} Std</span></div>
-            <div class="home-fact"><span class="k">Start</span><span class="v">München & Innsbruck · 02.08.2026</span></div>
-            <div class="home-fact"><span class="k">Festival</span><span class="v">Sizigia Eclipse Gathering · 10.–14.08. · Huesca</span></div>
-            <div class="home-fact"><span class="k">Fahrzeuge</span><span class="v">Camper ab Innsbruck · Kleinwagen ab München</span></div>
-          </div>
-          <div class="home-crew">${state.crew.map(c=>`<span class="chip static" style="--c:${c.color}" onclick="editCrew('${c.id}')" title="Name bearbeiten"><span class="dot"></span>${esc(c.name)}</span>`).join('')}</div>
-        </div>
-        <div class="home-panel">
-          <h2>Fortschritt</h2>
-          <div class="home-progress-list">
-            ${[['Packliste',pPack,'packen'],['Einkauf',pShop,'einkauf'],['Abfahrt',pCheck,'logistik'],['Dokumente',pDocs,'logistik']].map(([l,p,tab])=>`
-              <div class="home-progress-row" onclick="switchTab('${tab}')" title="öffnen">
-                <div class="top"><span>${l}</span><span>${p.done}/${p.total}</span></div>
-                <div class="progress"><i style="width:${p.pct}%"></i></div>
-              </div>`).join('')}
-          </div>
-        </div>
-      </div>
-
-      <div class="home-admin">
-        <div>
-          <b>Datensicherung</b>
-          <span>Backups und Sicherungen werden beim Öffnen zuerst nur lokal geladen. Der Gruppenstand bleibt geschützt.</span>
-        </div>
-        <div class="backup-actions">
-          <button class="btn primary" onclick="exportData()">Export</button>
-          <button class="btn" onclick="document.getElementById('importFile').click()">Import</button>
-          ${getSnapshots().length?'<button class="btn ghost" onclick="toggleSnapshots()">Sicherungen</button>':''}
-        </div>
-        <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importData(event)">
-      </div>
-      <div id="snapshotList" style="display:none">
-        ${(()=>{
-        const snaps = getSnapshots();
-        if(!snaps.length) return '';
-        return '<div class="home-panel">' +
-          '<h2>Automatische Sicherungen</h2>' +
-          snaps.map((s,i)=>({s,i})).reverse().map(({s,i})=>
-            '<div class="home-fact"><span class="k">'+new Date(s.ts).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})+' '+new Date(s.ts).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})+'</span><span class="v">'+esc(s.reason)+' <button class="btn ghost small" onclick="restoreSnapshot('+i+')">Lokal öffnen</button></span></div>'
-          ).join('') + '</div>';
-      })()}</div>
-
-      <div class="home-activity-line">
-        <span>${recent ? '<b>Letzte Änderung:</b> '+esc(recent.desc) : 'Noch keine Änderungen protokolliert.'}</span>
-        <button class="btn ghost small" onclick="switchTab('verlauf')">Aktivität</button>
-      </div>
-    </div>`;
+  document.getElementById('page-uebersicht').innerHTML = renderHomeDashboard(route, tot, recent);
 }
 function toggleSnapshots(){
   const el = document.getElementById('snapshotList');
@@ -2128,20 +2054,46 @@ function logRow(e){
     ${e.undo && !e.undone ? `<button class="btn ghost small" onclick="revertEntry('${e.id}')" title="Diesen Schritt rückgängig machen">↩︎</button>` : ''}
   </div>`;
 }
+function renderBackupTools(){
+  const snaps = getSnapshots();
+  return `
+    <div class="card backup-card">
+      <h2>Datensicherung</h2>
+      <p class="hint" style="margin-top:0">Export, Import und automatische Sicherungen bleiben lokal, bis du bewusst speicherst oder synchronisierst. Alte Sicherungen werden beim Öffnen zuerst nur auf diesem Gerät geladen.</p>
+      <div class="backup-actions">
+        <button class="btn primary" onclick="exportData()">Export</button>
+        <button class="btn" onclick="document.getElementById('importFile').click()">Import</button>
+        ${snaps.length ? '<button class="btn ghost" onclick="toggleSnapshots()">Sicherungen</button>' : ''}
+      </div>
+      <input type="file" id="importFile" accept=".json,application/json" style="display:none" onchange="importData(event)">
+    </div>
+    <div id="snapshotList" style="display:none">
+      ${snaps.length ? `
+        <div class="card">
+          <h2>Automatische Sicherungen</h2>
+          ${snaps.map((s,i)=>({s,i})).reverse().map(({s,i})=>`
+            <div class="backup-snapshot">
+              <span class="k">${new Date(s.ts).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})} ${new Date(s.ts).toLocaleTimeString('de-DE',{hour:'2-digit',minute:'2-digit'})}</span>
+              <span class="v">${esc(s.reason)} <button class="btn ghost small" onclick="restoreSnapshot(${i})">Lokal öffnen</button></span>
+            </div>`).join('')}
+        </div>` : ''}
+    </div>`;
+}
 function renderLog(){
   const entries = [...(state.log||[])].reverse().slice(0,100);
   const me = whoami();
   document.getElementById('page-verlauf').innerHTML = sectionBackButton() + `
     <div class="card">
-      <h2>🙋 Wer bist du?</h2>
+      <h2>Profil</h2>
       <div class="chips">${state.crew.map(c=>`<span class="chip${me===c.id?' on':''}" style="--c:${c.color}" onclick="setWhoami('${c.id}')"><span class="dot"></span>${esc(c.name)}</span>`).join('')}</div>
       <div class="hint">Wird nur auf diesem Gerät gespeichert — damit der Verlauf weiß, wer was ändert.</div>
     </div>
+    ${renderBackupTools()}
     <div class="card">
-      <h2>🕘 Verlauf</h2>
+      <h2>Verlauf</h2>
       ${entries.length===0 ? '<p class="hint" style="margin:0">Noch keine Änderungen protokolliert — ab jetzt wird alles hier festgehalten.</p>' : entries.map(logRow).join('')}
       ${(state.log||[]).length>100 ? '<p class="hint">Nur die letzten 100 Einträge werden angezeigt (gespeichert: max. 150).</p>' : ''}
-      <div class="hint">↩︎ macht genau diesen einen Schritt rückgängig — auch Schritte von anderen. Für größere Sprünge: Sicherungen in der Übersicht.</div>
+      <div class="hint">↩︎ macht genau diesen einen Schritt rückgängig — auch Schritte von anderen. Für größere Sprünge: Sicherungen in diesem Bereich.</div>
     </div>`;
 }
 
@@ -2209,13 +2161,11 @@ window.addEventListener('storage', e=>{
         setSyncStatus('localOnly');
         toast('Lokale Sicherung aus anderem Tab übernommen — nicht synchronisiert');
       } else {
-        toast('Daten aus anderem Tab übernommen 🔄');
+        toast('Daten aus anderem Tab übernommen');
       }
     }catch(err){ console.warn('Tab-Sync fehlgeschlagen', err); }
   }
 });
-// Countdown minütlich aktualisieren (nur Übersicht neu rendern, wenn aktiv)
-setInterval(()=>{ if(activeTab==='uebersicht') renderOverview(); }, 60000);
 // Cloud-Sync starten (falls konfiguriert): sofort, alle 25 s, bei Fokus & online
 if(CLOUD_URL){
   syncNow();
