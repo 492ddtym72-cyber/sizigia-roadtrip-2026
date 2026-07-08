@@ -437,6 +437,11 @@ a.maplink:hover{text-decoration:underline}
 .spot .desc{font-size:13.5px;color:var(--muted);margin:5px 0 9px}
 .spot .foot{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .votecount{margin-left:auto;font-size:13px;color:var(--muted);font-weight:700}
+.spot-flash{animation:spotflash 1.6s ease}
+@keyframes spotflash{
+  0%,100%{background:rgba(255,255,255,.028);border-color:var(--border)}
+  25%{background:color-mix(in srgb,var(--sun) 18%, transparent);border-color:var(--sun)}
+}
 
 /* ---------- Budget ---------- */
 .balance{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:14.5px}
@@ -460,6 +465,8 @@ a.maplink:hover{text-decoration:underline}
   position:fixed;inset:0;background:rgba(4,5,10,.72);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
   z-index:100;display:none;align-items:flex-end;justify-content:center;padding:0;
 }
+/* Spot-Info-Popup (#modalBg) muss auch über der großen Karte (#mapModalBg) liegen */
+#mapModalBg{z-index:90}
 .modal-bg.open{display:flex}
 @media(min-width:640px){.modal-bg{align-items:center;padding:20px}}
 .modal{
@@ -1545,8 +1552,12 @@ document.addEventListener('wheel', e=>{
 }, {passive:false});
 
 // Klick-Infos: Labels werden pro Render gesammelt, Marker referenzieren den Index
-let mapInfoLabels=[];
-function mapInfo(i){ toast(mapInfoLabels[i]); }
+let mapInfoItems=[];
+function mapInfo(i){
+  const item = mapInfoItems[i];
+  if(item && typeof item==='object' && item.type==='spot'){ openSpotInfo(item.id); return; }
+  toast(item);
+}
 function lineSvg(pts, color, {dashed, glow, faint}={}){
   if(pts.length<2) return '';
   const d='M'+pts.map(p=>{const q=project(p.lat,p.lng);return q.x.toFixed(1)+','+q.y.toFixed(1);}).join('L');
@@ -1559,7 +1570,7 @@ function lineSvg(pts, color, {dashed, glow, faint}={}){
 }
 // Marker: Formen in Bildschirm-px, Gruppe skaliert mit MU/MZ ⇒ konstante Größe
 function markerSvg(p, {num, color, kind, label}){
-  const q=project(p.lat,p.lng), idx=mapInfoLabels.push(label)-1;
+  const q=project(p.lat,p.lng), idx=mapInfoItems.push(label)-1;
   const on=`class="map-pt" onclick="mapInfo(${idx})" transform="translate(${q.x.toFixed(1)} ${q.y.toFixed(1)}) scale(${(MU/MZ).toFixed(4)})"`;
   if(kind==='start') return `<g ${on}><circle r="7" fill="#fff" stroke="${color}" stroke-width="3.5"/></g>`;
   if(kind==='dot')   return `<g ${on}><circle r="5" fill="${color}" stroke="#fffef8" stroke-width="1.6"/></g>`;
@@ -1587,7 +1598,7 @@ function spotMarkers(sorted, withNum){
   return sorted.map((sp,i)=>{
     const p=pointOf(sp, sp.name);
     if(!p) return '';
-    return markerSvg(p,{num:i+1, color:'#ff6b4a', kind:'spot', label:'📍 '+sp.name+' ('+sp.votes.length+' ⭐)'});
+    return markerSvg(p,{num:i+1, color:'#ff6b4a', kind:'spot', label:{type:'spot', id:sp.id}});
   }).join('');
 }
 function routeViewInit(){
@@ -2111,7 +2122,7 @@ function renderSpots(){
       <h2>📍 Spot-Ideen unterwegs <span class="spacer"></span><button class="btn small" onclick="addSpot()">+ Spot</button></h2>
       <p class="hint" style="margin:0 0 12px">Tippe auf deinen Namen bei einem Spot, um dafür zu stimmen. Sortiert nach Stimmen.</p>
       ${spots.map((sp,i)=>`
-        <div class="spot">
+        <div class="spot" id="spot-${sp.id}">
           <div class="head">
             <span class="spotnum"><b>${i+1}</b></span>
             <h3>${esc(sp.name)}</h3>
@@ -2131,6 +2142,43 @@ function renderSpots(){
           </div>
         </div>`).join('')}
     </div>`;
+}
+// Popup beim Antippen eines Spot-Markers auf der Karte: Info, Google-Maps-Link,
+// Sprung zur Spot-Liste. Nutzt das generische #modalBg/#modalBox (modalCtx=null,
+// da kein Formular — modalSave() wird hier nie aufgerufen).
+function openSpotInfo(id){
+  const sp = state.spots.find(s=>s.id===id);
+  if(!sp){ toast('Dieser Spot wurde entfernt'); return; }
+  const voters = sp.votes.map(cid=>state.crew.find(c=>c.id===cid)).filter(Boolean);
+  const mapsUrl = sp.link ? sp.link
+    : (sp.lat!=null && sp.lng!=null) ? `https://www.google.com/maps?q=${sp.lat},${sp.lng}`
+    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(sp.name + (sp.region?', '+sp.region:''))}`;
+  modalCtx = null;
+  document.getElementById('modalBox').innerHTML = `
+    <h3>📍 ${esc(sp.name)}</h3>
+    ${sp.region?`<div style="font-size:12px;color:var(--sun);letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin:-10px 0 12px">${esc(sp.region)}</div>`:''}
+    ${sp.desc?`<p style="font-size:13.5px;color:var(--muted);margin:0 0 12px">${esc(sp.desc)}</p>`:''}
+    ${sp.detour?`<p class="hint" style="margin:0 0 12px">🛣️ ${esc(sp.detour)}</p>`:''}
+    <div class="foot" style="margin-bottom:4px">
+      <div class="chips">${voters.length ? voters.map(c=>`<span class="chip on" style="--c:${c.color}"><span class="dot"></span>${esc(c.name)}</span>`).join('') : '<span class="hint" style="margin:0">Noch keine Stimmen</span>'}</div>
+      <span class="votecount">${sp.votes.length} ⭐</span>
+    </div>
+    <div class="btnrow"><a class="btn ghost" href="${esc(mapsUrl)}" target="_blank" rel="noopener">🗺️ Google Maps öffnen</a></div>
+    <div class="btnrow">
+      <button class="btn ghost" onclick="closeModal()">Schließen</button>
+      <button class="btn primary" onclick="goToSpotInList('${sp.id}')">Zur Spot-Liste</button>
+    </div>`;
+  document.getElementById('modalBg').classList.add('open');
+}
+function goToSpotInList(id){
+  closeModal();
+  closeBigMap();
+  switchTab('spots');
+  const el = document.getElementById('spot-'+id);
+  if(!el) return;
+  el.scrollIntoView({behavior:'smooth', block:'center'});
+  el.classList.add('spot-flash');
+  setTimeout(()=>el.classList.remove('spot-flash'), 1600);
 }
 function toggleVote(spotId, crewId){
   const sp = state.spots.find(s=>s.id===spotId);
@@ -2837,7 +2885,7 @@ function renderLog(){
    RENDER-ROOT
    ============================================================ */
 function renderAll(){
-  mapInfoLabels.length = 0;
+  mapInfoItems.length = 0;
   // Halb getippte Eingaben (Add-Felder, Budget-Formular) über Re-Renders retten
   const keepVals = {}, offChips = [];
   document.querySelectorAll('input[id], select[id], textarea[id]').forEach(el=>{
