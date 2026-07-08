@@ -434,27 +434,22 @@ textarea{resize:vertical;min-height:70px}
 a.maplink{color:var(--sky);font-size:12.5px;text-decoration:none}
 a.maplink:hover{text-decoration:underline}
 
-/* ---------- Festival Line-up ---------- */
-.lineup-stage{border:1px solid var(--border);border-left:3px solid var(--c,var(--sun));border-radius:14px;padding:14px;margin-bottom:10px;background:rgba(255,255,255,.028)}
-.lineup-stage-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.lineup-stage h3{font-family:var(--font-display);letter-spacing:.05em;font-size:16px;color:var(--c,var(--sun))}
-.lineup-stage .genre{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin:1px 0 11px}
-.lineup-schedule-btn{
-  margin-left:auto;display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;
-  background:color-mix(in srgb,var(--c,var(--sun)) 16%,transparent);border:1px solid color-mix(in srgb,var(--c,var(--sun)) 45%,transparent);
-  color:var(--c,var(--sun));font-size:12px;font-weight:700;cursor:pointer;
-}
-.lineup-schedule-btn:hover{background:color-mix(in srgb,var(--c,var(--sun)) 26%,transparent)}
-.lineup-tags{display:flex;flex-wrap:wrap;gap:6px}
-.lineup-tag{padding:4px 10px;border-radius:999px;background:var(--card);border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--text);max-width:100%}
+/* ---------- Festival Line-up: Zeitplan je Bühne, aufklappbar (<details>) ---------- */
+.lineup-stage{border:1px solid var(--border);border-left:3px solid var(--c,var(--sun));border-radius:14px;margin-bottom:10px;background:rgba(255,255,255,.028);overflow:hidden}
+.lineup-stage summary{list-style:none;cursor:pointer;padding:14px;user-select:none}
+.lineup-stage summary::-webkit-details-marker{display:none}
+.lineup-stage-toprow{display:flex;align-items:center;gap:9px}
+.lineup-stage-chevron{flex:0 0 auto;color:var(--c,var(--sun));font-size:12px;transition:transform .18s}
+.lineup-stage[open] .lineup-stage-chevron{transform:rotate(90deg)}
+.lineup-stage h3{font-family:var(--font-display);letter-spacing:.05em;font-size:16px;color:var(--c,var(--sun));margin:0}
+.lineup-stage-meta{margin-left:auto;font-size:11px;color:var(--faint);font-weight:700;white-space:nowrap;padding-left:8px}
+.lineup-stage .genre{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.09em;font-weight:700;margin:5px 0 0 21px}
 .ig-link{display:inline-flex;margin-left:5px;color:var(--muted);vertical-align:-2px}
 .ig-link:hover{color:var(--sky)}
 .ig-link svg{width:12px;height:12px;display:block}
-/* Zeitplan-Popup */
-.tt-list{max-height:58vh;overflow-y:auto;margin:0 -4px 14px;padding:2px 4px}
-.tt-day{margin-bottom:15px}
-.tt-day:last-child{margin-bottom:0}
-.tt-day-head{font-family:var(--font-display);font-size:13px;letter-spacing:.09em;text-transform:uppercase;color:var(--sun);font-weight:800;margin-bottom:6px;display:flex;align-items:baseline;gap:8px}
+.tt-list{padding:0 14px 14px;border-top:1px solid rgba(255,255,255,.06)}
+.tt-day{margin-top:14px}
+.tt-day-head{font-family:var(--font-display);font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--sun);font-weight:800;margin-bottom:5px;display:flex;align-items:baseline;gap:8px}
 .tt-day-head span{color:var(--faint);font-size:11px;letter-spacing:.02em;text-transform:none;font-weight:600}
 .tt-row{display:flex;gap:12px;padding:4px 0;font-size:13.5px;border-bottom:1px solid rgba(255,255,255,.045)}
 .tt-time{flex:0 0 48px;color:var(--muted);font-variant-numeric:tabular-nums;font-weight:700}
@@ -575,6 +570,8 @@ a.maplink:hover{text-decoration:underline}
   *{color:#000!important;background:#fff!important;border-color:#bbb!important;box-shadow:none!important;animation:none!important}
   .title h1,.count-cell b{-webkit-text-fill-color:#000}
   .card,.stage,.spot,.lineup-stage{break-inside:avoid;border:1px solid #ccc}
+  .lineup-stage .tt-list{display:block!important}
+  .lineup-stage-chevron{display:none}
   .progress i,.checkbox.done{background:#333!important}
   .item.done .txt{color:#888!important}
 }
@@ -3141,11 +3138,32 @@ const STAGE_SCHEDULES = {
     ]},
   ],
 };
-function openStageSchedule(name){
-  const days = STAGE_SCHEDULES[name];
-  if(!days){ toast('Für diese Bühne ist noch kein Zeitplan veröffentlicht'); return; }
-  modalCtx = null;
-  const rows = days.map(d=>`
+// Ein flacher Name→Instagram-Lookup über alle Bühnen (manche Acts spielen mehrfach,
+// z. B. Emok auf Origen und Ombra Sonora — case-insensitive, damit beide Schreibweisen greifen).
+const ALL_STAGE_IG = {};
+Object.values(LINEUP_IG).forEach(stageMap=>{
+  Object.entries(stageMap).forEach(([name,urls])=>{
+    const k = name.trim().toLowerCase();
+    const set = ALL_STAGE_IG[k] || (ALL_STAGE_IG[k] = new Set());
+    urls.forEach(u=>set.add(u));
+  });
+});
+Object.keys(ALL_STAGE_IG).forEach(k=>{ ALL_STAGE_IG[k] = [...ALL_STAGE_IG[k]]; });
+// Instagram-Link(s) für eine Timetable-Zeile ermitteln: erst als Ganzes probieren
+// (deckt gespeicherte b2b/f2f-Kombis ab), sonst in "X f2f Y"/"X b2b Y"/"X & Y" auftrennen
+// und jeden Namen einzeln nachschlagen. Anhänge wie "(Downtempo)" fürs Matching ignorieren.
+function scheduleActLinks(actText){
+  const clean = actText.replace(/\s*\([^)]*\)\s*$/,'').trim();
+  const whole = ALL_STAGE_IG[clean.toLowerCase()];
+  if(whole) return whole;
+  const parts = clean.split(/\s+(?:f2f|b2b|&)\s+/i).map(p=>p.trim()).filter(Boolean);
+  if(parts.length<2) return [];
+  const out=[];
+  parts.forEach(p=>{ const u=ALL_STAGE_IG[p.toLowerCase()]; if(u) out.push(...u); });
+  return out;
+}
+function renderStageTimetable(days){
+  return `<div class="tt-list">${days.map(d=>`
     <div class="tt-day">
       <div class="tt-day-head">${esc(d.day)} <span>${esc(d.date)}</span></div>
       ${d.sets.map(s=>{
@@ -3153,36 +3171,35 @@ function openStageSchedule(name){
         if(s[0]==='surprise') return `<div class="tt-break">🎁 Surprise Set</div>`;
         if(s[0]==='eclipse') return `<div class="tt-eclipse">🌑 Pause für die Sonnenfinsternis</div>`;
         if(s[0]==='closing') return `<div class="tt-break">🏁 Abschluss der Bühne</div>`;
-        return `<div class="tt-row"><span class="tt-time">${esc(s[0])}</span><span class="tt-act">${esc(s[1])}</span></div>`;
+        const igs = scheduleActLinks(s[1]).map(u=>`<a href="${esc(u)}" target="_blank" rel="noopener" class="ig-link" aria-label="Instagram">${igIcon()}</a>`).join('');
+        return `<div class="tt-row"><span class="tt-time">${esc(s[0])}</span><span class="tt-act">${esc(s[1])}${igs}</span></div>`;
       }).join('')}
-    </div>`).join('');
-  document.getElementById('modalBox').innerHTML = `
-    <h3>🕐 ${esc(name)} · Zeitplan</h3>
-    <div class="tt-list">${rows}</div>
-    <div class="btnrow"><button class="btn ghost" onclick="closeModal()">Schließen</button></div>`;
-  document.getElementById('modalBg').classList.add('open');
+    </div>`).join('')}
+  </div>`;
 }
 function lineupCard(){
   const stages = Object.entries(LINEUP);
   const uniqueCount = new Set(stages.flatMap(([,v])=>v.artists.map(a=>a.trim().toLowerCase()))).size;
-  const slotCount = stages.reduce((n,[,v])=>n+v.artists.length,0);
   return `<div class="card">
     <h2>🎶 Line-up</h2>
     <p class="hint" style="margin:0 0 14px">${uniqueCount} bestätigte Artists · ${stages.length} Bühnen</p>
-    ${stages.map(([name,v])=>`
-      <div class="lineup-stage" style="--c:${v.color}">
-        <div class="lineup-stage-head">
-          <h3>${esc(name)}</h3>
-          ${STAGE_SCHEDULES[name]?`<button type="button" class="lineup-schedule-btn" onclick="openStageSchedule('${name}')">🕐 Zeitplan</button>`:''}
-        </div>
-        ${v.genre?`<div class="genre">${esc(v.genre)}</div>`:''}
-        <div class="lineup-tags">${v.artists.map(a=>{
-          const links = (LINEUP_IG[name]||{})[a] || [];
-          const igs = links.map(u=>`<a href="${esc(u)}" target="_blank" rel="noopener" class="ig-link" aria-label="Instagram von ${esc(a)}">${igIcon()}</a>`).join('');
-          return `<span class="lineup-tag">${esc(a)}${igs}</span>`;
-        }).join('')}</div>
-      </div>`).join('')}
-    <div class="hint">Stand 08.07.2026 laut offizieller Sizigia-Seite und FestivalMates: ${uniqueCount} bestätigte Artists insgesamt (${slotCount} Bühnen-Nennungen, einige Acts spielen auf mehreren Bühnen). „🕐 Zeitplan" bei jeder Bühne zeigt die offiziellen Timetables.</div>
+    ${stages.map(([name,v])=>{
+      const days = STAGE_SCHEDULES[name];
+      const setCount = days ? days.reduce((n,d)=>n+d.sets.filter(s=>/^\d/.test(s[0])).length,0) : 0;
+      return `
+      <details class="lineup-stage" style="--c:${v.color}" open>
+        <summary>
+          <div class="lineup-stage-toprow">
+            <span class="lineup-stage-chevron" aria-hidden="true">▸</span>
+            <h3>${esc(name)}</h3>
+            <span class="lineup-stage-meta">${days?`${setCount} Sets · ${days.length} Tage`:`${v.artists.length} Artists`}</span>
+          </div>
+          ${v.genre?`<div class="genre">${esc(v.genre)}</div>`:''}
+        </summary>
+        ${days ? renderStageTimetable(days) : `<p class="hint" style="margin:0 14px 14px">Zeitplan für diese Bühne noch nicht veröffentlicht.</p>`}
+      </details>`;
+    }).join('')}
+    <div class="hint">Zeiten laut offiziellen Bühnen-Timetables (Stand 08.07.2026). Bühne antippen zum Auf-/Zuklappen. Instagram-Symbol nur bei bestätigtem Profil.</div>
   </div>`;
 }
 function renderFestival(){
