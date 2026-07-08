@@ -219,6 +219,13 @@ nav{display:none}
 .home-reminder-tile b{justify-self:start;text-align:left;font-size:17px}
 .home-reminder-tile span{position:relative;z-index:2;color:var(--muted);font-size:12.5px;line-height:1.35}
 .home-reminder-head{position:relative;z-index:2;display:flex;align-items:center;gap:9px;width:100%}
+.hr-icon{
+  display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;
+  width:32px;height:32px;border-radius:10px;
+  background:linear-gradient(135deg,rgba(255,138,107,.4),rgba(142,168,255,.35));
+  border:1px solid rgba(255,255,255,.2);
+}
+.hr-icon svg{width:17px;height:17px;stroke:#fff;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .home-reminder-badges{position:relative;z-index:2;display:flex;gap:7px;flex-wrap:wrap}
 .hr-badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px 4px 8px;border-radius:999px;font-size:12px;font-weight:800;border:1px solid transparent}
 .hr-badge svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}
@@ -1888,8 +1895,8 @@ function renderReminderHomeTile(){
   const total = c.reminders + c.polls;
   return `
     <button class="home-tile home-reminder-tile" onclick="switchTab('reminder')" aria-label="Erinnerungen und Umfragen öffnen">
-      <span class="home-watermark" aria-hidden="true">${homeIconSvg('bell')}</span>
       <div class="home-reminder-head">
+        <span class="hr-icon" aria-hidden="true">${homeIconSvg('bell')}</span>
         <b>Erinnerungen &amp; Umfragen</b>
         <span class="home-count-pill ${total?'active':'clear'}">${total ? total : homeIconSvg('check')}</span>
       </div>
