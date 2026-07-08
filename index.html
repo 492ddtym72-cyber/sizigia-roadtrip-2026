@@ -358,7 +358,7 @@ textarea{resize:vertical;min-height:70px}
 @media(min-width:640px){.route-picker{grid-template-columns:repeat(3,1fr)}}
 .route-opt{
   border:1px solid var(--border);border-radius:var(--radius);padding:14px;cursor:pointer;
-  background:var(--card);transition:all .2s;position:relative;
+  background:var(--card);transition:all .2s;position:relative;color:var(--text);font:inherit;text-align:left;width:100%;
 }
 .route-opt:hover{border-color:var(--border-strong)}
 .route-opt.sel{border-color:var(--sun);background:rgba(255,178,87,.07);box-shadow:0 0 24px -8px rgba(255,178,87,.4)}
@@ -367,6 +367,22 @@ textarea{resize:vertical;min-height:70px}
 .route-opt p{font-size:12.5px;color:var(--muted)}
 .route-opt .star{position:absolute;top:10px;right:12px;font-size:15px;opacity:.25}
 .route-opt.sel .star{opacity:1}
+.route-opt.custom .star{right:64px}
+.route-actions{position:absolute;right:9px;top:8px;display:flex;gap:4px;z-index:3}
+.route-action{
+  width:25px;height:25px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.045);
+  color:var(--muted);font-size:12px;font-weight:850;cursor:pointer;
+}
+.route-action:hover{color:var(--text);border-color:var(--border-strong);background:rgba(255,255,255,.08)}
+.route-create{
+  border-style:dashed;display:flex;flex-direction:column;justify-content:center;min-height:138px;
+  background:rgba(255,255,255,.032);
+}
+.route-create .emoji{color:var(--sun);font-size:24px;font-weight:900;line-height:1}
+.route-empty{
+  border:1px dashed var(--border-strong);border-radius:14px;padding:18px;text-align:center;color:var(--muted);
+  background:rgba(255,255,255,.025);
+}
 .stage{
   position:relative;padding:12px 12px 12px 34px;border:1px solid var(--border);border-radius:14px;
   background:rgba(255,255,255,.028);margin-bottom:10px;
@@ -754,7 +770,8 @@ function migrate(s){
     if(s[k] === undefined) s[k] = def[k];
   }
   // Verschachtelte Pflicht-Arrays normalisieren (ebenfalls Firebase-Schutz)
-  (s.routes||[]).forEach(r=>{ r.stages = r.stages || []; });
+  (s.routes||[]).forEach(r=>{ r.stages = r.stages || []; r.custom = !!r.custom; });
+  if(!s.routes.find(r=>r.id===s.selectedRoute)) s.selectedRoute = s.routes[0]?.id || def.selectedRoute;
   (s.spots||[]).forEach(sp=>{ sp.votes = sp.votes || []; });
   (s.vehicles||[]).forEach(v=>{ v.drivers=v.drivers||[]; v.passengers=v.passengers||[]; v.docs=v.docs||[]; });
   (s.packing||[]).forEach(c=>{ c.items = c.items || []; });
@@ -1093,6 +1110,9 @@ function applyRevert(u){
       ['date','from','to','km','time','stay','note','link'].forEach(k=>s[k]=u.prev[k]);
       if(u.prev.lat!=null){ s.lat=u.prev.lat; s.lng=u.prev.lng; } else { delete s.lat; delete s.lng; } break; }
     case 'stageMove':{ const l=getStageList(u.ref); if(u.from<0||u.from>=l.length) throw 0; const [s]=l.splice(u.from,1); l.splice(u.to,0,s); break; }
+    case 'routeAdd':  { const i=state.routes.findIndex(r=>r.id===u.id); if(i<0) throw 0; state.routes.splice(i,1); state.selectedRoute = u.prevSelected || state.routes[0]?.id; break; }
+    case 'routeDel':  state.routes.splice(Math.min(u.idx,state.routes.length),0,u.route); state.selectedRoute = u.prevSelected || u.route.id; break;
+    case 'routeEdit': Object.assign(need(state.routes.find(r=>r.id===u.id)), u.prev); break;
     case 'routeSel': state.selectedRoute = u.prev; break;
     case 'vote':     { const sp=need(state.spots.find(s=>s.id===u.spotId)); const i=sp.votes.indexOf(u.crewId);
       if(u.prev && i<0) sp.votes.push(u.crewId); if(!u.prev && i>=0) sp.votes.splice(i,1); break; }
@@ -1258,6 +1278,7 @@ function routePts(stages){
   return pts;
 }
 const ROUTE_COLORS={'r-kueste':'#54c8ff','r-alpen':'#5fd4a8','r-mix':'#ff8a5c'};
+function routeColor(route){ return route.color || ROUTE_COLORS[route.id] || '#8ea8ff'; }
 let mapLayers={alle:false, rueck:true, spots:true};
 function toggleMapLayer(k){ mapLayers[k]=!mapLayers[k]; renderRoute(); }
 function spotMarkers(sorted, withNum){
@@ -1271,7 +1292,7 @@ function buildRouteMap(){
   const sel=state.routes.find(r=>r.id===state.selectedRoute);
   let inner='';
   if(mapLayers.alle) state.routes.filter(r=>r.id!==sel.id).forEach(r=>{
-    inner+=lineSvg(routePts(r.stages), ROUTE_COLORS[r.id]||'#888', {dashed:true, faint:true});
+    inner+=lineSvg(routePts(r.stages), routeColor(r), {dashed:true, faint:true});
   });
   if(mapLayers.spots) inner+=spotMarkers(sortedSpots(), false);
   if(mapLayers.rueck){
@@ -1515,6 +1536,54 @@ function getStageList(ref){
   if(ref==='return') return state.returnStages;
   return state.routes.find(r=>r.id===ref).stages;
 }
+function routeFields(r={}){
+  return [
+    {key:'name',label:'Name der Route',value:r.name||'',placeholder:'z. B. Pyrenäen frei geplant'},
+    {key:'desc',label:'Kurzbeschreibung',type:'textarea',value:r.desc||'',placeholder:'z. B. Eigene Idee mit Stopps, Campingplätzen und Pausen.'},
+    {key:'emoji',label:'Symbol',type:'select',value:r.emoji||'🧭',options:[
+      {value:'🧭',label:'Kompass'},
+      {value:'🌄',label:'Berge & Meer'},
+      {value:'🌊',label:'Küste'},
+      {value:'🏔️',label:'Alpen'},
+      {value:'🛣️',label:'Straße'},
+      {value:'✨',label:'Eigene Idee'},
+    ]},
+  ];
+}
+function addRoute(){
+  openModal('Eigene Route anlegen', routeFields(), v=>{
+    const name = v.name.trim();
+    if(!name){ toast('Name der Route fehlt'); return; }
+    const prevSelected = state.selectedRoute;
+    const route = {id:uid(), emoji:v.emoji||'🧭', name, desc:v.desc.trim()||'Eigene Route von Grund auf planen.', stages:[], custom:true};
+    state.routes.push(route);
+    state.selectedRoute = route.id;
+    logChange('hat eigene Route „'+route.name+'" angelegt', {t:'routeAdd', id:route.id, prevSelected});
+  });
+}
+function editRoute(id){
+  const route = state.routes.find(r=>r.id===id);
+  if(!route || !route.custom){ toast('Nur eigene Routen können hier bearbeitet werden'); return; }
+  openModal('Route bearbeiten', routeFields(route), v=>{
+    const prev = {name:route.name, desc:route.desc, emoji:route.emoji};
+    route.name = v.name.trim() || route.name;
+    route.desc = v.desc.trim() || 'Eigene Route von Grund auf planen.';
+    route.emoji = v.emoji || '🧭';
+    logChange('hat eigene Route „'+route.name+'" bearbeitet', {t:'routeEdit', id, prev});
+  }, ()=>deleteRoute(id));
+}
+function deleteRoute(id){
+  const route = state.routes.find(r=>r.id===id);
+  if(!route || !route.custom){ toast('Nur eigene Routen können gelöscht werden'); return; }
+  const idx = state.routes.findIndex(r=>r.id===id);
+  const prevSelected = state.selectedRoute;
+  logChange('hat eigene Route „'+route.name+'" gelöscht', {t:'routeDel', route:{...route, stages:route.stages.map(s=>({...s}))}, idx, prevSelected});
+  state.routes.splice(idx,1);
+  if(state.selectedRoute === id) state.selectedRoute = state.routes[0]?.id || '';
+}
+function deleteRouteWithUndo(id){
+  withUndo('Route gelöscht', ()=>deleteRoute(id));
+}
 function renderRoute(){
   const route = state.routes.find(r=>r.id===state.selectedRoute);
   document.getElementById('page-route').innerHTML = sectionBackButton() + `
@@ -1531,26 +1600,39 @@ function renderRoute(){
     </div>
 
     <div class="card">
-      <h2>🧭 Routen-Option wählen</h2>
+      <h2>🧭 Routen-Option wählen <span class="spacer"></span><button class="btn small" onclick="addRoute()">+ Eigene Route</button></h2>
       <div class="route-picker">
         ${state.routes.map(r=>{
           const t = routeTotals(r.stages);
           return `
-          <div class="route-opt${r.id===state.selectedRoute?' sel':''}" onclick="selectRoute('${r.id}')">
+          <button class="route-opt${r.id===state.selectedRoute?' sel':''}${r.custom?' custom':''}" onclick="selectRoute('${r.id}')">
             <span class="star">★</span>
+            ${r.custom?`<span class="route-actions">
+              <span class="route-action" onclick="event.stopPropagation();editRoute('${r.id}')" title="Route bearbeiten">✎</span>
+              <span class="route-action" onclick="event.stopPropagation();deleteRouteWithUndo('${r.id}')" title="Route löschen">×</span>
+            </span>`:''}
             <span class="emoji">${r.emoji}</span>
             <h3>${esc(r.name)}</h3>
             <p>${esc(r.desc)}</p>
-            <p class="routetotal">ca. ${t.km} km · ~${t.hTxt} Std Fahrzeit</p>
-          </div>`;}).join('')}
+            <p class="routetotal">${r.stages.length ? `ca. ${t.km} km · ~${t.hTxt} Std Fahrzeit` : 'Noch keine Etappen'}</p>
+          </button>`;}).join('')}
+        <button class="route-opt route-create" onclick="addRoute()">
+          <span class="emoji">+</span>
+          <h3>Eigene Route</h3>
+          <p>Von Grund auf planen und danach Etappen hinzufügen.</p>
+        </button>
       </div>
-      <div class="hint">Die gewählte Route ist euer Favorit — alle drei bleiben aber erhalten und editierbar.</div>
+      <div class="hint">Die ersten Routen sind Vorschläge. Eigene Routen könnt ihr von Grund auf planen, auswählen und wieder löschen.</div>
     </div>
 
     <div class="card">
       <h2>${route.emoji} Hinweg: ${esc(route.name)} <span class="spacer"></span><button class="btn small" onclick="addStage('${route.id}')">+ Etappe</button></h2>
       <div>${route.stages.map((s,i)=>renderStage(s, route.id, i, route.stages.length)).join('')}</div>
-      ${route.stages.length===0?'<p class="hint">Noch keine Etappen — füge welche hinzu.</p>':
+      ${route.stages.length===0?`<div class="route-empty">
+        <b>Noch keine Etappen</b>
+        <p class="hint" style="margin:5px 0 12px">Starte mit dem ersten Abschnitt, danach funktionieren Karte, Gesamtstrecke und Bearbeitung wie bei den Vorschlägen.</p>
+        <button class="btn primary" onclick="addStage('${route.id}')">Erste Etappe anlegen</button>
+      </div>`:
         `<div class="routetotal">Gesamt Hinweg: ca. ${routeTotals(route.stages).km} km · ~${routeTotals(route.stages).hTxt} Std reine Fahrzeit</div>`}
     </div>
 
