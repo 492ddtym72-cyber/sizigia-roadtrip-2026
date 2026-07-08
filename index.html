@@ -435,6 +435,13 @@ textarea{resize:vertical;min-height:70px}
 a.maplink{color:var(--sky);font-size:12.5px;text-decoration:none}
 a.maplink:hover{text-decoration:underline}
 
+/* ---------- Festival Line-up ---------- */
+.lineup-stage{border:1px solid var(--border);border-left:3px solid var(--c,var(--sun));border-radius:14px;padding:14px;margin-bottom:10px;background:rgba(255,255,255,.028)}
+.lineup-stage h3{font-family:var(--font-display);letter-spacing:.05em;font-size:16px;color:var(--c,var(--sun))}
+.lineup-stage .genre{font-size:11.5px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;font-weight:700;margin:1px 0 11px}
+.lineup-tags{display:flex;flex-wrap:wrap;gap:6px}
+.lineup-tag{padding:4px 10px;border-radius:999px;background:var(--card);border:1px solid var(--border);font-size:12px;font-weight:600;color:var(--text);max-width:100%}
+
 /* ---------- Spots ---------- */
 .spot{border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.028);padding:14px;margin-bottom:10px}
 .spot .head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
@@ -547,7 +554,7 @@ a.maplink:hover{text-decoration:underline}
   .wrap{max-width:none;padding:0}
   *{color:#000!important;background:#fff!important;border-color:#bbb!important;box-shadow:none!important;animation:none!important}
   .title h1,.count-cell b{-webkit-text-fill-color:#000}
-  .card,.stage,.spot{break-inside:avoid;border:1px solid #ccc}
+  .card,.stage,.spot,.lineup-stage{break-inside:avoid;border:1px solid #ccc}
   .progress i,.checkbox.done{background:#333!important}
   .item.done .txt{color:#888!important}
 }
@@ -2828,8 +2835,56 @@ function deleteExpense(id){
 /* ============================================================
    FESTIVAL
    ============================================================ */
+// Line-up nach Bühne — statische Referenzdaten (Stand 08.07.2026, offizielle
+// Sizigia-Seite & FestivalMates), bewusst kein state (keine Nutzer-Edits/Sync
+// nötig, hält den Cloud-Payload klein). Manche Acts spielen auf >1 Bühne,
+// daher Gesamtzahl der Nennungen > Zahl eindeutiger Artists.
+const LINEUP = {
+  'Origen': {genre:'Psychedelic Trance', color:'#ff8a5c', artists:[
+    "3LMT", "1200MIC by Riktam", "ACE VENTURA", "Ametrina", "Amplify", "Anny", "Anoebis", "Arjuna", "ASTRIX",
+    "Atbloom", "Atmos", "Avalon", "Beyond b2b Danger", "Bumbling Loons", "Cesar Mimesis", "Chaac", "Cronocops",
+    "Daksinamurti", "Dekel", "Dickster", "Digital Hippie", "Djantrix", "E-Clip", "Emok", "Etnica",
+    "Farebi Jalebi", "Filteria", "Freedom Fighters", "Fungus Funk", "Giuseppe", "GMS", "Goa Jonas", "Gorovich",
+    "Green Nuns Of The Revolution by Dick Trevor", "Hypnoise", "Hypnoxock", "IAMAI", "Ingrained Instincts",
+    "Insane Creatures", "James Monro", "Khromata", "Killerwatts", "Kokmok", "Kulle", "Liquid Soul", "Lunatica",
+    "Menog", "Originz", "Out Of Orbit", "Phaxe", "Pleiadians", "Prana", "Psygroo", "Psynonima", "Rajax",
+    "Regan", "Render", "RISING DUST", "Ritmo", "Sator Arepo", "Shove", "Smkng Chkrs", "Starlab", "Swarup",
+    "Tristan", "Tsuyoshi Suzuki", "Vegan Cake"
+  ]},
+  'Ombra Sonora': {genre:'', color:'#54c8ff', artists:[
+    "Aaron King", "Art Of Trance", "Axon", "Aynix.x", "Bioterranean", "Bitz Pliz", "BOUNDLESS", "Cajarana",
+    "Captain Pastek", "CELLI", "Emiri", "Emok", "Evil Oil Man", "Extrawelt", "Fernanda Pistelli", "Golanski",
+    "Hellquist", "Iamai", "Ivana", "Jedidiah", "JOSSIE TELCH", "Kozy", "Kromagon", "Krumelur", "Lara S",
+    "L-Xir", "Marycroft", "Merkaba", "Michael Banel", "Miles From Mars", "Mngrm", "Ne Yam", "Okapi",
+    "One Million Toys", "Ori", "raxon", "Sumiruna", "Tao Andra", "Technocalor", "TRIFORCE", "Tsu", "Union Jack",
+    "Victor Ruiz"
+  ]},
+  'Lumina': {genre:'', color:'#b18cff', artists:[
+    "AZALEH", "BAYAWAKA", "CIOZ", "CONSORZIO OCHIROSSI", "DEACON", "DEKEL", "DELA MOON", "DESERT DWELLERS",
+    "FABIAN KROOSS", "FLAVE", "FRIDA DARKO B2B ATRIC", "GRIFFIN KLOUD", "IMAGO", "I.M.D", "JAMES MONRO",
+    "JOSKO", "KALYA SCINTILLA", "KINO DOSCUN", "LO.RENZO", "MAIKY", "MENTAL", "NIXE", "NUEQ", "OLIVER KOLETZKI",
+    "PSYGROO", "PULLI", "R3NATA", "RAFAEL ARAGON", "SAHRA BASS", "SOMETHING BLUE", "TRIBONE", "UREM",
+    "YUSUF LEMONE", "WA JIMA TAPES"
+  ]},
+};
+function lineupCard(){
+  const stages = Object.entries(LINEUP);
+  const uniqueCount = new Set(stages.flatMap(([,v])=>v.artists.map(a=>a.trim().toLowerCase()))).size;
+  const slotCount = stages.reduce((n,[,v])=>n+v.artists.length,0);
+  return `<div class="card">
+    <h2>🎶 Line-up</h2>
+    <p class="hint" style="margin:0 0 14px">${uniqueCount} bestätigte Artists · ${stages.length} Bühnen</p>
+    ${stages.map(([name,v])=>`
+      <div class="lineup-stage" style="--c:${v.color}">
+        <h3>${esc(name)}</h3>
+        ${v.genre?`<div class="genre">${esc(v.genre)}</div>`:''}
+        <div class="lineup-tags">${v.artists.map(a=>`<span class="lineup-tag">${esc(a)}</span>`).join('')}</div>
+      </div>`).join('')}
+    <div class="hint">Stand 08.07.2026 laut offizieller Sizigia-Seite und FestivalMates: ${uniqueCount} bestätigte Artists insgesamt (${slotCount} Bühnen-Nennungen, einige Acts spielen auf mehreren Bühnen). Tageszeiten/Slots sind noch nicht veröffentlicht.</div>
+  </div>`;
+}
 function renderFestival(){
-  document.getElementById('page-festival').innerHTML = sectionBackButton() +
+  document.getElementById('page-festival').innerHTML = sectionBackButton() + lineupCard() +
     state.festival.map(f=>`
       <div class="card">
         <h2>${esc(f.title)} <span class="spacer"></span><button class="btn ghost small" onclick="editFestival('${f.id}')">✎</button></h2>
