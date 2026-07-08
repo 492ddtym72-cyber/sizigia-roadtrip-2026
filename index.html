@@ -437,8 +437,9 @@ a.maplink:hover{text-decoration:underline}
 .spot .desc{font-size:13.5px;color:var(--muted);margin:5px 0 9px}
 .spot .foot{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .votecount{margin-left:auto;font-size:13px;color:var(--muted);font-weight:700}
-.spot-flash{animation:spotflash 1.6s ease}
-@keyframes spotflash{
+/* Kurzes Aufblitzen, wenn ein Karten-Popup zu einem Listeneintrag springt (Spot- oder Etappen-Karte) */
+.map-flash{animation:mapflash 1.6s ease}
+@keyframes mapflash{
   0%,100%{background:rgba(255,255,255,.028);border-color:var(--border)}
   25%{background:color-mix(in srgb,var(--sun) 18%, transparent);border-color:var(--sun)}
 }
@@ -1555,7 +1556,10 @@ document.addEventListener('wheel', e=>{
 let mapInfoItems=[];
 function mapInfo(i){
   const item = mapInfoItems[i];
-  if(item && typeof item==='object' && item.type==='spot'){ openSpotInfo(item.id); return; }
+  if(item && typeof item==='object'){
+    if(item.type==='spot'){ openSpotInfo(item.id); return; }
+    if(item.type==='stage'){ openStageInfo(item.ref, item.id); return; }
+  }
   toast(item);
 }
 function lineSvg(pts, color, {dashed, glow, faint}={}){
@@ -1577,16 +1581,17 @@ function markerSvg(p, {num, color, kind, label}){
   if(kind==='spot')  return `<g ${on}><rect x="-9" y="-9" width="18" height="18" rx="4" transform="rotate(45)" fill="${color}" stroke="#fffef8" stroke-width="1.8"/><text y="3.9" text-anchor="middle" font-size="10.5" font-weight="800" fill="#1a0d05">${num}</text></g>`;
   return `<g ${on}><circle r="11" fill="${color}" stroke="#fffef8" stroke-width="1.8"/><text y="4.2" text-anchor="middle" font-size="12" font-weight="800" fill="#10131f">${num}</text></g>`;
 }
-// Etappenliste → Kartenpunkte (Startpunkt der 1. Etappe + alle Ziele, Duplikate kollabiert)
-function routePts(stages){
+// Etappenliste → Kartenpunkte (Startpunkt der 1. Etappe + alle Ziele, Duplikate kollabiert).
+// ref = getStageList()-Referenz (Routen-Id oder 'return'), id = Etappen-Id für den Info-Popup.
+function routePts(stages, ref){
   const pts=[];
   stages.forEach((s,i)=>{
-    if(i===0){ const p0=pointOf(null, s.from); if(p0) pts.push({...p0, stage:i, start:true, label:'Start: '+s.from}); }
+    if(i===0){ const p0=pointOf(null, s.from); if(p0) pts.push({...p0, stage:i, ref, id:s.id, start:true, label:'Start: '+s.from}); }
     const p=pointOf(s, s.to);
     if(!p) return;
     const prev=pts[pts.length-1];
     if(prev && Math.abs(prev.lat-p.lat)<1e-4 && Math.abs(prev.lng-p.lng)<1e-4) return;
-    pts.push({...p, stage:i, label:(s.date?s.date+' · ':'')+s.from+' → '+s.to});
+    pts.push({...p, stage:i, ref, id:s.id, label:(s.date?s.date+' · ':'')+s.from+' → '+s.to});
   });
   return pts;
 }
@@ -1615,14 +1620,14 @@ function buildRouteMap(id='route', rebuild=renderRoute){
   });
   if(mapLayers.spots) inner+=spotMarkers(sortedSpots(), false);
   if(mapLayers.rueck){
-    const pts=routePts(state.returnStages);
+    const pts=routePts(state.returnStages, 'return');
     inner+=lineSvg(pts,'#b18cff',{dashed:true});
-    inner+=pts.map(p=>markerSvg(p,{color:'#b18cff', kind:'dot', label:'Rückreise · '+p.label})).join('');
+    inner+=pts.map(p=>markerSvg(p,{color:'#b18cff', kind:'dot', label:{type:'stage', ref:p.ref, id:p.id}})).join('');
   }
-  const pts=routePts(sel.stages);
+  const pts=routePts(sel.stages, sel.id);
   inner+=lineSvg(pts,'#ffb257',{glow:true});
-  inner+=pts.map(p=>markerSvg(p, p.start ? {color:'#ffb257', kind:'start', label:p.label}
-                                         : {num:p.stage+1, color:'#ffb257', kind:'', label:p.label})).join('');
+  inner+=pts.map(p=>markerSvg(p, p.start ? {color:'#ffb257', kind:'start', label:{type:'stage', ref:p.ref, id:p.id}}
+                                         : {num:p.stage+1, color:'#ffb257', kind:'', label:{type:'stage', ref:p.ref, id:p.id}})).join('');
   return baseMapSvg(inner, id);
 }
 function buildSpotsMap(sorted){
@@ -1924,7 +1929,7 @@ function renderStage(s, listRef, idx, len){
   const now = new Date();
   const isToday = m && +m[1]===now.getDate() && +m[2]===now.getMonth()+1;
   return `
-  <div class="stage${isToday?' today':''}">
+  <div class="stage${isToday?' today':''}" id="stage-${listRef}-${s.id}">
     <div class="actions">
       ${idx>0?`<button title="nach oben" onclick="moveStage('${listRef}',${idx},-1)">↑</button>`:''}
       ${idx<len-1?`<button title="nach unten" onclick="moveStage('${listRef}',${idx},1)">↓</button>`:''}
@@ -1943,6 +1948,42 @@ function renderStage(s, listRef, idx, len){
 function getStageList(ref){
   if(ref==='return') return state.returnStages;
   return state.routes.find(r=>r.id===ref).stages;
+}
+// Popup beim Antippen eines Etappen-Markers auf der Karte (Hinweg wie Rückreise):
+// Details, Google-Maps-Link, Sprung zur Etappen-Karte in der Liste.
+function openStageInfo(ref, id){
+  const list = getStageList(ref);
+  const s = list && list.find(x=>x.id===id);
+  if(!s){ toast('Diese Etappe wurde entfernt'); return; }
+  const link = mapsLink(s);
+  const isReturn = ref==='return';
+  const routeName = isReturn ? '' : (state.routes.find(r=>r.id===ref)?.name || '');
+  modalCtx = null;
+  document.getElementById('modalBox').innerHTML = `
+    <h3>${isReturn?'🔙':'🧭'} ${esc(s.from)} → ${esc(s.to)}</h3>
+    <div style="font-size:12px;color:var(--sun);letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin:-10px 0 12px">${esc(s.date||'')}${isReturn?' · Rückreise':(routeName?' · '+esc(routeName):'')}</div>
+    <div class="meta" style="display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);margin-bottom:12px">
+      ${s.km?`<span>📏 ${esc(s.km)}</span>`:''}
+      ${s.time?`<span>⏱ ${esc(s.time)}</span>`:''}
+    </div>
+    ${s.stay?`<p style="font-size:13.5px;color:var(--muted);margin:0 0 10px">⛺ ${esc(s.stay)}</p>`:''}
+    ${s.note?`<p style="font-size:13.5px;color:var(--muted);margin:0 0 12px">${esc(s.note)}</p>`:''}
+    <div class="btnrow">${link?`<a class="btn ghost" href="${esc(link)}" target="_blank" rel="noopener">🗺️ Google Maps öffnen</a>`:'<span class="hint" style="margin:0">Keine Positionsangabe verfügbar</span>'}</div>
+    <div class="btnrow">
+      <button class="btn ghost" onclick="closeModal()">Schließen</button>
+      <button class="btn primary" onclick="goToStageInList('${ref}','${s.id}')">Zur Etappen-Liste</button>
+    </div>`;
+  document.getElementById('modalBg').classList.add('open');
+}
+function goToStageInList(ref, id){
+  closeModal();
+  closeBigMap();
+  switchTab('route');
+  const el = document.getElementById('stage-'+ref+'-'+id);
+  if(!el) return;
+  el.scrollIntoView({behavior:'smooth', block:'center'});
+  el.classList.add('map-flash');
+  setTimeout(()=>el.classList.remove('map-flash'), 1600);
 }
 function routeFields(r={}){
   return [
@@ -2177,8 +2218,8 @@ function goToSpotInList(id){
   const el = document.getElementById('spot-'+id);
   if(!el) return;
   el.scrollIntoView({behavior:'smooth', block:'center'});
-  el.classList.add('spot-flash');
-  setTimeout(()=>el.classList.remove('spot-flash'), 1600);
+  el.classList.add('map-flash');
+  setTimeout(()=>el.classList.remove('map-flash'), 1600);
 }
 function toggleVote(spotId, crewId){
   const sp = state.spots.find(s=>s.id===spotId);
