@@ -204,6 +204,13 @@ nav{display:none}
 }
 .home-latest-meta{position:relative;z-index:2;color:var(--faint);font-size:10.5px;font-weight:750}
 .home-latest-kicker{position:relative;z-index:2;color:var(--sun);font-size:10px;letter-spacing:.16em;text-transform:uppercase;font-weight:900}
+.home-reminder-tile{
+  --tile-a:#17283f;--tile-b:#101724;grid-column:1/-1;min-height:108px;text-align:left;justify-items:start;align-content:center;gap:7px;
+  border-color:rgba(95,212,168,.26);
+}
+.home-reminder-tile b{justify-self:start;text-align:left;font-size:18px}
+.home-reminder-tile span{position:relative;z-index:2;color:var(--muted);font-size:12.5px;line-height:1.35}
+.home-count-pill{display:inline-flex!important;align-items:center;justify-content:center;min-width:26px;height:26px;padding:0 9px;border-radius:999px;background:rgba(95,212,168,.16);border:1px solid rgba(95,212,168,.35);color:var(--mint)!important;font-weight:900}
 .backup-card .backup-actions{margin-top:13px}
 .backup-snapshot{
   display:grid;grid-template-columns:94px minmax(0,1fr);gap:10px;align-items:center;
@@ -221,6 +228,7 @@ nav{display:none}
 @media(min-width:760px){
   .home-tile-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
   .home-latest-tile{grid-column:span 2}
+  .home-reminder-tile{grid-column:1/-1}
 }
 @media(max-width:640px){
   .route-hero{min-height:168px}
@@ -284,6 +292,7 @@ button{font-family:var(--font-body)}
 .item{
   display:flex;align-items:center;gap:11px;padding:9px 4px;border-bottom:1px solid rgba(255,255,255,.05);
 }
+.item.multi{align-items:flex-start}
 .item:last-of-type{border-bottom:none}
 .checkbox{
   width:22px;height:22px;flex:0 0 auto;border-radius:7px;border:1.5px solid var(--border-strong);
@@ -293,6 +302,12 @@ button{font-family:var(--font-body)}
 .checkbox.done{background:linear-gradient(120deg,var(--sun-deep),var(--coral));border-color:transparent}
 .item .txt{flex:1;font-size:14.5px;cursor:pointer;min-width:0;overflow-wrap:anywhere}
 .item.done .txt{color:var(--faint);text-decoration:line-through}
+.item-main{flex:1;min-width:0;display:grid;gap:6px}
+.item-titleline{display:flex;align-items:center;gap:9px;min-width:0}
+.item-titleline .txt{flex:1}
+.mini-assignees{display:flex;gap:6px;flex-wrap:wrap}
+.mini-assignees .chip{font-size:11px;padding:3px 8px}
+.mini-assignees .chip.done{background:color-mix(in srgb,var(--c,#888) 30%, transparent);color:#fff}
 .item .who{
   font-size:11.5px;font-weight:700;padding:3px 9px;border-radius:999px;flex:0 0 auto;
   background:color-mix(in srgb,var(--c,#888) 18%, transparent);color:var(--text);
@@ -300,6 +315,7 @@ button{font-family:var(--font-body)}
 }
 .item .del{border:none;background:none;color:var(--faint);cursor:pointer;font-size:15px;padding:4px;flex:0 0 auto}
 .item .del:hover{color:var(--danger)}
+.item.pulse-highlight{outline:2px solid var(--sky);outline-offset:3px;border-radius:12px;background:rgba(84,200,255,.08)}
 .addrow{display:flex;gap:8px;margin-top:11px}
 .addrow input{flex:1}
 input,select,textarea{
@@ -316,10 +332,12 @@ textarea{resize:vertical;min-height:70px}
 /* ---------- Karte (Inline-SVG, offline) ---------- */
 .mapwrap{border:1px solid var(--border);border-radius:14px;overflow-x:auto;background:#0a1020;margin-bottom:4px}
 .mapwrap svg{display:block;width:100%;height:auto}
+.route-map-card .mapwrap{cursor:zoom-in}
 .map-pt{cursor:pointer}
 .map-pt:hover circle,.map-pt:hover rect{filter:brightness(1.2)}
 .sea-label{fill:#2f3a66;font-size:13px;letter-spacing:.28em;text-transform:uppercase;font-family:var(--font-display);font-weight:700}
 .city-label{fill:#8891b8;font-size:10px;font-family:var(--font-body)}
+.country-label{fill:#6f7cad;font-size:18px;letter-spacing:.2em;text-transform:uppercase;font-family:var(--font-display);font-weight:700;opacity:.55}
 .layerchips{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}
 .lchip{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;border:1px solid var(--border);background:var(--card);font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;user-select:none;transition:all .15s}
 .lchip .swatch{width:15px;height:3px;border-radius:2px;background:var(--c,#888);flex:0 0 auto}
@@ -447,8 +465,28 @@ a.maplink:hover{text-decoration:underline}
 .modal h3{font-family:var(--font-display);letter-spacing:.1em;text-transform:uppercase;font-size:14px;color:var(--sun);margin-bottom:16px}
 .modal .field{margin-bottom:12px}
 .modal .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;letter-spacing:.06em;text-transform:uppercase}
+.modal-check{display:flex;align-items:center;gap:10px;color:var(--text);font-weight:650}
+.modal-check input{width:auto}
+.crewselect .chip{margin:0 4px 6px 0}
 .modal .btnrow{display:flex;gap:9px;margin-top:18px}
 .modal .btnrow .btn{flex:1}
+.map-modal{max-width:940px;height:min(86vh,760px);display:flex;flex-direction:column}
+.map-modal-head{display:flex;align-items:center;gap:12px;justify-content:space-between;margin-bottom:10px}
+.map-modal-head h3{margin:0}
+.big-map-tools{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.big-map-stage{flex:1;min-height:320px;overflow:hidden;border:1px solid var(--border);border-radius:16px;background:#07101d;touch-action:none;cursor:grab}
+.big-map-stage.dragging{cursor:grabbing}
+.big-map-inner{transform-origin:center center;will-change:transform}
+.big-map-inner .mapwrap{margin:0;border:0;border-radius:0;overflow:hidden}
+.big-map-inner svg{height:100%;min-height:520px;object-fit:contain}
+.reminder-card,.poll-card{border:1px solid rgba(255,255,255,.08);border-radius:15px;padding:12px;margin-bottom:10px;background:rgba(255,255,255,.035)}
+.reminder-card.done,.poll-card.closed{opacity:.58}
+.reminder-head,.poll-head{display:flex;align-items:flex-start;gap:10px}
+.reminder-head b,.poll-head b{flex:1;min-width:0}
+.reminder-meta,.poll-meta{color:var(--faint);font-size:12px;margin-top:4px}
+.poll-option{padding:9px 0;border-top:1px solid rgba(255,255,255,.06)}
+.poll-option:first-of-type{border-top:0}
+.poll-option-title{display:flex;justify-content:space-between;gap:10px;font-weight:750;margin-bottom:7px}
 
 /* Toast */
 #toast{
@@ -534,11 +572,26 @@ a.maplink:hover{text-decoration:underline}
   <section class="page" id="page-einkauf" data-title="Einkaufsliste"></section>
   <section class="page" id="page-budget" data-title="Budget"></section>
   <section class="page" id="page-festival" data-title="Festival"></section>
+  <section class="page" id="page-reminder" data-title="Erinnern"></section>
   <section class="page" id="page-verlauf" data-title="Verlauf"></section>
 </div>
 
 <div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()">
   <div class="modal" id="modalBox"></div>
+</div>
+<div class="modal-bg map-modal-bg" id="mapModalBg" onclick="if(event.target===this)closeBigMap()">
+  <div class="modal map-modal">
+    <div class="map-modal-head">
+      <h3>Große Karte</h3>
+      <button class="btn ghost small" onclick="closeBigMap()">Schließen</button>
+    </div>
+    <div class="big-map-tools">
+      <button class="btn small" onclick="bigMapZoom(1.18)">+</button>
+      <button class="btn small" onclick="bigMapZoom(.85)">−</button>
+      <button class="btn small ghost" onclick="resetBigMap()">Zurücksetzen</button>
+    </div>
+    <div class="big-map-stage" id="bigMapStage"></div>
+  </div>
 </div>
 <div id="toast"></div>
 
@@ -550,7 +603,7 @@ a.maplink:hover{text-decoration:underline}
      später austauschbar gegen Cloud-Sync (gleiche Schnittstelle).
    ============================================================ */
 const STORAGE_KEY = 'sizigia-roadtrip-2026';
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 const LOG_MAX = 60;
 const UNDO_MAX = 20;
 
@@ -589,7 +642,7 @@ function defaultState(){
     {id:'c-freddi',    name:'Freddi',    color:'#ffd76b'},
   ];
   const st = (date, from, to, km, time, stay, note) => ({id:uid(), date, from, to, km, time, stay, note, link:''});
-  const li = (text, who='') => ({id:uid(), text, done:false, who});
+  const li = (text, who='') => ({id:uid(), text, done:false, who, assignees:who?[who]:[], doneBy:[]});
 
   return {
     schemaVersion: SCHEMA_VERSION,
@@ -745,6 +798,8 @@ function defaultState(){
       ]},
     ],
     budget:{ expenses:[] },
+    reminders:[],
+    polls:[],
     log:[],
     festival:[
       {id:uid(), title:'Sizigia Eclipse Gathering 2026', text:'10.–14.08.2026 · Provinz Huesca (Aragón, Spanien).\nGenauer Standort & Anfahrt: siehe Ticket-/Info-Mail — hier eintragen, sobald bekannt.'},
@@ -756,6 +811,25 @@ function defaultState(){
   };
 }
 
+function allListItems(src=state){
+  const out = [];
+  (src.checklist||[]).forEach(i=>out.push(i));
+  (src.vehicles||[]).forEach(v=>(v.docs||[]).forEach(i=>out.push(i)));
+  (src.packing||[]).forEach(c=>(c.items||[]).forEach(i=>out.push(i)));
+  (src.shopping||[]).forEach(c=>(c.items||[]).forEach(i=>out.push(i)));
+  return out;
+}
+function normalizeListItem(item){
+  if(!item || typeof item !== 'object') return item;
+  const crewIds = new Set(['c-jakob','c-christoph','c-bernhard','c-max','c-lukas','c-freddi']);
+  const legacy = item.who && crewIds.has(item.who) ? [item.who] : [];
+  item.assignees = Array.isArray(item.assignees) ? item.assignees.filter(id=>crewIds.has(id)) : legacy;
+  item.doneBy = Array.isArray(item.doneBy) ? item.doneBy.filter(id=>item.assignees.includes(id)) : [];
+  if(item.done && item.assignees.length > 1 && item.doneBy.length === 0) item.doneBy = [...item.assignees];
+  item.who = item.assignees.length === 1 ? item.assignees[0] : (item.assignees.length ? '' : (item.who || ''));
+  return item;
+}
+
 /* ---------- Laden + Migration ---------- */
 function migrate(s){
   if(!s || typeof s !== 'object') return defaultState();
@@ -763,7 +837,7 @@ function migrate(s){
   // benutzten State (meta.lastSaved existiert) fehlende, leerbare Container
   // als leer wiederherstellen statt mit Defaults zu befüllen.
   if(s.meta && s.meta.lastSaved){
-    ['checklist','returnStages','spots','festival','log'].forEach(k=>{ if(s[k] === undefined) s[k] = []; });
+    ['checklist','returnStages','spots','festival','log','reminders','polls'].forEach(k=>{ if(s[k] === undefined) s[k] = []; });
     if(s.budget === undefined) s.budget = {expenses:[]};
   }
   // Fehlende Top-Level-Schlüssel defensiv aus dem Standard ergänzen
@@ -778,8 +852,32 @@ function migrate(s){
   (s.vehicles||[]).forEach(v=>{ v.drivers=v.drivers||[]; v.passengers=v.passengers||[]; v.docs=v.docs||[]; });
   (s.packing||[]).forEach(c=>{ c.items = c.items || []; });
   (s.shopping||[]).forEach(c=>{ c.items = c.items || []; });
+  allListItems(s).forEach(normalizeListItem);
   s.budget.expenses = s.budget.expenses || [];
   s.budget.expenses.forEach(e=>{ e.sharers = e.sharers || []; });
+  s.reminders = (s.reminders || []).map(r=>({
+    id:r.id || uid(),
+    title:String(r.title || ''),
+    done:!!r.done,
+    createdAt:r.createdAt || new Date().toISOString(),
+    createdBy:r.createdBy || null,
+    link:r.link && r.link.type==='listItem' ? {type:'listItem', ref:r.link.ref, itemId:r.link.itemId} : undefined
+  })).filter(r=>r.title);
+  s.polls = (s.polls || []).map(p=>({
+    id:p.id || uid(),
+    question:String(p.question || ''),
+    options:Array.isArray(p.options) ? p.options.map(o=>({id:o.id || uid(), text:String(o.text || '')})).filter(o=>o.text) : [],
+    votes:p.votes && typeof p.votes==='object' ? p.votes : {},
+    closed:!!p.closed,
+    createdAt:p.createdAt || new Date().toISOString(),
+    createdBy:p.createdBy || null
+  })).filter(p=>p.question && p.options.length);
+  s.polls.forEach(p=>{
+    const optionIds = new Set(p.options.map(o=>o.id));
+    Object.keys(p.votes).forEach(cid=>{
+      p.votes[cid] = Array.isArray(p.votes[cid]) ? p.votes[cid].filter(id=>optionIds.has(id)) : [];
+    });
+  });
   if(Array.isArray(s.log)){
     while(s.log.length > LOG_MAX) s.log.shift();
     let keep = UNDO_MAX;
@@ -1122,9 +1220,19 @@ function applyRevert(u){
   const need = x => { if(!x) throw new Error('Ziel existiert nicht mehr'); return x; };
   switch(u.t){
     case 'toggle':   need(resolveList(u.ref)?.find(i=>i.id===u.id)).done = u.prev; break;
+    case 'personDone': { const it=need(resolveList(u.ref)?.find(i=>i.id===u.id)); it.doneBy = u.prevDoneBy || []; it.done = !!u.prevDone; break; }
     case 'itemAdd':  { const l=need(resolveList(u.ref)); const i=l.findIndex(x=>x.id===u.id); if(i<0) throw 0; l.splice(i,1); break; }
-    case 'itemDel':  { const l=need(resolveList(u.ref)); l.splice(Math.min(u.idx,l.length),0,u.item); break; }
+    case 'itemDel':  { const l=need(resolveList(u.ref)); l.splice(Math.min(u.idx,l.length),0,u.item); if(u.reminder) state.reminders.splice(Math.min(u.reminderIdx ?? state.reminders.length,state.reminders.length),0,u.reminder); break; }
     case 'itemEdit': Object.assign(need(resolveList(u.ref)?.find(i=>i.id===u.id)), u.prev); break;
+    case 'remAdd':   { const i=state.reminders.findIndex(r=>r.id===u.id); if(i<0) throw 0; state.reminders.splice(i,1); break; }
+    case 'remDel':   state.reminders.splice(Math.min(u.idx,state.reminders.length),0,u.reminder); break;
+    case 'remEdit':  Object.assign(need(state.reminders.find(r=>r.id===u.id)), u.prev); break;
+    case 'remToggle': need(state.reminders.find(r=>r.id===u.id)).done = u.prev; break;
+    case 'pollAdd':  { const i=state.polls.findIndex(p=>p.id===u.id); if(i<0) throw 0; state.polls.splice(i,1); break; }
+    case 'pollDel':  state.polls.splice(Math.min(u.idx,state.polls.length),0,u.poll); break;
+    case 'pollEdit': Object.assign(need(state.polls.find(p=>p.id===u.id)), u.prev); break;
+    case 'pollVote': need(state.polls.find(p=>p.id===u.id)).votes = u.prev; break;
+    case 'pollClose': need(state.polls.find(p=>p.id===u.id)).closed = u.prev; break;
     case 'stageAdd': { const l=getStageList(u.ref); const i=l.findIndex(x=>x.id===u.id); if(i<0) throw 0; l.splice(i,1); break; }
     case 'stageDel': { const l=getStageList(u.ref); l.splice(Math.min(u.idx,l.length),0,u.stage); break; }
     case 'stageEdit':{ const s=need(getStageList(u.ref).find(x=>x.id===u.id));
@@ -1205,7 +1313,7 @@ function mapsLink(stage){
    ============================================================ */
 const MAP_BOUNDS = {
   detail:{lonMin:-4.5,lonMax:14.5,latMin:39.8,latMax:49.2},
-  europe:{lonMin:-9.5,lonMax:16.5,latMin:38.0,latMax:51.4},
+  europe:{lonMin:-11.5,lonMax:20.5,latMin:36.0,latMax:55.5},
 };
 let mapZoom = sessionStorage.getItem('sizigia-map-zoom') || 'detail';
 let mapStyle = sessionStorage.getItem('sizigia-map-style') || 'abstract';
@@ -1250,14 +1358,14 @@ function pointOf(o, text){
 
 // Küstenlinie [lon,lat], grob vereinfacht: Bretagne → Biskaya → Spanien →
 // Mittelmeerbogen (E-Küste Spanien, S-Frankreich, W-Italien) → Kartenrand
-const COAST=[[-2.0,49.2],[-2.6,48.65],[-3.6,48.7],[-4.5,48.4],[-4.5,47.9],[-3.9,47.7],[-2.5,47.28],[-2.2,47.1],
+const COAST=[[-7.5,55.5],[-6.0,53.5],[-4.8,51.5],[-2.0,49.2],[-2.6,48.65],[-3.6,48.7],[-4.5,48.4],[-4.5,47.9],[-3.9,47.7],[-2.5,47.28],[-2.2,47.1],
 [-1.8,46.6],[-1.15,46.15],[-1.1,45.8],[-1.15,45.55],[-1.25,44.6],[-1.45,43.65],[-1.6,43.4],[-2.0,43.32],
 [-2.95,43.42],[-4.0,43.45],[-4.5,43.4],[-4.5,39.8],[0.0,39.8],[0.2,40.15],[0.5,40.55],[0.9,40.85],[1.25,41.1],
 [2.17,41.38],[2.8,41.7],[3.2,41.9],[3.1,42.15],[3.28,42.29],[3.05,42.45],[3.04,42.7],[3.0,43.0],[3.25,43.2],
 [3.7,43.4],[4.1,43.5],[4.55,43.4],[4.85,43.33],[5.05,43.33],[5.35,43.21],[5.54,43.2],[5.93,43.08],[6.15,43.03],
 [6.68,43.15],[6.95,43.48],[7.27,43.68],[7.6,43.77],[8.1,43.9],[8.5,44.2],[8.93,44.4],[9.3,44.31],[9.7,44.1],
 [9.83,44.05],[10.1,43.95],[10.25,43.8],[10.3,43.53],[10.5,42.95],[10.75,42.8],[11.1,42.4],[11.75,42.1],
-[12.25,41.72],[12.9,41.4],[13.1,41.25],[13.6,41.2],[14.05,40.8],[14.5,40.7],[14.5,49.2]];
+[12.25,41.72],[12.9,41.4],[13.1,41.25],[13.6,41.2],[14.05,40.8],[14.5,40.7],[20.5,44.0],[20.5,55.5]];
 const ISLANDS=[
   [[8.6,42.35],[8.65,42.7],[9.35,43.0],[9.45,42.65],[9.55,42.1],[9.2,41.4],[8.8,41.55],[8.72,41.93]],           // Korsika
   [[8.2,40.85],[8.15,40.58],[8.4,40.3],[8.42,39.8],[9.65,39.8],[9.8,40.5],[9.65,41.0],[9.23,41.25],[8.9,40.95]], // Sardinien (angeschnitten)
@@ -1288,8 +1396,11 @@ function svgLine(pts){
 }
 function baseMapSvg(inner, pickerId){
   const cities = mapZoom==='europe'
-    ? [['München',48.14,11.57],['Innsbruck',47.27,11.39],['Huesca',42.14,-0.41],['Barcelona',41.39,2.17],['Marseille',43.30,5.37],['Lyon',45.76,4.84],['Toulouse',43.60,1.44],['Zaragoza',41.65,-0.88],['Genua',44.41,8.93],['Nizza',43.70,7.27],['Mailand',45.46,9.19],['Bordeaux',44.84,-0.58],['Bilbao',43.26,-2.94]]
+    ? [['München',48.14,11.57],['Innsbruck',47.27,11.39],['Huesca',42.14,-0.41],['Barcelona',41.39,2.17],['Marseille',43.30,5.37],['Lyon',45.76,4.84],['Toulouse',43.60,1.44],['Zaragoza',41.65,-0.88],['Genua',44.41,8.93],['Nizza',43.70,7.27],['Mailand',45.46,9.19],['Bordeaux',44.84,-0.58],['Bilbao',43.26,-2.94],['Paris',48.86,2.35],['Berlin',52.52,13.40],['Wien',48.21,16.37],['Prag',50.08,14.44],['Rom',41.90,12.50],['Madrid',40.42,-3.70]]
     : [['München',48.14,11.57],['Innsbruck',47.27,11.39],['Huesca',42.14,-0.41],['Barcelona',41.39,2.17],['Marseille',43.30,5.37],['Lyon',45.76,4.84],['Toulouse',43.60,1.44],['Genua',44.41,8.93]];
+  const countries = mapZoom==='europe'
+    ? [['Deutschland',51.0,10.2],['Frankreich',46.6,2.1],['Spanien',40.0,-3.6],['Italien',42.8,12.0],['Schweiz',46.8,8.3],['Österreich',47.6,14.2]]
+    : [];
   const sea1=project(41.2,6.6), sea2=project(45.8,-3.3);
   const relief = mapStyle === 'relief';
   const defs = relief ? `<defs>
@@ -1312,6 +1423,7 @@ function baseMapSvg(inner, pickerId){
     ${BORDERS.map(b=>`<path d="${svgLine(b)}" fill="none" stroke="#c7d0ff" stroke-width=".9" stroke-opacity="${relief?'.35':'.24'}" stroke-dasharray="4 4"/>`).join('')}
     <text x="${sea1.x}" y="${sea1.y}" class="sea-label">Mittelmeer</text>
     <text x="${sea2.x}" y="${sea2.y}" class="sea-label">Atlantik</text>
+    ${countries.map(c=>{const q=project(c[1],c[2]);return `<text x="${q.x.toFixed(1)}" y="${q.y.toFixed(1)}" text-anchor="middle" class="country-label">${c[0]}</text>`;}).join('')}
     ${cities.map(c=>{const q=project(c[1],c[2]);return `<circle cx="${q.x.toFixed(1)}" cy="${q.y.toFixed(1)}" r="2.2" fill="#5a6488"/><text x="${(q.x+5).toFixed(1)}" y="${(q.y+3.5).toFixed(1)}" class="city-label">${c[0]}</text>`;}).join('')}
     ${inner}
   </svg></div>`;
@@ -1383,6 +1495,59 @@ function buildSpotsMap(sorted){
   return baseMapSvg(inner);
 }
 
+let bigMapScale = 1, bigMapX = 0, bigMapY = 0, bigMapDrag = null;
+function renderBigMap(){
+  const stage = document.getElementById('bigMapStage');
+  if(!stage) return;
+  const oldZoom = mapZoom;
+  mapZoom = 'europe';
+  MAP = makeMap();
+  const html = buildRouteMap();
+  mapZoom = oldZoom;
+  MAP = makeMap();
+  stage.innerHTML = `<div class="big-map-inner" id="bigMapInner">${html}</div>`;
+  applyBigMapTransform();
+}
+function applyBigMapTransform(){
+  const inner = document.getElementById('bigMapInner');
+  if(inner) inner.style.transform = `translate(${bigMapX}px, ${bigMapY}px) scale(${bigMapScale})`;
+}
+function openBigMap(ev){
+  if(ev && ev.target && ev.target.closest('.map-pt')) return;
+  bigMapScale = 1; bigMapX = 0; bigMapY = 0;
+  document.getElementById('mapModalBg').classList.add('open');
+  renderBigMap();
+}
+function closeBigMap(){ document.getElementById('mapModalBg').classList.remove('open'); }
+function bigMapZoom(f){
+  bigMapScale = Math.max(.75, Math.min(4, bigMapScale * f));
+  applyBigMapTransform();
+}
+function resetBigMap(){ bigMapScale = 1; bigMapX = 0; bigMapY = 0; applyBigMapTransform(); }
+document.addEventListener('pointerdown', e=>{
+  const stage = e.target.closest && e.target.closest('#bigMapStage');
+  if(!stage) return;
+  bigMapDrag = {x:e.clientX, y:e.clientY, ox:bigMapX, oy:bigMapY};
+  stage.classList.add('dragging');
+  stage.setPointerCapture?.(e.pointerId);
+});
+document.addEventListener('pointermove', e=>{
+  if(!bigMapDrag) return;
+  bigMapX = bigMapDrag.ox + e.clientX - bigMapDrag.x;
+  bigMapY = bigMapDrag.oy + e.clientY - bigMapDrag.y;
+  applyBigMapTransform();
+});
+document.addEventListener('pointerup', e=>{
+  if(!bigMapDrag) return;
+  document.getElementById('bigMapStage')?.classList.remove('dragging');
+  bigMapDrag = null;
+});
+document.addEventListener('wheel', e=>{
+  if(!e.target.closest || !e.target.closest('#bigMapStage')) return;
+  e.preventDefault();
+  bigMapZoom(e.deltaY < 0 ? 1.08 : .92);
+}, {passive:false});
+
 /* --- Kartenauswahl im Modal (Position durch Antippen setzen) --- */
 function pickMapField(i, val, autoPos){
   const cur = val || null;
@@ -1426,6 +1591,8 @@ function openModal(title, fields, onSave, onDelete, opts={}){
     if(f.type==='textarea') input = '<textarea id="mf'+i+'" placeholder="'+esc(f.placeholder||'')+'">'+esc(f.value||'')+'</textarea>';
     else if(f.type==='select') input = '<select id="mf'+i+'">'+f.options.map(o=>'<option value="'+esc(o.value)+'"'+(o.value===f.value?' selected':'')+'>'+esc(o.label)+'</option>').join('')+'</select>';
     else if(f.type==='map') input = pickMapField(i, f.value, f.auto);
+    else if(f.type==='checkbox') input = '<label class="modal-check"><input id="mf'+i+'" type="checkbox" '+(f.value?'checked':'')+'> '+esc(f.text||'aktiv')+'</label>';
+    else if(f.type==='crewMulti') input = crewMultiField(i, f.value || []);
     else input = '<input id="mf'+i+'" type="'+(f.type==='number'?'number':'text')+'" '+(f.type==='number'?'step="0.01" inputmode="decimal"':'')+' value="'+esc(f.value||'')+'" placeholder="'+esc(f.placeholder||'')+'">';
     return '<div class="field"><label>'+esc(f.label)+'</label>'+input+'</div>';
   }).join('') +
@@ -1440,7 +1607,10 @@ function openModal(title, fields, onSave, onDelete, opts={}){
 }
 function modalSave(){
   const vals = {};
-  modalCtx.fields.forEach((f,i)=>{ vals[f.key] = document.getElementById('mf'+i).value; });
+  modalCtx.fields.forEach((f,i)=>{
+    const el = document.getElementById('mf'+i);
+    vals[f.key] = f.type==='checkbox' ? el.checked : el.value;
+  });
   const skipSave = !!modalCtx.skipSave;
   modalCtx.onSave(vals);
   closeModal();
@@ -1455,6 +1625,32 @@ function modalDelete(){
 function closeModal(){ document.getElementById('modalBg').classList.remove('open'); modalCtx = null; }
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
 
+function crewMultiField(i, selected){
+  const ids = Array.isArray(selected) ? selected : [];
+  return `<input type="hidden" id="mf${i}" value="${esc(ids.join(','))}">
+    <div class="chips crewselect" id="crewMulti${i}">
+      <span class="chip${ids.length===state.crew.length?' on':''}" onclick="toggleCrewMulti(${i},'__all')">Alle</span>
+      ${state.crew.map(c=>`<span class="chip${ids.includes(c.id)?' on':''}" style="--c:${c.color}" data-id="${c.id}" onclick="toggleCrewMulti(${i},'${c.id}')"><span class="dot"></span>${esc(c.name)}</span>`).join('')}
+    </div>`;
+}
+function toggleCrewMulti(i, id){
+  const input = document.getElementById('mf'+i);
+  if(!input) return;
+  let ids = input.value ? input.value.split(',').filter(Boolean) : [];
+  if(id==='__all') ids = ids.length===state.crew.length ? [] : state.crew.map(c=>c.id);
+  else {
+    ids = ids.includes(id) ? ids.filter(x=>x!==id) : [...ids, id];
+    ids = state.crew.map(c=>c.id).filter(cid=>ids.includes(cid));
+  }
+  input.value = ids.join(',');
+  const box = document.getElementById('crewMulti'+i);
+  if(!box) return;
+  box.querySelectorAll('.chip').forEach(ch=>{
+    const cid = ch.dataset.id;
+    ch.classList.toggle('on', cid ? ids.includes(cid) : ids.length===state.crew.length);
+  });
+}
+
 /* ============================================================
    NAVIGATION
    ============================================================ */
@@ -1467,6 +1663,7 @@ const TABS = [
   {id:'einkauf',    label:'Einkaufen'},
   {id:'budget',     label:'Ausgaben'},
   {id:'festival',   label:'Festival'},
+  {id:'reminder',   label:'Erinnern'},
   {id:'verlauf',    label:'Verlauf'},
 ];
 const HOME_TILES = [
@@ -1499,6 +1696,7 @@ function homeIconSvg(kind){
     money:'<svg viewBox="0 0 24 24"><path d="M12 3v18"/><path d="M17 7H9.5a3 3 0 0 0 0 6H14a3 3 0 0 1 0 6H6"/></svg>',
     ticket:'<svg viewBox="0 0 24 24"><path d="M5 6h14v4a2 2 0 0 0 0 4v4H5v-4a2 2 0 0 0 0-4V6Z"/><path d="M9 9h6"/><path d="M9 15h4"/><path d="M16.5 6v12"/></svg>',
     activity:'<svg viewBox="0 0 24 24"><path d="M4 12h4l2-6 4 12 2-6h4"/><path d="M5 20h14"/></svg>',
+    bell:'<svg viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 7 3 7 3 9H3c0-2 3-2 3-9"/><path d="M10 21h4"/></svg>',
   };
   return icons[kind] || icons.activity;
 }
@@ -1513,13 +1711,31 @@ function renderLatestActivityTile(recent){
       <span class="home-latest-meta">${esc(meta)}</span>
     </button>`;
 }
+function reminderCounts(){
+  return {
+    reminders:(state.reminders||[]).filter(r=>!r.done).length,
+    polls:(state.polls||[]).filter(p=>!p.closed).length
+  };
+}
+function renderReminderHomeTile(){
+  const c = reminderCounts();
+  const total = c.reminders + c.polls;
+  const detail = total ? `${c.reminders} offen · ${c.polls} Umfragen aktiv` : 'Keine offenen Erinnerungen oder Umfragen';
+  return `
+    <button class="home-tile home-reminder-tile" onclick="switchTab('reminder')" aria-label="Erinnerungen und Umfragen öffnen">
+      <span class="home-watermark" aria-hidden="true">${homeIconSvg('bell')}</span>
+      <span class="home-count-pill">${total}</span>
+      <b>Erinnerungen & Umfragen</b>
+      <span>${esc(detail)}</span>
+    </button>`;
+}
 
 /* ============================================================
    ÜBERSICHT
    ============================================================ */
 function listProgress(items){
   const flat = items.flatMap(g => g.items ? g.items : [g]);
-  const done = flat.filter(i=>i.done).length;
+  const done = flat.filter(itemComplete).length;
   return {done, total:flat.length, pct: flat.length ? Math.round(done/flat.length*100) : 0};
 }
 // Summen über Etappen: km aus "280 km", Stunden aus "~4,5 Std"
@@ -1549,6 +1765,7 @@ function renderHomeDashboard(route, tot, recent){
             <span class="home-watermark" aria-hidden="true">${homeIconSvg(t.icon)}</span>
             <b>${esc(t.label)}</b>
           </button>`).join('')}
+        ${renderReminderHomeTile()}
         ${renderLatestActivityTile(recent)}
       </div>
     </div>`;
@@ -1657,9 +1874,11 @@ function deleteRouteWithUndo(id){
 function renderRoute(){
   const route = state.routes.find(r=>r.id===state.selectedRoute);
   document.getElementById('page-route').innerHTML = sectionBackButton() + `
-    <div class="card">
-      <h2>🗺️ Karte</h2>
-      ${buildRouteMap()}
+    <div class="card route-map-card">
+      <h2>🗺️ Karte <span class="spacer"></span><button class="btn small" onclick="openBigMap(event)">Groß öffnen</button></h2>
+      <div onclick="openBigMap(event)" aria-label="Karte groß öffnen">
+        ${buildRouteMap()}
+      </div>
       <div class="layerchips">
         <span class="lchip${mapZoom==='detail'?' on':''}" style="--c:#ffb257" onclick="setMapZoom('detail')"><span class="swatch"></span>Detail</span>
         <span class="lchip${mapZoom==='europe'?' on':''}" style="--c:#ffb257" onclick="setMapZoom('europe')"><span class="swatch"></span>Europa</span>
@@ -1670,7 +1889,7 @@ function renderRoute(){
         <span class="lchip${mapLayers.rueck?' on':''}" style="--c:#b18cff" onclick="toggleMapLayer('rueck')"><span class="swatch"></span>Rückreise</span>
         <span class="lchip${mapLayers.spots?' on':''}" style="--c:#ff6b4a" onclick="toggleMapLayer('spots')"><span class="swatch"></span>Spots</span>
       </div>
-      <div class="hint">Offline-Karte ohne externe Tiles. „Europa" zoomt weiter heraus, „Relief" zeigt eine stilisierte Basiskarte mit Grenzen/Strukturen. Marker antippen für Details.</div>
+      <div class="hint">Offline-Karte ohne externe Tiles. „Europa" zoomt weiter heraus, „Relief" zeigt eine stilisierte Basiskarte mit Grenzen/Strukturen. Karte antippen für die große Zoom-Ansicht, Marker antippen für Details.</div>
     </div>
 
     <div class="card">
@@ -1933,21 +2152,86 @@ function resolveList(ref){
   if(kind==='shop') return state.shopping.find(c=>c.id===id).items;
   return null;
 }
+function itemKey(ref, id){ return ref.replace(/[^a-z0-9_-]/gi,'-') + '--' + id; }
+function copyData(x){ return JSON.parse(JSON.stringify(x)); }
+function itemAssignees(item){ normalizeListItem(item); return item.assignees || []; }
+function itemComplete(item){
+  const ids = itemAssignees(item);
+  if(ids.length <= 1) return !!item.done;
+  return ids.every(id=>(item.doneBy||[]).includes(id));
+}
+function updateMultiDone(item){
+  item.doneBy = (item.doneBy || []).filter(id=>itemAssignees(item).includes(id));
+  item.done = itemComplete(item);
+}
+function listItemByRef(ref, id){
+  const list = resolveList(ref);
+  return list ? list.find(i=>i.id===id) : null;
+}
+function tabForListRef(ref){
+  if(ref.startsWith('pack:')) return 'packen';
+  if(ref.startsWith('shop:')) return 'einkauf';
+  return 'logistik';
+}
+function linkedReminder(ref, itemId){
+  return (state.reminders||[]).find(r=>!r.done && r.link && r.link.type==='listItem' && r.link.ref===ref && r.link.itemId===itemId);
+}
+function syncLinkedReminder(ref, item){
+  const r = linkedReminder(ref, item.id);
+  if(r) r.title = item.text;
+}
 function itemRow(item, ref){
-  const who = item.who ? crewById(item.who) : null;
+  normalizeListItem(item);
+  const assignees = itemAssignees(item);
+  const done = itemComplete(item);
+  const who = assignees.length===1 ? crewById(assignees[0]) : null;
+  const multi = assignees.length > 1;
+  const chips = multi ? `<div class="mini-assignees">${assignees.map(id=>{
+    const c = crewById(id);
+    if(!c) return '';
+    const isDone = (item.doneBy||[]).includes(id);
+    return `<span class="chip${isDone?' done on':''}" style="--c:${c.color}" onclick="event.stopPropagation();toggleItemPerson('${ref}','${item.id}','${id}')"><span class="dot"></span>${esc(c.name)}</span>`;
+  }).join('')}</div>` : '';
   return `
-  <div class="item${item.done?' done':''}">
-    <button class="checkbox${item.done?' done':''}" onclick="toggleItem('${ref}','${item.id}')" aria-label="abhaken">${item.done?'✓':''}</button>
-    <span class="txt" onclick="editItem('${ref}','${item.id}')">${esc(item.text)}</span>
-    ${who?`<span class="who" style="--c:${who.color}" onclick="editItem('${ref}','${item.id}')">${esc(who.name)}</span>`:''}
+  <div class="item${done?' done':''}${multi?' multi':''}" data-item-key="${itemKey(ref,item.id)}">
+    <button class="checkbox${done?' done':''}" onclick="toggleItem('${ref}','${item.id}')" aria-label="abhaken">${done?'✓':''}</button>
+    <div class="item-main">
+      <div class="item-titleline">
+        <span class="txt" onclick="editItem('${ref}','${item.id}')">${esc(item.text)}</span>
+        ${who?`<span class="who" style="--c:${who.color}" onclick="editItem('${ref}','${item.id}')">${esc(who.name)}</span>`:''}
+      </div>
+      ${chips}
+    </div>
     <button class="del" onclick="deleteItem('${ref}','${item.id}')" aria-label="löschen">✕</button>
   </div>`;
 }
 function toggleItem(ref, id){
   const it = resolveList(ref).find(i=>i.id===id);
+  normalizeListItem(it);
+  const assignees = itemAssignees(it);
+  if(assignees.length > 1){
+    const me = whoami();
+    if(!me){ askWho(); return; }
+    if(!assignees.includes(me)){ toast('Dieser Eintrag ist anderen Personen zugeordnet'); return; }
+    toggleItemPerson(ref, id, me);
+    return;
+  }
+  const prev = it.done;
   it.done = !it.done;
   logChange((it.done ? 'hat „'+it.text+'" abgehakt' : 'hat den Haken bei „'+it.text+'" entfernt') + ' (' + refLabel(ref) + ')',
-    {t:'toggle', ref, id, prev:!it.done});
+    {t:'toggle', ref, id, prev});
+  save(); renderAll();
+}
+function toggleItemPerson(ref, id, cid){
+  const it = resolveList(ref).find(i=>i.id===id);
+  normalizeListItem(it);
+  if(!itemAssignees(it).includes(cid)) return;
+  const prevDoneBy = [...(it.doneBy||[])], prevDone = !!it.done;
+  const idx = it.doneBy.indexOf(cid);
+  if(idx>=0) it.doneBy.splice(idx,1); else it.doneBy.push(cid);
+  updateMultiDone(it);
+  logChange((crewById(cid)?.name||'?') + (idx>=0 ? ' hat den eigenen Haken bei „' : ' hat „') + it.text + (idx>=0 ? '" entfernt' : '" erledigt') + ' (' + refLabel(ref) + ')',
+    {t:'personDone', ref, id, prevDoneBy, prevDone});
   save(); renderAll();
 }
 function deleteItem(ref, id){
@@ -1956,15 +2240,18 @@ function deleteItem(ref, id){
   if(idx<0) return;
   const label = list[idx].text;
   withUndo('„' + (label.length>28 ? label.slice(0,28)+'…' : label) + '" gelöscht', ()=>{
-    logChange('hat „'+label+'" gelöscht (' + refLabel(ref) + ')', {t:'itemDel', ref, item:{...list[idx]}, idx});
+    const remIdx = (state.reminders||[]).findIndex(r=>r.link && r.link.type==='listItem' && r.link.ref===ref && r.link.itemId===id);
+    const reminder = remIdx>=0 ? copyData(state.reminders[remIdx]) : null;
+    logChange('hat „'+label+'" gelöscht (' + refLabel(ref) + ')', {t:'itemDel', ref, item:copyData(list[idx]), idx, reminder, reminderIdx:remIdx});
     list.splice(idx,1);
+    removeLinkedReminderForItem(ref, id, false);
   });
 }
 function addListItem(ref){
   const input = document.getElementById('add-' + ref.replace(':','-'));
   const text = input.value.trim();
   if(!text) return;
-  const item = {id:uid(), text, done:false, who:''};
+  const item = {id:uid(), text, done:false, who:'', assignees:[], doneBy:[]};
   resolveList(ref).push(item);
   logChange('hat „'+text+'" hinzugefügt (' + refLabel(ref) + ')', {t:'itemAdd', ref, id:item.id});
   input.value = '';
@@ -1975,18 +2262,30 @@ function addListItem(ref){
 }
 function editItem(ref, id){
   const it = resolveList(ref).find(i=>i.id===id);
+  normalizeListItem(it);
   openModal('Eintrag bearbeiten', [
     {key:'text',label:'Text',value:it.text},
-    {key:'who',label:'Wer bringt’s mit / erledigt’s?',type:'select',value:it.who||'',
-      options:[{value:'',label:'– niemand zugeordnet –'}, ...state.crew.map(c=>({value:c.id,label:c.name}))]},
+    {key:'assignees',label:'Zuständig',type:'crewMulti',value:itemAssignees(it)},
+    {key:'reminder',label:'Erinnerung',type:'checkbox',text:'In Erinnerungen anzeigen',value:!!linkedReminder(ref,id)},
   ], v=>{
-    const prev = {text:it.text, who:it.who};
-    it.text = v.text.trim()||it.text; it.who = v.who;
+    const prev = copyData(it);
+    it.text = v.text.trim()||it.text;
+    it.assignees = v.assignees ? v.assignees.split(',').filter(Boolean) : [];
+    it.who = it.assignees.length===1 ? it.assignees[0] : '';
+    it.doneBy = (it.doneBy||[]).filter(cid=>it.assignees.includes(cid));
+    if(it.assignees.length <= 1) it.doneBy = [];
+    updateMultiDone(it);
+    if(v.reminder) ensureLinkedReminder(ref, it);
+    else removeLinkedReminderForItem(ref, id, true);
+    syncLinkedReminder(ref, it);
     logChange('hat „'+it.text+'" bearbeitet (' + refLabel(ref) + ')', {t:'itemEdit', ref, id, prev});
   }, ()=>{
     const l=resolveList(ref); const i=l.findIndex(x=>x.id===id);
-    logChange('hat „'+l[i].text+'" gelöscht (' + refLabel(ref) + ')', {t:'itemDel', ref, item:{...l[i]}, idx:i});
+    const remIdx = (state.reminders||[]).findIndex(r=>r.link && r.link.type==='listItem' && r.link.ref===ref && r.link.itemId===id);
+    const reminder = remIdx>=0 ? copyData(state.reminders[remIdx]) : null;
+    logChange('hat „'+l[i].text+'" gelöscht (' + refLabel(ref) + ')', {t:'itemDel', ref, item:copyData(l[i]), idx:i, reminder, reminderIdx:remIdx});
     l.splice(i,1);
+    removeLinkedReminderForItem(ref, id, false);
   });
 }
 
@@ -2026,11 +2325,180 @@ function renderPacking(){
   </div>`;
   let groups = state.packing;
   if(packFilter) groups = state.packing
-    .map(g=>({ ...g, items: g.items.filter(i=>i.who===packFilter) }))
+    .map(g=>({ ...g, items: g.items.filter(i=>itemAssignees(i).includes(packFilter)) }))
     .filter(g=>g.items.length);
   renderCategoryLists('page-packen', groups, 'pack', 'Kategorie hinzufügen', bar, !!packFilter);
 }
 function renderShopping(){ renderCategoryLists('page-einkauf', state.shopping, 'shop', 'Kategorie hinzufügen'); }
+
+/* ============================================================
+   ERINNERUNGEN & UMFRAGEN
+   ============================================================ */
+function reminderMeta(r){
+  const c = r.createdBy ? crewById(r.createdBy) : null;
+  return (c ? c.name + ' · ' : '') + fmtLogTs(r.createdAt);
+}
+function ensureLinkedReminder(ref, item){
+  if(linkedReminder(ref, item.id)) return;
+  const reminder = {id:uid(), title:item.text, done:false, createdAt:new Date().toISOString(), createdBy:whoami(), link:{type:'listItem', ref, itemId:item.id}};
+  state.reminders.push(reminder);
+  logChange('hat „'+item.text+'" in Erinnerungen angezeigt', {t:'remAdd', id:reminder.id});
+}
+function removeLinkedReminderForItem(ref, itemId, withLog){
+  const idx = (state.reminders||[]).findIndex(r=>r.link && r.link.type==='listItem' && r.link.ref===ref && r.link.itemId===itemId);
+  if(idx<0) return;
+  const reminder = copyData(state.reminders[idx]);
+  state.reminders.splice(idx,1);
+  if(withLog) logChange('hat Erinnerung „'+reminder.title+'" entfernt', {t:'remDel', reminder, idx});
+}
+function addReminder(){
+  openModal('Neue Erinnerung', [
+    {key:'title',label:'Titel',value:'',placeholder:'z. B. Tickets prüfen'},
+  ], v=>{
+    const title = v.title.trim();
+    if(!title) return;
+    const reminder = {id:uid(), title, done:false, createdAt:new Date().toISOString(), createdBy:whoami()};
+    state.reminders.push(reminder);
+    logChange('hat Erinnerung „'+title+'" angelegt', {t:'remAdd', id:reminder.id});
+  });
+}
+function editReminder(id){
+  const r = state.reminders.find(x=>x.id===id);
+  if(!r) return;
+  openModal('Erinnerung bearbeiten', [
+    {key:'title',label:'Titel',value:r.title},
+  ], v=>{
+    const prev = copyData(r);
+    r.title = v.title.trim() || r.title;
+    logChange('hat Erinnerung „'+r.title+'" bearbeitet', {t:'remEdit', id, prev});
+  }, ()=>{
+    const idx = state.reminders.findIndex(x=>x.id===id);
+    if(idx<0) return;
+    const reminder = copyData(state.reminders[idx]);
+    logChange('hat Erinnerung „'+reminder.title+'" gelöscht', {t:'remDel', reminder, idx});
+    state.reminders.splice(idx,1);
+  });
+}
+function toggleReminder(id){
+  const r = state.reminders.find(x=>x.id===id);
+  if(!r) return;
+  const prev = !!r.done;
+  r.done = !r.done;
+  logChange((r.done?'hat Erinnerung erledigt: ':'hat Erinnerung wieder geöffnet: ') + '„'+r.title+'"', {t:'remToggle', id, prev});
+  save(); renderAll();
+}
+let pendingHighlightKey = '';
+function openReminderLink(id){
+  const r = state.reminders.find(x=>x.id===id);
+  if(!r || !r.link || r.link.type!=='listItem') return;
+  pendingHighlightKey = itemKey(r.link.ref, r.link.itemId);
+  switchTab(tabForListRef(r.link.ref));
+  setTimeout(()=>{
+    const el = document.querySelector('[data-item-key="'+pendingHighlightKey+'"]');
+    if(!el){ toast('Verknüpfter Eintrag nicht mehr gefunden'); return; }
+    el.scrollIntoView({block:'center', behavior:'smooth'});
+    el.classList.add('pulse-highlight');
+    setTimeout(()=>el.classList.remove('pulse-highlight'), 2200);
+  }, 120);
+}
+function reminderRow(r){
+  return `<div class="reminder-card${r.done?' done':''}">
+    <div class="reminder-head">
+      <button class="checkbox${r.done?' done':''}" onclick="toggleReminder('${r.id}')" aria-label="Erinnerung erledigen">${r.done?'✓':''}</button>
+      <b>${esc(r.title)}</b>
+      ${r.link?`<button class="btn ghost small" onclick="openReminderLink('${r.id}')">Öffnen</button>`:''}
+      <button class="btn ghost small" onclick="editReminder('${r.id}')">✎</button>
+    </div>
+    <div class="reminder-meta">${esc(reminderMeta(r))}${r.link?' · '+esc(refLabel(r.link.ref)):''}</div>
+  </div>`;
+}
+function addPoll(){
+  openModal('Neue Umfrage', [
+    {key:'question',label:'Frage',value:'',placeholder:'z. B. Welcher Badestopp?'},
+    {key:'options',label:'Optionen (eine pro Zeile)',type:'textarea',value:''},
+  ], v=>{
+    const question = v.question.trim();
+    const lines = v.options.split('\n').map(x=>x.trim()).filter(Boolean);
+    if(!question || lines.length < 2){ toast('Bitte Frage und mindestens zwei Optionen eintragen'); return; }
+    const poll = {id:uid(), question, options:lines.map(text=>({id:uid(), text})), votes:{}, closed:false, createdAt:new Date().toISOString(), createdBy:whoami()};
+    state.polls.push(poll);
+    logChange('hat Umfrage „'+question+'" angelegt', {t:'pollAdd', id:poll.id});
+  });
+}
+function editPoll(id){
+  const p = state.polls.find(x=>x.id===id);
+  if(!p) return;
+  openModal('Umfrage bearbeiten', [
+    {key:'question',label:'Frage',value:p.question},
+    {key:'options',label:'Optionen (eine pro Zeile)',type:'textarea',value:p.options.map(o=>o.text).join('\n')},
+  ], v=>{
+    const question = v.question.trim();
+    const lines = v.options.split('\n').map(x=>x.trim()).filter(Boolean);
+    if(!question || lines.length < 2){ toast('Bitte Frage und mindestens zwei Optionen eintragen'); return; }
+    const prev = copyData(p);
+    const oldByText = new Map(p.options.map(o=>[o.text,o.id]));
+    p.question = question;
+    p.options = lines.map(text=>({id:oldByText.get(text) || uid(), text}));
+    const valid = new Set(p.options.map(o=>o.id));
+    Object.keys(p.votes).forEach(cid=>{ p.votes[cid] = (p.votes[cid]||[]).filter(oid=>valid.has(oid)); });
+    logChange('hat Umfrage „'+p.question+'" bearbeitet', {t:'pollEdit', id, prev});
+  }, ()=>{
+    const idx = state.polls.findIndex(x=>x.id===id);
+    if(idx<0) return;
+    const poll = copyData(state.polls[idx]);
+    logChange('hat Umfrage „'+poll.question+'" gelöscht', {t:'pollDel', poll, idx});
+    state.polls.splice(idx,1);
+  });
+}
+function togglePollVote(pollId, optionId, crewId){
+  const p = state.polls.find(x=>x.id===pollId);
+  if(!p || p.closed) return;
+  const prev = copyData(p.votes || {});
+  p.votes[crewId] = p.votes[crewId] || [];
+  const i = p.votes[crewId].indexOf(optionId);
+  if(i>=0) p.votes[crewId].splice(i,1); else p.votes[crewId].push(optionId);
+  logChange((crewById(crewId)?.name||'?') + ' hat bei „'+p.question+'" abgestimmt', {t:'pollVote', id:pollId, prev});
+  save(); renderAll();
+}
+function togglePollClosed(id){
+  const p = state.polls.find(x=>x.id===id);
+  if(!p) return;
+  const prev = !!p.closed;
+  p.closed = !p.closed;
+  logChange((p.closed?'hat Umfrage geschlossen: ':'hat Umfrage wieder geöffnet: ') + '„'+p.question+'"', {t:'pollClose', id, prev});
+  save(); renderAll();
+}
+function pollRow(p){
+  const creator = p.createdBy ? crewById(p.createdBy) : null;
+  return `<div class="poll-card${p.closed?' closed':''}">
+    <div class="poll-head">
+      <b>${esc(p.question)}</b>
+      <button class="btn ghost small" onclick="togglePollClosed('${p.id}')">${p.closed?'Öffnen':'Schließen'}</button>
+      <button class="btn ghost small" onclick="editPoll('${p.id}')">✎</button>
+    </div>
+    <div class="poll-meta">${creator?esc(creator.name)+' · ':''}${fmtLogTs(p.createdAt)}${p.closed?' · geschlossen':''}</div>
+    ${p.options.map(o=>{
+      const voters = state.crew.filter(c=>(p.votes[c.id]||[]).includes(o.id));
+      return `<div class="poll-option">
+        <div class="poll-option-title"><span>${esc(o.text)}</span><span>${voters.length}</span></div>
+        <div class="chips">${state.crew.map(c=>`<span class="chip${(p.votes[c.id]||[]).includes(o.id)?' on':''}" style="--c:${c.color}" onclick="togglePollVote('${p.id}','${o.id}','${c.id}')"><span class="dot"></span>${esc(c.name)}</span>`).join('')}</div>
+      </div>`;
+    }).join('')}
+  </div>`;
+}
+function renderReminder(){
+  const reminders = [...(state.reminders||[])].sort((a,b)=>(a.done===b.done ? new Date(b.createdAt)-new Date(a.createdAt) : (a.done?1:-1)));
+  const polls = [...(state.polls||[])].sort((a,b)=>(a.closed===b.closed ? new Date(b.createdAt)-new Date(a.createdAt) : (a.closed?1:-1)));
+  document.getElementById('page-reminder').innerHTML = sectionBackButton() + `
+    <div class="card">
+      <h2>Erinnerungen <span class="spacer"></span><button class="btn small" onclick="addReminder()">+ Erinnerung</button></h2>
+      ${reminders.length ? reminders.map(reminderRow).join('') : '<p class="hint" style="margin:0">Keine Erinnerungen. Du kannst sie hier anlegen oder aus Packen, Einkauf, Checkliste und Fahrzeug-Dokumenten verknüpfen.</p>'}
+    </div>
+    <div class="card">
+      <h2>Umfragen <span class="spacer"></span><button class="btn small" onclick="addPoll()">+ Umfrage</button></h2>
+      ${polls.length ? polls.map(pollRow).join('') : '<p class="hint" style="margin:0">Noch keine Umfragen.</p>'}
+    </div>`;
+}
 
 /* ============================================================
    BUDGET — geteilte Ausgaben & Ausgleich
@@ -2288,6 +2756,7 @@ function renderAll(){
   renderShopping();
   renderBudget();
   renderFestival();
+  renderReminder();
   renderLog();
   updateSaveInfo();
   // Gerettete Eingaben wiederherstellen
