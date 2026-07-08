@@ -435,21 +435,27 @@ a.maplink{color:var(--sky);font-size:12.5px;text-decoration:none}
 a.maplink:hover{text-decoration:underline}
 
 /* ---------- Festival Line-up: Zeitplan je Bühne, aufklappbar (<details>) ---------- */
-.lineup-stage{border:1px solid var(--border);border-left:3px solid var(--c,var(--sun));border-radius:14px;margin-bottom:10px;background:rgba(255,255,255,.028);overflow:hidden}
-.lineup-stage summary{list-style:none;cursor:pointer;padding:14px;user-select:none}
+.lineup-stage{border:1px solid rgba(255,255,255,.14);border-radius:16px;margin-bottom:10px;overflow:hidden}
+.lineup-stage summary{
+  list-style:none;cursor:pointer;user-select:none;padding:14px;display:flex;align-items:center;gap:12px;
+  background:linear-gradient(155deg, color-mix(in srgb, var(--accent,#8ea8ff) 40%, #171b2c), color-mix(in srgb, var(--accent,#8ea8ff) 10%, #10131f) 78%);
+  box-shadow:inset 0 1px rgba(255,255,255,.09);
+}
 .lineup-stage summary::-webkit-details-marker{display:none}
-.lineup-stage-toprow{display:flex;align-items:center;gap:9px}
-.lineup-stage-chevron{flex:0 0 auto;color:var(--c,var(--sun));font-size:12px;transition:transform .18s}
-.lineup-stage[open] .lineup-stage-chevron{transform:rotate(90deg)}
-.lineup-stage h3{font-family:var(--font-display);letter-spacing:.05em;font-size:16px;color:var(--c,var(--sun));margin:0}
-.lineup-stage-meta{margin-left:auto;font-size:11px;color:var(--faint);font-weight:700;white-space:nowrap;padding-left:8px}
-.lineup-stage .genre{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.09em;font-weight:700;margin:5px 0 0 21px}
+.lineup-stage-icon{flex:0 0 auto;display:flex;color:rgba(255,255,255,.95);filter:drop-shadow(0 1px 3px rgba(0,0,0,.3))}
+.lineup-stage-icon svg{width:30px;height:30px}
+.lineup-stage-text{flex:1;min-width:0}
+.lineup-stage h3{font-family:var(--font-display);letter-spacing:.03em;font-size:16px;color:#fff;margin:0;text-shadow:0 1px 6px rgba(0,0,0,.2)}
+.lineup-stage-meta{font-size:11.5px;color:rgba(255,255,255,.78);font-weight:700;white-space:nowrap;margin-top:2px}
+.lineup-stage .genre{font-size:11px;color:rgba(255,255,255,.7);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-top:1px}
+.lineup-stage-chevron{flex:0 0 auto;color:#fff;font-size:13px;transition:transform .18s;opacity:.85}
+.lineup-stage[open] .lineup-stage-chevron{transform:rotate(180deg)}
 .ig-link{display:inline-flex;margin-left:5px;color:var(--muted);vertical-align:-2px}
 .ig-link:hover{color:var(--sky)}
 .ig-link svg{width:12px;height:12px;display:block}
 .tt-list{padding:0 14px 14px;border-top:1px solid rgba(255,255,255,.06)}
 .tt-day{margin-top:14px}
-.tt-day-head{font-family:var(--font-display);font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--sun);font-weight:800;margin-bottom:5px;display:flex;align-items:baseline;gap:8px}
+.tt-day-head{font-family:var(--font-display);font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent,var(--sun));font-weight:800;margin-bottom:5px;display:flex;align-items:baseline;gap:8px}
 .tt-day-head span{color:var(--faint);font-size:11px;letter-spacing:.02em;text-transform:none;font-weight:600}
 .tt-row{display:flex;gap:12px;padding:4px 0;font-size:13.5px;border-bottom:1px solid rgba(255,255,255,.045)}
 .tt-time{flex:0 0 48px;color:var(--muted);font-variant-numeric:tabular-nums;font-weight:700}
@@ -2875,7 +2881,7 @@ function deleteExpense(id){
 // nötig, hält den Cloud-Payload klein). Manche Acts spielen auf >1 Bühne,
 // daher Gesamtzahl der Nennungen > Zahl eindeutiger Artists.
 const LINEUP = {
-  'Origen': {genre:'Psychedelic Trance', color:'#ff8a5c', artists:[
+  'Origen': {genre:'Psychedelic Trance', color:'#ff8a5c', icon:'sun', artists:[
     "3LMT", "1200MIC by Riktam", "ACE VENTURA", "Ametrina", "Amplify", "Anny", "Anoebis", "Arjuna", "ASTRIX",
     "Atbloom", "Atmos", "Avalon", "Beyond b2b Danger", "Bumbling Loons", "Cesar Mimesis", "Chaac", "Cronocops",
     "Daksinamurti", "Dekel", "Dickster", "Digital Hippie", "Djantrix", "E-Clip", "Emok", "Etnica",
@@ -2886,7 +2892,7 @@ const LINEUP = {
     "Regan", "Render", "RISING DUST", "Ritmo", "Sator Arepo", "Shove", "Smkng Chkrs", "Starlab", "Swarup",
     "Tristan", "Tsuyoshi Suzuki", "Vegan Cake"
   ]},
-  'Ombra Sonora': {genre:'', color:'#54c8ff', artists:[
+  'Ombra Sonora': {genre:'', color:'#54c8ff', icon:'moon', artists:[
     "Aaron King", "Art Of Trance", "Axon", "Aynix.x", "Bioterranean", "Bitz Pliz", "BOUNDLESS", "Cajarana",
     "Captain Pastek", "CELLI", "Emiri", "Emok", "Evil Oil Man", "Extrawelt", "Fernanda Pistelli", "Golanski",
     "Hellquist", "Iamai", "Ivana", "Jedidiah", "JOSSIE TELCH", "Kozy", "Kromagon", "Krumelur", "Lara S",
@@ -2894,7 +2900,7 @@ const LINEUP = {
     "One Million Toys", "Ori", "raxon", "Sumiruna", "Tao Andra", "Technocalor", "TRIFORCE", "Tsu", "Union Jack",
     "Victor Ruiz"
   ]},
-  'Lumina': {genre:'', color:'#b18cff', artists:[
+  'Lumina': {genre:'', color:'#b18cff', icon:'star', artists:[
     "AZALEH", "BAYAWAKA", "CIOZ", "CONSORZIO OCHIROSSI", "DEACON", "DEKEL", "DELA MOON", "DESERT DWELLERS",
     "FABIAN KROOSS", "FLAVE", "FRIDA DARKO B2B ATRIC", "GRIFFIN KLOUD", "IMAGO", "I.M.D", "JAMES MONRO",
     "JOSKO", "KALYA SCINTILLA", "KINO DOSCUN", "LO.RENZO", "MAIKY", "MENTAL", "NIXE", "NUEQ", "OLIVER KOLETZKI",
@@ -3034,6 +3040,14 @@ const LINEUP_IG = {
 };
 function igIcon(){
   return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="5.5"/><circle cx="12" cy="12" r="4"/><circle cx="17.4" cy="6.6" r="1.1" fill="currentColor" stroke="none"/></svg>';
+}
+function stageIconSvg(kind){
+  const icons = {
+    sun:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.1 5.1l2.1 2.1M16.8 16.8l2.1 2.1M18.9 5.1l-2.1 2.1M7.2 16.8l-2.1 2.1"/></svg>',
+    moon:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.3A8.4 8.4 0 1 1 9.7 4a6.9 6.9 0 0 0 10.3 10.3Z"/></svg>',
+    star:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M12 3.2l1.9 5.4 5.6 0.2-4.5 3.5 1.7 5.5L12 14.6l-4.7 3.2 1.7-5.5-4.5-3.5 5.6-0.2Z"/></svg>',
+  };
+  return icons[kind] || icons.star;
 }
 // Zeitpläne je Bühne — bislang nur für Origen veröffentlicht (offizielles Stage-Timetable).
 // 'break' = reguläre Bühnenpause, 'eclipse' = Pause für die Sonnenfinsternis am 12.08.
@@ -3187,19 +3201,20 @@ function lineupCard(){
       const days = STAGE_SCHEDULES[name];
       const setCount = days ? days.reduce((n,d)=>n+d.sets.filter(s=>/^\d/.test(s[0])).length,0) : 0;
       return `
-      <details class="lineup-stage" style="--c:${v.color}" open>
+      <details class="lineup-stage" style="--accent:${v.color}">
         <summary>
-          <div class="lineup-stage-toprow">
-            <span class="lineup-stage-chevron" aria-hidden="true">▸</span>
+          <span class="lineup-stage-icon" aria-hidden="true">${stageIconSvg(v.icon)}</span>
+          <div class="lineup-stage-text">
             <h3>${esc(name)}</h3>
-            <span class="lineup-stage-meta">${days?`${setCount} Sets · ${days.length} Tage`:`${v.artists.length} Artists`}</span>
+            ${v.genre?`<div class="genre">${esc(v.genre)}</div>`:''}
+            <div class="lineup-stage-meta">${days?`${setCount} Sets · ${days.length} Tage`:`${v.artists.length} Artists`}</div>
           </div>
-          ${v.genre?`<div class="genre">${esc(v.genre)}</div>`:''}
+          <span class="lineup-stage-chevron" aria-hidden="true">▾</span>
         </summary>
         ${days ? renderStageTimetable(days) : `<p class="hint" style="margin:0 14px 14px">Zeitplan für diese Bühne noch nicht veröffentlicht.</p>`}
       </details>`;
     }).join('')}
-    <div class="hint">Zeiten laut offiziellen Bühnen-Timetables (Stand 08.07.2026). Bühne antippen zum Auf-/Zuklappen. Instagram-Symbol nur bei bestätigtem Profil.</div>
+    <div class="hint">Bühnen-Symbol antippen für den Zeitplan mit allen Acts und Instagram-Links (Stand 08.07.2026, offizielle Timetables). Instagram-Symbol nur bei bestätigtem Profil.</div>
   </div>`;
 }
 function renderFestival(){
