@@ -126,6 +126,63 @@ nav::-webkit-scrollbar{display:none}
   .tab{font-size:13px;padding:10px 15px}
 }
 
+nav{display:none}
+.home-dashboard{display:grid;gap:14px;margin:6px 0 18px}
+.home-kicker{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--sun);font-weight:800}
+.home-intro{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:2px}
+.home-intro h2{font-family:var(--font-display);font-size:20px;letter-spacing:.08em;text-transform:uppercase;color:var(--text);margin:0}
+.home-intro p{font-size:13px;color:var(--muted);margin-top:3px;max-width:46ch}
+.route-hero{
+  position:relative;display:block;width:100%;min-height:196px;border:1px solid var(--border-strong);border-radius:22px;
+  overflow:hidden;background:#101522;box-shadow:0 18px 45px rgba(0,0,0,.28), inset 0 1px rgba(255,255,255,.05);cursor:pointer;
+  padding:0;font:inherit;color:var(--text);text-align:left;appearance:none;-webkit-appearance:none;
+}
+.route-hero svg{position:absolute;inset:0;width:100%;height:100%}
+.route-hero::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(7,10,18,.94),rgba(7,10,18,.48) 58%,rgba(7,10,18,.72))}
+.goa-ring{
+  position:absolute;right:-24px;top:-26px;width:146px;height:146px;border-radius:50%;opacity:.18;z-index:1;
+  background:repeating-conic-gradient(from 12deg,rgba(255,178,87,.9) 0 6deg,transparent 6deg 14deg);
+}
+.hero-copy{position:absolute;left:18px;right:18px;bottom:17px;z-index:2}
+.hero-copy .eyebrow{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--sun);font-weight:900}
+.hero-copy b{display:block;font-size:25px;line-height:1.05;margin-top:5px}
+.hero-copy span{display:block;font-size:13px;color:var(--muted);margin-top:4px}
+.home-tile-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.home-tile{
+  position:relative;min-height:112px;border:1px solid var(--border);border-radius:18px;
+  background:linear-gradient(145deg,rgba(255,255,255,.075),rgba(255,255,255,.028));
+  padding:13px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;cursor:pointer;
+  box-shadow:inset 0 1px rgba(255,255,255,.05);transition:border-color .16s,transform .16s,background .16s;
+}
+.home-tile:hover{border-color:var(--border-strong);background:rgba(255,255,255,.065);transform:translateY(-1px)}
+.home-tile::before{
+  content:"";position:absolute;right:-18px;top:-18px;width:82px;height:82px;border-radius:50%;
+  background:var(--tile-glow,rgba(255,178,87,.22));opacity:.42;filter:blur(2px);
+}
+.home-tile::after{content:"";position:absolute;inset:0;border-radius:18px;background:linear-gradient(160deg,rgba(255,255,255,.08),transparent 45%);opacity:.55;pointer-events:none}
+.home-icon{position:relative;width:31px;height:31px;color:#f6f7ff;z-index:1}
+.home-icon svg{width:100%;height:100%;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.home-tile b{position:relative;z-index:1;font-size:13.5px;color:var(--text);text-shadow:0 1px 10px rgba(0,0,0,.35)}
+.home-tile small{position:relative;z-index:1;font-size:10.5px;color:var(--muted)}
+.home-live{border:1px solid var(--border);border-radius:18px;background:rgba(255,255,255,.04);padding:13px}
+.home-live b{display:block;color:var(--sun);font-size:13.5px}
+.home-live span{display:block;color:var(--muted);font-size:12px;margin-top:3px}
+.section-return{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.section-return button{
+  width:38px;height:38px;border-radius:13px;border:1px solid var(--border);background:var(--card);color:var(--sun);
+  font-size:18px;font-weight:900;cursor:pointer;
+}
+.section-return span{font-size:13px;color:var(--muted);font-weight:700}
+@media(min-width:760px){
+  .home-tile-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media(max-width:640px){
+  .home-intro{display:block}
+  .route-hero{min-height:168px}
+  .home-tile-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .home-tile{min-height:104px}
+}
+
 /* ---------- Allgemeine Bausteine ---------- */
 section.page{display:none;animation:fadein .35s ease}
 section.page.active{display:block}
@@ -1225,6 +1282,15 @@ const TABS = [
   {id:'festival',   label:'Festival'},
   {id:'verlauf',    label:'Aktivität'},
 ];
+const HOME_TILES = [
+  {id:'spots', label:'Stopps', sub:'Ideen & Voting', icon:'pin', glow:'rgba(255,107,74,.32)'},
+  {id:'logistik', label:'Fahrzeuge', sub:'Sitze & Dokumente', icon:'van', glow:'rgba(142,168,255,.30)'},
+  {id:'packen', label:'Packen', sub:'Listen & Zuständigkeit', icon:'bag', glow:'rgba(224,140,255,.28)'},
+  {id:'einkauf', label:'Einkaufen', sub:'Vorräte & Wasser', icon:'cart', glow:'rgba(95,212,168,.30)'},
+  {id:'budget', label:'Ausgaben', sub:'Salden & Ausgleich', icon:'money', glow:'rgba(255,215,107,.32)'},
+  {id:'festival', label:'Festival', sub:'Infos & Anreise', icon:'tent', glow:'rgba(255,178,87,.30)'},
+  {id:'verlauf', label:'Aktivität', sub:'Verlauf & Undo', icon:'activity', glow:'rgba(142,168,255,.26)'},
+];
 let activeTab = sessionStorage.getItem('sizigia-tab') || 'uebersicht';
 function renderNav(){
   document.getElementById('nav').innerHTML = TABS.map(t =>
@@ -1237,6 +1303,37 @@ function switchTab(id){
   sessionStorage.setItem('sizigia-tab', id);
   renderNav();
   window.scrollTo({top:0});
+}
+function homeIconSvg(kind){
+  const icons = {
+    pin:'<svg viewBox="0 0 24 24"><path d="M12 21s7-5.1 7-11a7 7 0 1 0-14 0c0 5.9 7 11 7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>',
+    van:'<svg viewBox="0 0 24 24"><path d="M4 16V8h12l4 4v4"/><path d="M6 16a2 2 0 1 0 4 0"/><path d="M16 16a2 2 0 1 0 4 0"/><path d="M4 12h16"/></svg>',
+    bag:'<svg viewBox="0 0 24 24"><path d="M7 9V7a5 5 0 0 1 10 0v2"/><path d="M5 9h14l-1 12H6L5 9Z"/><path d="M9 13h6"/></svg>',
+    cart:'<svg viewBox="0 0 24 24"><path d="M4 5h2l2 11h10l2-8H7"/><path d="M9 20a1 1 0 1 0 0-2"/><path d="M17 20a1 1 0 1 0 0-2"/></svg>',
+    money:'<svg viewBox="0 0 24 24"><path d="M12 3v18"/><path d="M17 7H9.5a3 3 0 0 0 0 6H14a3 3 0 0 1 0 6H6"/></svg>',
+    tent:'<svg viewBox="0 0 24 24"><path d="M4 20 12 4l8 16"/><path d="M8 13h8"/><path d="M6 20h12"/></svg>',
+    activity:'<svg viewBox="0 0 24 24"><path d="M4 12h4l2-6 4 12 2-6h4"/><path d="M5 20h14"/></svg>',
+  };
+  return icons[kind] || icons.activity;
+}
+function routeHeroSvg(){
+  return `<svg viewBox="0 0 420 190" preserveAspectRatio="none" aria-hidden="true">
+    <defs>
+      <linearGradient id="sea" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#18264a"/><stop offset="1" stop-color="#080d19"/></linearGradient>
+      <linearGradient id="land" x1="0" x2="1"><stop stop-color="#182032"/><stop offset="1" stop-color="#0f1625"/></linearGradient>
+      <filter id="routeGlow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+    </defs>
+    <rect width="420" height="190" fill="url(#sea)"/>
+    <path d="M0 48 C62 58 82 34 130 45 C184 58 176 91 236 88 C295 85 317 64 420 75 L420 0 L0 0Z" fill="url(#land)" opacity=".96"/>
+    <path d="M0 144 C64 126 108 136 150 120 C203 100 247 118 294 103 C341 88 365 92 420 80 L420 190 L0 190Z" fill="#080b12" opacity=".72"/>
+    <path d="M90 40 C132 66 150 97 182 112 C225 132 256 118 291 101 C323 86 348 82 382 72" stroke="#ffb257" stroke-width="3" fill="none" filter="url(#routeGlow)"/>
+    <path d="M90 40 C132 66 150 97 182 112 C225 132 256 118 291 101 C323 86 348 82 382 72" stroke="#ff6b4a" stroke-width="1.1" stroke-dasharray="5 7" fill="none"/>
+    <circle cx="90" cy="40" r="5" fill="#ffb257"/><circle cx="182" cy="112" r="5" fill="#ffb257"/><circle cx="291" cy="101" r="5" fill="#ffb257"/><circle cx="382" cy="72" r="6" fill="#ff6b4a"/>
+    <text x="71" y="31" fill="#9da6c1" font-size="9">München</text>
+    <text x="362" y="60" fill="#ffd39a" font-size="9">Huesca</text>
+    <circle cx="352" cy="47" r="16" fill="none" stroke="#ffb257" stroke-width="1" opacity=".55"/>
+    <circle cx="359" cy="42" r="15" fill="#0b0d16" opacity=".9"/>
+  </svg>`;
 }
 
 /* ============================================================
@@ -1257,6 +1354,42 @@ function routeTotals(stages){
   });
   return {km, hTxt: String(Math.round(h*10)/10).replace('.',',')};
 }
+function renderHomeDashboard(route, tot, pCheck){
+  return `
+    <div class="home-dashboard">
+      <div class="home-intro">
+        <div>
+          <div class="home-kicker">Start</div>
+          <h2>Wohin willst du?</h2>
+          <p>Der schnelle Einstieg für Route, Orga und Festival.</p>
+        </div>
+      </div>
+      <div class="route-hero" onclick="switchTab('route')" role="button" tabindex="0" aria-label="Route planen" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchTab('route')}">
+        ${routeHeroSvg()}
+        <div class="goa-ring" aria-hidden="true"></div>
+        <div class="hero-copy">
+          <div class="eyebrow">Roadtrip</div>
+          <b>Route planen</b>
+          <span>${esc(route.name)} · ca. ${tot.km} km · ~${tot.hTxt} Std</span>
+        </div>
+      </div>
+      <div class="home-tile-grid">
+        ${HOME_TILES.map(t=>`
+          <button class="home-tile" style="--tile-glow:${t.glow}" onclick="switchTab('${t.id}')">
+            <span class="home-icon">${homeIconSvg(t.icon)}</span>
+            <b>${esc(t.label)}</b>
+            <small>${esc(t.sub)}</small>
+          </button>`).join('')}
+      </div>
+      <div class="home-live">
+        <b>Heute im Blick</b>
+        <span>${pCheck.done}/${pCheck.total} Punkte der Checkliste erledigt · Backups bleiben beim Öffnen lokal geschützt.</span>
+      </div>
+    </div>`;
+}
+function sectionBackButton(){
+  return `<div class="section-return"><button onclick="switchTab('uebersicht')" aria-label="Zur Übersicht">←</button><span>Zur Übersicht</span></div>`;
+}
 function renderOverview(){
   const start = new Date('2026-08-02T08:00:00');
   const diff = Math.max(0, start - Date.now());
@@ -1267,7 +1400,7 @@ function renderOverview(){
   const pPack = listProgress(state.packing), pShop = listProgress(state.shopping), pCheck = listProgress(state.checklist);
   const pDocs = listProgress(state.vehicles.map(v=>({items:v.docs})));
 
-  document.getElementById('page-uebersicht').innerHTML = `
+  document.getElementById('page-uebersicht').innerHTML = renderHomeDashboard(route, tot, pCheck) + `
     <div class="card countdown">
       <div class="label">Abfahrt · Sonntag, 2. August 2026</div>
       <div class="count-nums">
@@ -1275,29 +1408,29 @@ function renderOverview(){
         <div class="count-cell"><b>${hrs}</b><span>Std</span></div>
         <div class="count-cell"><b>${min}</b><span>Min</span></div>
       </div>
-      <div class="label" style="margin-top:6px">bis zum Roadtrip 🚐 · Totale Sonnenfinsternis in ${eclDays} Tagen 🌒</div>
+      <div class="label" style="margin-top:6px">bis zum Roadtrip · Totale Sonnenfinsternis in ${eclDays} Tagen</div>
     </div>
 
     <div class="grid2">
       <div class="card">
-        <h2>👥 Crew <span class="spacer"></span></h2>
+        <h2>Crew <span class="spacer"></span></h2>
         <div class="chips">${state.crew.map(c=>`<span class="chip static" style="--c:${c.color}" onclick="editCrew('${c.id}')" title="Name bearbeiten"><span class="dot"></span>${esc(c.name)}</span>`).join('')}</div>
         <div class="hint">Tipp: Auf einen Namen tippen, um ihn zu ändern.</div>
       </div>
       <div class="card">
-        <h2>📌 Eckdaten</h2>
+        <h2>Eckdaten</h2>
         <div class="factrow"><span class="k">Abfahrt</span><span class="v">So, 02.08.2026 — München & Innsbruck</span></div>
-        <div class="factrow"><span class="k">Fahrzeuge</span><span class="v">🚐 Camper (Lukas, ab Innsbruck) · 🚗 Kleinwagen (Bernhard, ab München)</span></div>
+        <div class="factrow"><span class="k">Fahrzeuge</span><span class="v">Camper (Lukas, ab Innsbruck) · Kleinwagen (Bernhard, ab München)</span></div>
         <div class="factrow"><span class="k">Festival</span><span class="v">Sizigia Eclipse Gathering · 10.–14.08. · Huesca (ES)</span></div>
-        <div class="factrow"><span class="k">Highlight</span><span class="v">🌒 Totale Sonnenfinsternis am 12.08.2026</span></div>
-        <div class="factrow"><span class="k">Route</span><span class="v">${route.emoji} ${esc(route.name)} · ca. ${tot.km} km, ~${tot.hTxt} Std Fahrzeit</span></div>
+        <div class="factrow"><span class="k">Highlight</span><span class="v">Totale Sonnenfinsternis am 12.08.2026</span></div>
+        <div class="factrow"><span class="k">Route</span><span class="v">${esc(route.name)} · ca. ${tot.km} km, ~${tot.hTxt} Std Fahrzeit</span></div>
       </div>
     </div>
 
     <div class="card">
-      <h2>📊 Fortschritt</h2>
+      <h2>Fortschritt</h2>
       <div style="display:grid;gap:12px">
-        ${[['🎒 Packliste',pPack,'packen'],['🛒 Einkauf',pShop,'einkauf'],['✅ Checkliste vor Abfahrt',pCheck,'logistik'],['🚐 Fahrzeug-Dokumente',pDocs,'logistik']].map(([l,p,tab])=>`
+        ${[['Packliste',pPack,'packen'],['Einkauf',pShop,'einkauf'],['Checkliste vor Abfahrt',pCheck,'logistik'],['Fahrzeug-Dokumente',pDocs,'logistik']].map(([l,p,tab])=>`
           <div style="cursor:pointer" onclick="switchTab('${tab}')" title="öffnen">
             <div style="display:flex;justify-content:space-between;font-size:13.5px"><span>${l}</span><span style="color:var(--muted)">${p.done}/${p.total} ›</span></div>
             <div class="progress"><i style="width:${p.pct}%"></i></div>
@@ -1306,13 +1439,13 @@ function renderOverview(){
     </div>
 
     <div class="card">
-      <h2>🕘 Zuletzt passiert <span class="spacer"></span><button class="btn ghost small" onclick="switchTab('verlauf')">alle ›</button></h2>
+      <h2>Zuletzt passiert <span class="spacer"></span><button class="btn ghost small" onclick="switchTab('verlauf')">alle ›</button></h2>
       ${(state.log||[]).length===0 ? '<p class="hint" style="margin:0">Noch keine Änderungen — leg los!</p>' :
         [...state.log].reverse().slice(0,3).map(logRow).join('')}
     </div>
 
     <div class="card">
-      <h2>💾 Datensicherung</h2>
+      <h2>Datensicherung</h2>
       <p style="font-size:14px;color:var(--muted)">Alle Änderungen werden automatisch lokal gespeichert und mit der Gruppe synchronisiert, sobald Verbindung besteht. Backups und automatische Sicherungen werden beim Öffnen nur auf diesem Gerät geladen, damit niemand versehentlich alte Daten für alle überschreibt.</p>
       <div class="backup-actions">
         <button class="btn primary" onclick="exportData()">Backup exportieren</button>
@@ -1371,7 +1504,7 @@ function getStageList(ref){
 }
 function renderRoute(){
   const route = state.routes.find(r=>r.id===state.selectedRoute);
-  document.getElementById('page-route').innerHTML = `
+  document.getElementById('page-route').innerHTML = sectionBackButton() + `
     <div class="card">
       <h2>🗺️ Karte</h2>
       ${buildRouteMap()}
@@ -1476,7 +1609,7 @@ function sortedSpots(){
 }
 function renderSpots(){
   const spots = sortedSpots();
-  document.getElementById('page-spots').innerHTML = `
+  document.getElementById('page-spots').innerHTML = sectionBackButton() + `
     <div class="card">
       <h2>🗺️ Spots auf der Karte</h2>
       ${buildSpotsMap(spots)}
@@ -1556,7 +1689,7 @@ function editSpot(id){
    LOGISTIK
    ============================================================ */
 function renderLogistics(){
-  document.getElementById('page-logistik').innerHTML = `
+  document.getElementById('page-logistik').innerHTML = sectionBackButton() + `
     ${state.vehicles.map(v=>`
       <div class="card">
         <h2>${v.id==='v-camper'?'🚐':'🚗'} ${esc(v.name)} <span class="spacer"></span><button class="btn ghost small" onclick="editVehicle('${v.id}')">✎</button></h2>
@@ -1692,7 +1825,7 @@ function editItem(ref, id){
    PACKEN & EINKAUF
    ============================================================ */
 function renderCategoryLists(pageId, groups, kind, addCatLabel, prefix='', hideAdd=false){
-  document.getElementById(pageId).innerHTML = prefix + groups.map(g=>{
+  document.getElementById(pageId).innerHTML = sectionBackButton() + prefix + groups.map(g=>{
     const p = listProgress(g.items);
     return `
     <div class="card">
@@ -1786,7 +1919,7 @@ function renderBudget(){
   const ex = state.budget.expenses;
   const {total, bal, settlements} = budgetCalc();
 
-  document.getElementById('page-budget').innerHTML = `
+  document.getElementById('page-budget').innerHTML = sectionBackButton() + `
     <div class="card">
       <h2>💶 Neue Ausgabe</h2>
       <div class="formgrid">
@@ -1860,7 +1993,7 @@ function deleteExpense(id){
    FESTIVAL
    ============================================================ */
 function renderFestival(){
-  document.getElementById('page-festival').innerHTML =
+  document.getElementById('page-festival').innerHTML = sectionBackButton() +
     state.festival.map(f=>`
       <div class="card">
         <h2>${esc(f.title)} <span class="spacer"></span><button class="btn ghost small" onclick="editFestival('${f.id}')">✎</button></h2>
@@ -1919,7 +2052,7 @@ function logRow(e){
 function renderLog(){
   const entries = [...(state.log||[])].reverse().slice(0,100);
   const me = whoami();
-  document.getElementById('page-verlauf').innerHTML = `
+  document.getElementById('page-verlauf').innerHTML = sectionBackButton() + `
     <div class="card">
       <h2>🙋 Wer bist du?</h2>
       <div class="chips">${state.crew.map(c=>`<span class="chip${me===c.id?' on':''}" style="--c:${c.color}" onclick="setWhoami('${c.id}')"><span class="dot"></span>${esc(c.name)}</span>`).join('')}</div>
