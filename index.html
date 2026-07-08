@@ -339,12 +339,18 @@ textarea{resize:vertical;min-height:70px}
 #page-spots .mapwrap svg{height:min(60vw,380px)}
 .map-tools{position:absolute;right:8px;bottom:8px;display:flex;gap:6px;z-index:2}
 .mtool{width:36px;height:36px;border-radius:10px;border:1px solid var(--border-strong);background:rgba(10,16,32,.74);color:var(--text);font-size:18px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
-.mtool.wide{width:auto;padding:0 11px;font-size:12.5px}
 .map-pt{cursor:pointer}
 .map-pt:hover circle,.map-pt:hover rect{filter:brightness(1.12)}
 .sea-label{fill:#4f86b8;letter-spacing:.28em;text-transform:uppercase;font-family:var(--font-display);font-weight:700;opacity:.75;text-anchor:middle}
 .city-label{fill:#3d4453;font-family:var(--font-body);font-weight:600;paint-order:stroke;stroke:rgba(255,255,250,.8)}
 .country-label{fill:#585f6e;letter-spacing:.14em;text-transform:uppercase;font-family:var(--font-display);font-weight:700;opacity:.92;text-anchor:middle;paint-order:stroke;stroke:rgba(255,255,250,.72)}
+.route-switch{position:relative;display:inline-block;margin:12px 0 2px}
+.route-switch select{
+  appearance:none;-webkit-appearance:none;-moz-appearance:none;width:auto;max-width:100%;
+  border:1px solid var(--border-strong);background:var(--card);color:var(--text);
+  padding:9px 34px 9px 15px;border-radius:11px;font-size:13.5px;font-weight:600;cursor:pointer;
+}
+.route-switch::after{content:"▾";position:absolute;right:13px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);font-size:11px}
 .layerchips{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}
 .lchip{display:inline-flex;align-items:center;gap:7px;padding:5px 12px;border-radius:999px;border:1px solid var(--border);background:var(--card);font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;user-select:none;transition:all .15s}
 .lchip .swatch{width:15px;height:3px;border-radius:2px;background:var(--c,#888);flex:0 0 auto}
@@ -1438,7 +1444,6 @@ function baseMapSvg(inner, id){
     <div class="map-tools">
       <button type="button" class="mtool" onclick="mapZoomBy('${id}',1.45)" aria-label="Hineinzoomen">+</button>
       <button type="button" class="mtool" onclick="mapZoomBy('${id}',${1/1.45})" aria-label="Herauszoomen">−</button>
-      <button type="button" class="mtool wide" onclick="mapResetView('${id}')">Europa</button>
     </div>
   </div>`;
 }
@@ -1481,10 +1486,6 @@ function mapZoomBy(id, f){
   if(!svg) return;
   const r = svg.getBoundingClientRect();
   mapZoomAt(id, f, r.left+r.width/2, r.top+r.height/2);
-  mapSettle(id);
-}
-function mapResetView(id){
-  Object.assign(MAP_VIEWS[id], {z:1, cx:MAP.W/2, cy:MAP.H/2});
   mapSettle(id);
 }
 // Pointer-Gesten (dokumentweit, eine aktive Karte): 1 Finger = verschieben,
@@ -2039,6 +2040,11 @@ function renderRoute(){
     <div class="card route-map-card">
       <h2>🗺️ Karte <span class="spacer"></span><button class="btn small" onclick="openBigMap()">Groß öffnen</button></h2>
       ${buildRouteMap()}
+      <div class="route-switch">
+        <select onchange="selectRoute(this.value)" aria-label="Route wechseln">
+          ${state.routes.map(r=>`<option value="${r.id}"${r.id===state.selectedRoute?' selected':''}>${esc(r.emoji)} ${esc(r.name)}</option>`).join('')}
+        </select>
+      </div>
       <div class="layerchips">
         <span class="lchip static on" style="--c:#ffb257"><span class="swatch"></span>${esc(route.name)} (gewählt)</span>
         <span class="lchip${mapLayers.alle?' on':''}" style="--c:#54c8ff" onclick="toggleMapLayer('alle')"><span class="swatch"></span>Alle Routen vergleichen</span>
