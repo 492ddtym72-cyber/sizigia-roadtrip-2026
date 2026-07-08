@@ -315,7 +315,7 @@ textarea{resize:vertical;min-height:70px}
 
 /* ---------- Karte (Inline-SVG, offline) ---------- */
 .mapwrap{border:1px solid var(--border);border-radius:14px;overflow-x:auto;background:#0a1020;margin-bottom:4px}
-.mapwrap svg{display:block;width:100%;min-width:520px;height:auto}
+.mapwrap svg{display:block;width:100%;height:auto}
 .map-pt{cursor:pointer}
 .map-pt:hover circle,.map-pt:hover rect{filter:brightness(1.2)}
 .sea-label{fill:#2f3a66;font-size:13px;letter-spacing:.28em;text-transform:uppercase;font-family:var(--font-display);font-weight:700}
@@ -551,6 +551,8 @@ a.maplink:hover{text-decoration:underline}
    ============================================================ */
 const STORAGE_KEY = 'sizigia-roadtrip-2026';
 const SCHEMA_VERSION = 1;
+const LOG_MAX = 60;
+const UNDO_MAX = 20;
 
 /* CLOUD-SYNC (optional):
    REST-URL einer Firebase Realtime Database inkl. geheimem Pfad + ".json",
@@ -778,6 +780,15 @@ function migrate(s){
   (s.shopping||[]).forEach(c=>{ c.items = c.items || []; });
   s.budget.expenses = s.budget.expenses || [];
   s.budget.expenses.forEach(e=>{ e.sharers = e.sharers || []; });
+  if(Array.isArray(s.log)){
+    while(s.log.length > LOG_MAX) s.log.shift();
+    let keep = UNDO_MAX;
+    for(let i=s.log.length-1; i>=0; i--){
+      if(!s.log[i].undo) continue;
+      if(keep>0) keep--;
+      else s.log[i].undo = null;
+    }
+  }
   s.schemaVersion = SCHEMA_VERSION;
   return s;
 }
@@ -1086,7 +1097,17 @@ function askWho(){
 function logChange(desc, undo=null, who=whoami()){
   if(!Array.isArray(state.log)) state.log = [];
   state.log.push({id:uid(), ts:new Date().toISOString(), who, desc, undo});
-  while(state.log.length > 150) state.log.shift();
+  pruneLog();
+}
+function pruneLog(){
+  if(!Array.isArray(state.log)) state.log = [];
+  while(state.log.length > LOG_MAX) state.log.shift();
+  let keep = UNDO_MAX;
+  for(let i=state.log.length-1; i>=0; i--){
+    if(!state.log[i].undo) continue;
+    if(keep>0) keep--;
+    else state.log[i].undo = null;
+  }
 }
 function refLabel(ref){
   if(ref==='checklist') return 'Checkliste';
@@ -1182,9 +1203,21 @@ function mapsLink(stage){
    Erkennung über das GEO-Ortslexikon (Textabgleich, letzter Treffer
    im String gewinnt = Zielort).
    ============================================================ */
-const MAP = (()=>{ const m={lonMin:-4.5,lonMax:14.5,latMin:39.8,latMax:49.2,W:700};
+const MAP_BOUNDS = {
+  detail:{lonMin:-4.5,lonMax:14.5,latMin:39.8,latMax:49.2},
+  europe:{lonMin:-9.5,lonMax:16.5,latMin:38.0,latMax:51.4},
+};
+let mapZoom = sessionStorage.getItem('sizigia-map-zoom') || 'detail';
+let mapStyle = sessionStorage.getItem('sizigia-map-style') || 'abstract';
+function makeMap(){
+  const bounds = MAP_BOUNDS[mapZoom] || MAP_BOUNDS.detail;
+  const m={...bounds,W:700};
   m.kx=m.W/(m.lonMax-m.lonMin); m.ky=m.kx/Math.cos(44.5*Math.PI/180);
-  m.H=Math.round((m.latMax-m.latMin)*m.ky); return m; })();
+  m.H=Math.round((m.latMax-m.latMin)*m.ky); return m;
+}
+let MAP = makeMap();
+function setMapZoom(mode){ mapZoom = mode; sessionStorage.setItem('sizigia-map-zoom', mode); MAP = makeMap(); renderRoute(); }
+function setMapStyle(mode){ mapStyle = mode; sessionStorage.setItem('sizigia-map-style', mode); renderRoute(); }
 function project(lat,lng){ return {x:(lng-MAP.lonMin)*MAP.kx, y:(MAP.latMax-lat)*MAP.ky}; }
 function unproject(x,y){ return {lat:MAP.latMax-y/MAP.ky, lng:MAP.lonMin+x/MAP.kx}; }
 
@@ -1230,16 +1263,53 @@ const ISLANDS=[
   [[8.2,40.85],[8.15,40.58],[8.4,40.3],[8.42,39.8],[9.65,39.8],[9.8,40.5],[9.65,41.0],[9.23,41.25],[8.9,40.95]], // Sardinien (angeschnitten)
   [[2.4,39.8],[2.75,39.87],[3.17,39.95],[3.45,39.8]],                                                            // Mallorca (angeschnitten)
 ];
+const BORDERS=[
+  [[-1.8,43.35],[-1.1,43.05],[0.1,42.85],[1.45,42.55],[2.15,42.42],[3.25,42.45]], // Spanien / Frankreich
+  [[6.65,45.0],[7.0,44.55],[7.4,44.18],[8.1,44.0]],                              // Frankreich / Italien
+  [[5.9,46.1],[7.2,46.2],[8.2,46.1],[9.1,46.0]],                                  // Frankreich / Schweiz / Norditalien
+  [[9.1,46.0],[10.0,46.4],[11.1,47.0],[12.1,47.05]],                              // Alpenraum / Österreich
+  [[-7.4,43.7],[-5.8,43.3],[-2.0,43.35]],                                          // Nordspanien
+];
+const RIVERS=[
+  [[4.8,45.8],[4.6,44.9],[4.85,44.2],[4.55,43.4]],                                // Rhône
+  [[0.8,43.6],[0.5,43.25],[0.7,42.85],[1.25,42.55]],                               // Garonne/Pyrenäenraum
+  [[10.4,46.1],[10.8,45.3],[10.85,44.85],[10.0,44.4]],                             // Po grob
+  [[-1.1,41.75],[-0.9,41.65],[-0.4,41.7],[0.1,41.62]],                             // Ebro grob
+];
+const MOUNTAINS=[
+  [[-1.7,43.1],[-0.6,42.72],[0.5,42.55],[1.8,42.38],[3.1,42.42]],                  // Pyrenäen
+  [[5.9,45.8],[6.8,46.1],[7.9,46.0],[9.2,45.75],[10.8,46.25],[12.0,47.0]],          // Alpen
+];
 function svgPath(pts, close=true){
   return 'M'+pts.map(p=>{const q=project(p[1],p[0]);return q.x.toFixed(1)+','+q.y.toFixed(1);}).join('L')+(close?'Z':'');
 }
+function svgLine(pts){
+  return 'M'+pts.map(p=>{const q=project(p[1],p[0]);return q.x.toFixed(1)+','+q.y.toFixed(1);}).join('L');
+}
 function baseMapSvg(inner, pickerId){
-  const cities=[['München',48.14,11.57],['Innsbruck',47.27,11.39],['Huesca',42.14,-0.41],['Barcelona',41.39,2.17],['Marseille',43.30,5.37]];
+  const cities = mapZoom==='europe'
+    ? [['München',48.14,11.57],['Innsbruck',47.27,11.39],['Huesca',42.14,-0.41],['Barcelona',41.39,2.17],['Marseille',43.30,5.37],['Lyon',45.76,4.84],['Toulouse',43.60,1.44],['Zaragoza',41.65,-0.88],['Genua',44.41,8.93],['Nizza',43.70,7.27],['Mailand',45.46,9.19],['Bordeaux',44.84,-0.58],['Bilbao',43.26,-2.94]]
+    : [['München',48.14,11.57],['Innsbruck',47.27,11.39],['Huesca',42.14,-0.41],['Barcelona',41.39,2.17],['Marseille',43.30,5.37],['Lyon',45.76,4.84],['Toulouse',43.60,1.44],['Genua',44.41,8.93]];
   const sea1=project(41.2,6.6), sea2=project(45.8,-3.3);
+  const relief = mapStyle === 'relief';
+  const defs = relief ? `<defs>
+      <linearGradient id="landGrad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#26345c"/><stop offset=".48" stop-color="#263a35"/><stop offset="1" stop-color="#4a3a2b"/>
+      </linearGradient>
+      <linearGradient id="seaGrad" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="#061225"/><stop offset="1" stop-color="#0a1f34"/>
+      </linearGradient>
+    </defs>` : '';
+  const seaFill = relief ? 'url(#seaGrad)' : '#080d1a';
+  const landFill = relief ? 'url(#landGrad)' : '#1f2745';
   return `<div class="mapwrap"><svg viewBox="0 0 ${MAP.W} ${MAP.H}" xmlns="http://www.w3.org/2000/svg"${pickerId?` id="${pickerId}"`:''}>
-    <rect width="${MAP.W}" height="${MAP.H}" fill="#080d1a"/>
-    <path d="${svgPath(COAST)}" fill="#1f2745" stroke="#3d4a78" stroke-width="1.3"/>
-    ${ISLANDS.map(i=>`<path d="${svgPath(i)}" fill="#1f2745" stroke="#3d4a78" stroke-width="1"/>`).join('')}
+    ${defs}
+    <rect width="${MAP.W}" height="${MAP.H}" fill="${seaFill}"/>
+    <path d="${svgPath(COAST)}" fill="${landFill}" stroke="#526196" stroke-width="${relief?1.15:1.3}"/>
+    ${ISLANDS.map(i=>`<path d="${svgPath(i)}" fill="${landFill}" stroke="#526196" stroke-width="1"/>`).join('')}
+    ${relief ? MOUNTAINS.map(m=>`<path d="${svgLine(m)}" fill="none" stroke="#ffcf8a" stroke-width="5" stroke-opacity=".08" stroke-linecap="round"/>`).join('') : ''}
+    ${relief ? RIVERS.map(r=>`<path d="${svgLine(r)}" fill="none" stroke="#78c8ff" stroke-width="1.2" stroke-opacity=".42" stroke-linecap="round"/>`).join('') : ''}
+    ${BORDERS.map(b=>`<path d="${svgLine(b)}" fill="none" stroke="#c7d0ff" stroke-width=".9" stroke-opacity="${relief?'.35':'.24'}" stroke-dasharray="4 4"/>`).join('')}
     <text x="${sea1.x}" y="${sea1.y}" class="sea-label">Mittelmeer</text>
     <text x="${sea2.x}" y="${sea2.y}" class="sea-label">Atlantik</text>
     ${cities.map(c=>{const q=project(c[1],c[2]);return `<circle cx="${q.x.toFixed(1)}" cy="${q.y.toFixed(1)}" r="2.2" fill="#5a6488"/><text x="${(q.x+5).toFixed(1)}" y="${(q.y+3.5).toFixed(1)}" class="city-label">${c[0]}</text>`;}).join('')}
@@ -1591,12 +1661,16 @@ function renderRoute(){
       <h2>🗺️ Karte</h2>
       ${buildRouteMap()}
       <div class="layerchips">
+        <span class="lchip${mapZoom==='detail'?' on':''}" style="--c:#ffb257" onclick="setMapZoom('detail')"><span class="swatch"></span>Detail</span>
+        <span class="lchip${mapZoom==='europe'?' on':''}" style="--c:#ffb257" onclick="setMapZoom('europe')"><span class="swatch"></span>Europa</span>
+        <span class="lchip${mapStyle==='abstract'?' on':''}" style="--c:#8ea8ff" onclick="setMapStyle('abstract')"><span class="swatch"></span>Abstrakt</span>
+        <span class="lchip${mapStyle==='relief'?' on':''}" style="--c:#8ea8ff" onclick="setMapStyle('relief')"><span class="swatch"></span>Relief</span>
         <span class="lchip static on" style="--c:#ffb257"><span class="swatch"></span>${esc(route.name)} (gewählt)</span>
         <span class="lchip${mapLayers.alle?' on':''}" style="--c:#54c8ff" onclick="toggleMapLayer('alle')"><span class="swatch"></span>Alle Routen vergleichen</span>
         <span class="lchip${mapLayers.rueck?' on':''}" style="--c:#b18cff" onclick="toggleMapLayer('rueck')"><span class="swatch"></span>Rückreise</span>
         <span class="lchip${mapLayers.spots?' on':''}" style="--c:#ff6b4a" onclick="toggleMapLayer('spots')"><span class="swatch"></span>Spots</span>
       </div>
-      <div class="hint">Marker antippen für Details. Nummern = Etappen-Tage. Positionen lassen sich beim Bearbeiten einer Etappe per Fingertipp auf die Karte feinjustieren.</div>
+      <div class="hint">Offline-Karte ohne externe Tiles. „Europa" zoomt weiter heraus, „Relief" zeigt eine stilisierte Basiskarte mit Grenzen/Strukturen. Marker antippen für Details.</div>
     </div>
 
     <div class="card">
@@ -2170,7 +2244,8 @@ function renderBackupTools(){
     </div>`;
 }
 function renderLog(){
-  const entries = [...(state.log||[])].reverse().slice(0,100);
+  pruneLog();
+  const entries = [...(state.log||[])].reverse();
   const me = whoami();
   document.getElementById('page-verlauf').innerHTML = sectionBackButton() + `
     <div class="card">
@@ -2182,8 +2257,7 @@ function renderLog(){
     <div class="card">
       <h2>Verlauf</h2>
       ${entries.length===0 ? '<p class="hint" style="margin:0">Noch keine Änderungen protokolliert — ab jetzt wird alles hier festgehalten.</p>' : entries.map(logRow).join('')}
-      ${(state.log||[]).length>100 ? '<p class="hint">Nur die letzten 100 Einträge werden angezeigt (gespeichert: max. 150).</p>' : ''}
-      <div class="hint">↩︎ macht genau diesen einen Schritt rückgängig — auch Schritte von anderen. Für größere Sprünge: Sicherungen in diesem Bereich.</div>
+      <div class="hint">Gespeichert werden die letzten ${LOG_MAX} Einträge. Rückgängig ist nur für die letzten ${UNDO_MAX} reversiblen Schritte aktiv — für größere Sprünge: Sicherungen in diesem Bereich.</div>
     </div>`;
 }
 
