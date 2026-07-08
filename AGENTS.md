@@ -83,13 +83,25 @@ AGENTS.md                   # Diese Datei (CLAUDE.md verweist hierauf)
 - Editieren über das generische Modal: `openModal(title, fields, onSave, onDelete?)`.
   Feldtypen: `text` (Default), `number`, `textarea`, `select`, `map`
   (Positionswahl per Fingertipp, liefert `"lat,lng"`-String → `applyPos()`).
-- **Karte:** Inline-SVG, komplett offline — bewusst KEINE Tiles/Leaflet/CDN.
-  Equirektangulare Projektion (`MAP`, `project()`/`unproject()`), vereinfachte
-  Küste (`COAST`, `ISLANDS`, Format `[lon,lat]`). Positionen kommen aus
-  gespeichertem `lat`/`lng` am Objekt oder automatisch via `GEO`-Ortslexikon
-  (`geoLookup`: Substring-Abgleich, letzter Treffer im String gewinnt = Ziel).
-  Neue vorbefüllte Orte ⇒ Eintrag in `GEO` ergänzen. Marker-Klicks laufen über
-  das `mapInfoLabels`-Array (wird in `renderAll()` geleert).
+- **Karte:** echtes Europakarten-Bild (Natural Earth I, public domain; Terrain +
+  Grenzen ins Bild gebacken), als WebP-Data-URI in `MAP_IMG` eingebettet —
+  komplett offline, bewusst KEINE Tiles/Leaflet/CDN. Feste equirektangulare
+  Projektion über die Bildgrenzen (`MAP` = 12°W–45°O / 33°–63°N,
+  `project()`/`unproject()`). Länder-/Städte-/Meer-Beschriftungen
+  (`COUNTRY_LABELS`, `CITY_LABELS`, `SEA_LABELS`) sowie Routen/Marker sind
+  SVG-Overlays im `<g class="map-pan">`. Pan/Zoom pro Karten-Instanz
+  (`MAP_VIEWS`, `data-mapid`: `route`, `spots`, `big`, `pick<i>`): Ziehen,
+  Pinch, Mausrad, +/−-Buttons. Gesten ändern nur das `transform`; am
+  Gesten-Ende baut `mapSettle()` → `rebuild()` das Overlay mit Gegenskalierung
+  (Modul-Variable `MZ`) neu, damit Marker/Labels konstant groß bleiben.
+  Positionen kommen aus gespeichertem `lat`/`lng` am Objekt oder automatisch
+  via `GEO`-Ortslexikon (`geoLookup`: Substring-Abgleich, letzter Treffer im
+  String gewinnt = Ziel). Neue vorbefüllte Orte ⇒ Eintrag in `GEO` ergänzen.
+  Marker-Klicks laufen über das `mapInfoLabels`-Array (in `renderAll()`
+  geleert). Bild neu erzeugen: Natural-Earth-Raster (GitHub
+  `nvkelso/natural-earth-raster`, `NE1_HR_LC_SR_W.tif`) auf die `MAP`-Grenzen
+  zuschneiden, Grenzen aus `ne_50m_admin_0_boundary_lines_land` einzeichnen,
+  als WebP (Qualität ≈78) kodieren.
 - Design-Tokens als CSS-Variablen in `:root` (Theme „Eclipse Night": dunkler
   Nachthimmel, Sonnenkorona-Akzente `--sun`/`--coral`).
 
