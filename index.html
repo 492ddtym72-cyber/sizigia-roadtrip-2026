@@ -590,11 +590,16 @@ a.maplink:hover{text-decoration:underline}
 .big-map-stage{flex:1;min-height:320px;display:flex}
 .big-map-stage .mapwrap{flex:1;margin:0;border-radius:16px}
 .big-map-stage .mapwrap svg{height:100%;width:100%}
-.reminder-card,.poll-card{border:1px solid rgba(255,255,255,.08);border-radius:15px;padding:12px;margin-bottom:10px;background:rgba(255,255,255,.035)}
+.reminder-card,.poll-card,.camp-card{border:1px solid rgba(255,255,255,.08);border-radius:15px;padding:12px;margin-bottom:10px;background:rgba(255,255,255,.035)}
 .reminder-card.done,.poll-card.closed{opacity:.58}
-.reminder-head,.poll-head{display:flex;align-items:flex-start;gap:10px}
-.reminder-head b,.poll-head b{flex:1;min-width:0}
+.reminder-head,.poll-head,.camp-head{display:flex;align-items:flex-start;gap:10px}
+.reminder-head b,.poll-head b,.camp-head b{flex:1;min-width:0}
 .reminder-meta,.poll-meta{color:var(--faint);font-size:12px;margin-top:4px}
+.camp-head b{font-family:var(--font-display);font-size:15px;letter-spacing:.02em}
+.camp-region{font-size:11.5px;color:var(--sun);letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-top:2px}
+.camp-note{font-size:13px;color:var(--muted);margin:6px 0 0;white-space:pre-line}
+.camp-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.camp-actions .btn{text-decoration:none}
 .poll-option{padding:9px 6px;margin:0 -6px;border-top:1px solid rgba(255,255,255,.06);border-radius:10px;cursor:pointer;transition:background .15s}
 .poll-option:first-of-type{border-top:0}
 .poll-option:hover{background:rgba(255,255,255,.035)}
@@ -911,6 +916,7 @@ function defaultState(){
     budget:{ expenses:[] },
     reminders:[],
     polls:[],
+    campContacts:[],
     log:[],
     festival:[
       {id:uid(), title:'Sizigia Eclipse Gathering 2026', text:'10.–14.08.2026 · Provinz Huesca (Aragón, Spanien).\nGenauer Standort & Anfahrt: siehe Ticket-/Info-Mail — hier eintragen, sobald bekannt.'},
@@ -948,7 +954,7 @@ function migrate(s){
   // benutzten State (meta.lastSaved existiert) fehlende, leerbare Container
   // als leer wiederherstellen statt mit Defaults zu befüllen.
   if(s.meta && s.meta.lastSaved){
-    ['checklist','returnStages','spots','festival','log','reminders','polls'].forEach(k=>{ if(s[k] === undefined) s[k] = []; });
+    ['checklist','returnStages','spots','festival','log','reminders','polls','campContacts'].forEach(k=>{ if(s[k] === undefined) s[k] = []; });
     if(s.budget === undefined) s.budget = {expenses:[]};
   }
   // Fehlende Top-Level-Schlüssel defensiv aus dem Standard ergänzen
@@ -1344,6 +1350,9 @@ function applyRevert(u){
     case 'pollEdit': Object.assign(need(state.polls.find(p=>p.id===u.id)), u.prev); break;
     case 'pollVote': need(state.polls.find(p=>p.id===u.id)).votes = u.prev; break;
     case 'pollClose': need(state.polls.find(p=>p.id===u.id)).closed = u.prev; break;
+    case 'campAdd':  { const i=state.campContacts.findIndex(c=>c.id===u.id); if(i<0) throw 0; state.campContacts.splice(i,1); break; }
+    case 'campDel':  state.campContacts.splice(Math.min(u.idx,state.campContacts.length),0,u.contact); break;
+    case 'campEdit': Object.assign(need(state.campContacts.find(c=>c.id===u.id)), u.prev); break;
     case 'stageAdd': { const l=getStageList(u.ref); const i=l.findIndex(x=>x.id===u.id); if(i<0) throw 0; l.splice(i,1); break; }
     case 'stageDel': { const l=getStageList(u.ref); l.splice(Math.min(u.idx,l.length),0,u.stage);
       if(u.followFix){ const f=l.find(x=>x.id===u.followFix.id); if(f){ f.from=u.followFix.prevFrom; f.km=u.followFix.prevKm; f.time=u.followFix.prevTime;
@@ -2987,9 +2996,68 @@ function pollRow(p){
     }).join(''); })()}
   </div>`;
 }
+// Camping-Kontakte: Notfall-Liste zum spontanen Anrufen, falls der geplante
+// Platz voll ist. Bewusst schlank (Name, Ort, Telefon, Karten-Link, Notiz) —
+// keine Priorisierung/Sortierlogik nötig für eine Handvoll Kontakte.
+function addCampContact(){
+  openModal('Camping-Kontakt hinzufügen', [
+    {key:'name',label:'Name des Campingplatzes',value:''},
+    {key:'region',label:'Region / Ort',value:''},
+    {key:'phone',label:'Telefon',value:'',placeholder:'z. B. +34 123 456 789'},
+    {key:'link',label:'Karten-Link (optional)',value:'',placeholder:'https://maps.google.com/…'},
+    {key:'note',label:'Notizen',type:'textarea',value:'',placeholder:'z. B. Preis/Nacht, Verfügbarkeit, Ansprechpartner'},
+  ], v=>{
+    const name = v.name.trim();
+    if(!name){ toast('Bitte einen Namen eintragen'); return; }
+    const contact = {id:uid(), name, region:v.region.trim(), phone:v.phone.trim(), link:v.link.trim(), note:v.note.trim(), createdAt:new Date().toISOString()};
+    state.campContacts.push(contact);
+    logChange('hat Camping-Kontakt „'+name+'" hinzugefügt', {t:'campAdd', id:contact.id});
+  });
+}
+function editCampContact(id){
+  const c = state.campContacts.find(x=>x.id===id);
+  if(!c) return;
+  openModal('Camping-Kontakt bearbeiten', [
+    {key:'name',label:'Name des Campingplatzes',value:c.name},
+    {key:'region',label:'Region / Ort',value:c.region||''},
+    {key:'phone',label:'Telefon',value:c.phone||'',placeholder:'z. B. +34 123 456 789'},
+    {key:'link',label:'Karten-Link (optional)',value:c.link||'',placeholder:'https://maps.google.com/…'},
+    {key:'note',label:'Notizen',type:'textarea',value:c.note||''},
+  ], v=>{
+    const name = v.name.trim();
+    if(!name){ toast('Bitte einen Namen eintragen'); return; }
+    const prev = {name:c.name, region:c.region, phone:c.phone, link:c.link, note:c.note};
+    c.name = name; c.region = v.region.trim(); c.phone = v.phone.trim(); c.link = v.link.trim(); c.note = v.note.trim();
+    logChange('hat Camping-Kontakt „'+c.name+'" bearbeitet', {t:'campEdit', id, prev});
+  }, ()=>{
+    const idx = state.campContacts.findIndex(x=>x.id===id);
+    if(idx<0) return;
+    const contact = copyData(c);
+    logChange('hat Camping-Kontakt „'+c.name+'" gelöscht', {t:'campDel', contact, idx});
+    state.campContacts.splice(idx,1);
+  });
+}
+function campContactRow(c){
+  const telHref = c.phone ? 'tel:'+c.phone.replace(/[^\d+]/g,'') : null;
+  const mapsHref = c.link || 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(c.name+(c.region?', '+c.region:''));
+  return `<div class="camp-card">
+    <div class="camp-head">
+      <b>${esc(c.name)}</b>
+      <button class="btn ghost small" onclick="editCampContact('${c.id}')">✎</button>
+    </div>
+    ${c.region?`<div class="camp-region">${esc(c.region)}</div>`:''}
+    ${c.phone?`<div class="camp-note">📞 ${esc(c.phone)}</div>`:''}
+    ${c.note?`<div class="camp-note">${esc(c.note)}</div>`:''}
+    <div class="camp-actions">
+      ${telHref?`<a class="btn primary small" href="${esc(telHref)}">📞 Anrufen</a>`:''}
+      <a class="btn ghost small" href="${esc(mapsHref)}" target="_blank" rel="noopener">🗺️ Karte</a>
+    </div>
+  </div>`;
+}
 function renderReminder(){
   const reminders = [...(state.reminders||[])].sort((a,b)=>(a.done===b.done ? new Date(b.createdAt)-new Date(a.createdAt) : (a.done?1:-1)));
   const polls = [...(state.polls||[])].sort((a,b)=>(a.closed===b.closed ? new Date(b.createdAt)-new Date(a.createdAt) : (a.closed?1:-1)));
+  const campContacts = [...(state.campContacts||[])].sort((a,b)=>a.name.localeCompare(b.name,'de'));
   document.getElementById('page-reminder').innerHTML = sectionBackButton() + `
     <div class="card">
       <h2>Erinnerungen <span class="spacer"></span><button class="btn small" onclick="addReminder()">+ Erinnerung</button></h2>
@@ -2998,6 +3066,11 @@ function renderReminder(){
     <div class="card">
       <h2>Umfragen <span class="spacer"></span><button class="btn small" onclick="addPoll()">+ Umfrage</button></h2>
       ${polls.length ? `<p class="hint" style="margin:0 0 12px">Tippe eine Option an, um mit deinem eigenen Profil dafür zu stimmen (Mehrfachauswahl möglich).</p>${polls.map(pollRow).join('')}` : '<p class="hint" style="margin:0">Noch keine Umfragen.</p>'}
+    </div>
+    <div class="card">
+      <h2>🏕️ Camping-Kontakte <span class="spacer"></span><button class="btn small" onclick="addCampContact()">+ Kontakt</button></h2>
+      <p class="hint" style="margin:0 0 12px">Campingplätze zum spontanen Anrufen, falls der geplante Platz mal voll ist.</p>
+      ${campContacts.length ? campContacts.map(campContactRow).join('') : '<p class="hint" style="margin:0">Noch keine Kontakte hinterlegt.</p>'}
     </div>`;
 }
 
