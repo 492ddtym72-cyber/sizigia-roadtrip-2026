@@ -452,6 +452,18 @@ a.maplink:hover{text-decoration:underline}
   display:flex;align-items:center;justify-content:center;line-height:1;padding:0;
 }
 .stage-connector-add:hover{color:var(--text);border-color:var(--border-strong);background:rgba(255,255,255,.09)}
+.stage-start{
+  position:relative;display:block;width:100%;text-align:left;padding:8px 12px 8px 34px;
+  background:none;border:none;color:inherit;font:inherit;cursor:pointer;border-radius:10px;
+}
+.stage-start:hover{background:rgba(255,255,255,.035)}
+.stage-start-dot{
+  position:absolute;left:14px;top:50%;margin-top:-4.5px;width:9px;height:9px;border-radius:50%;
+  border:2px solid var(--muted);background:var(--card-solid);z-index:1;
+}
+.stage-start::after{content:"";position:absolute;left:17.5px;top:50%;bottom:-2px;width:2px;background:rgba(255,178,87,.4)}
+.stage-start-kicker{display:block;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.stage-start b{font-size:14.5px;color:var(--text);font-family:var(--font-display);letter-spacing:.02em}
 
 /* ---------- Festival Line-up: psychedelischer Header + Zeitplan je Bühne (<details>) ---------- */
 .lineup-card{
@@ -2050,6 +2062,20 @@ function editCrew(id){
 /* ============================================================
    ROUTE
    ============================================================ */
+// Startpunkt der Liste: die Etappen-Karten zeigen seit der Timeline-Umstellung nur
+// noch ihr Ziel (die Herkunft ergibt sich aus der Vorgänger-Karte) — ohne diesen
+// Block wäre die Startadresse der allerersten Etappe (list[0].from) nirgends mehr
+// sichtbar. Antippen öffnet die erste Etappe zum Bearbeiten.
+function renderStageStart(ref, list){
+  if(!list.length || !list[0].from) return '';
+  return `
+  <div class="stage-start" role="button" tabindex="0" title="Startpunkt bearbeiten"
+       onclick="editStage('${ref}',0)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();editStage('${ref}',0)}">
+    <span class="stage-start-dot"></span>
+    <span class="stage-start-kicker">Start</span>
+    <b>${esc(list[0].from)}</b>
+  </div>`;
+}
 // Verbindung zwischen zwei Etappen-Karten: Linie + Pille mit Distanz/Fahrzeit/
 // Navigations-Link der Fahrt, die zu Etappe s hinführt. Läuft immer vor der
 // zugehörigen Etappen-Karte (auch vor der ersten — Strecke ab Treffpunkt).
@@ -2229,7 +2255,7 @@ function renderRoute(){
 
     <div class="card">
       <h2 style="flex-wrap:wrap">${route.emoji} Hinweg: ${esc(route.name)} <span class="spacer"></span><button class="btn small" onclick="openStageChooser('${route.id}')">+ Etappe</button></h2>
-      <div class="stage-list">${route.stages.map((s,i)=>renderStageConnector(s, route.id, i)+renderStage(s, route.id, i, route.stages.length)).join('')}</div>
+      <div class="stage-list">${renderStageStart(route.id, route.stages)}${route.stages.map((s,i)=>renderStageConnector(s, route.id, i)+renderStage(s, route.id, i, route.stages.length)).join('')}</div>
       ${route.stages.length===0?`<div class="route-empty">
         <b>Noch keine Etappen</b>
         <p class="hint" style="margin:5px 0 12px">Starte mit dem ersten Abschnitt, danach funktionieren Karte, Gesamtstrecke und Bearbeitung wie bei den Vorschlägen.</p>
@@ -2240,7 +2266,7 @@ function renderRoute(){
 
     <div class="card">
       <h2 style="flex-wrap:wrap">🔙 Rückreise (ab 14.08., Vorschlag) <span class="spacer"></span><button class="btn small" onclick="openStageChooser('return')">+ Etappe</button></h2>
-      <div class="stage-list">${state.returnStages.map((s,i)=>renderStageConnector(s, 'return', i)+renderStage(s, 'return', i, state.returnStages.length)).join('')}</div>
+      <div class="stage-list">${renderStageStart('return', state.returnStages)}${state.returnStages.map((s,i)=>renderStageConnector(s, 'return', i)+renderStage(s, 'return', i, state.returnStages.length)).join('')}</div>
       ${state.returnStages.length?`<div class="routetotal">Gesamt Rückreise: ca. ${routeTotals(state.returnStages).km} km · ~${routeTotals(state.returnStages).hTxt} Std</div>`:''}
       <div class="hint">Nur ein Vorschlag — Datum & Route der Rückreise sind noch offen, alles anpassbar.</div>
     </div>`;
