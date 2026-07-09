@@ -2153,8 +2153,18 @@ function renderStageStart(ref, list){
 // Verbindung zwischen zwei Etappen-Karten: Linie + Pille mit Distanz/Fahrzeit/
 // Navigations-Link der Fahrt, die zu Etappe s hinführt. Läuft immer vor der
 // zugehörigen Etappen-Karte (auch vor der ersten — Strecke ab Treffpunkt).
+// Navigations-Link der Verbindungs-Pille: immer eine echte Route (Von → Nach),
+// nie der evtl. hinterlegte Ziel-Link der Etappe (der zeigt nur einen Pin — für
+// den Etappen-Popup richtig, zum Losfahren nicht). Bekannte Koordinaten schlagen
+// Ortsnamen: eindeutiger für Google Maps als Namen mit Zusätzen wie "(Region)".
+function stageRouteLink(s, prevStage){
+  const part = (pt, txt) => pt ? pt.lat.toFixed(5)+','+pt.lng.toFixed(5) : (txt ? encodeURIComponent(txt) : null);
+  const o = part(stageFromPoint(prevStage, s), s.from);
+  const d = part(pointOf(s, s.to), s.to);
+  return (o && d) ? 'https://www.google.com/maps/dir/'+o+'/'+d : null;
+}
 function renderStageConnector(s, ref, idx){
-  const link = mapsLink(s);
+  const link = stageRouteLink(s, getStageList(ref)[idx-1]);
   const hasInfo = s.km || s.time || link;
   return `
   <div class="stage-connector">
