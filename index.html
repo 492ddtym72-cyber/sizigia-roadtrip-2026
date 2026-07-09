@@ -693,7 +693,7 @@ a.maplink:hover{text-decoration:underline}
   <section class="page" id="page-einkauf" data-title="Einkaufsliste"></section>
   <section class="page" id="page-budget" data-title="Budget"></section>
   <section class="page" id="page-festival" data-title="Festival"></section>
-  <section class="page" id="page-reminder" data-title="Erinnern"></section>
+  <section class="page" id="page-reminder" data-title="Orga"></section>
   <section class="page" id="page-verlauf" data-title="Verlauf"></section>
 </div>
 
@@ -1926,7 +1926,7 @@ const TABS = [
   {id:'einkauf',    label:'Einkaufen'},
   {id:'budget',     label:'Ausgaben'},
   {id:'festival',   label:'Festival'},
-  {id:'reminder',   label:'Erinnern'},
+  {id:'reminder',   label:'Orga'},
   {id:'verlauf',    label:'Verlauf'},
 ];
 const HOME_TILES = [
@@ -1995,10 +1995,10 @@ function renderReminderHomeTile(){
   const c = reminderCounts();
   const total = c.reminders + c.polls;
   return `
-    <button class="home-tile home-reminder-tile" onclick="switchTab('reminder')" aria-label="Erinnerungen und Umfragen öffnen">
+    <button class="home-tile home-reminder-tile" onclick="switchTab('reminder')" aria-label="Orga: Erinnerungen, Umfragen und Camping-Kontakte öffnen">
       <div class="home-reminder-head">
         <span class="home-tile-icon" aria-hidden="true">${homeIconSvg('bell')}</span>
-        <b>Erinnerungen &amp; Umfragen</b>
+        <b>Erinnerungen, Umfragen &amp; Kontakte</b>
         <span class="home-count-pill ${total?'active':'clear'}">${total ? total : homeIconSvg('check')}</span>
       </div>
       <div class="home-reminder-badges">
