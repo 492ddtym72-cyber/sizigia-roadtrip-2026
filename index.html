@@ -1687,6 +1687,12 @@ const SPOT_TYPES = {
   both: {label:'Tagesausflug + Camping', color:'#b18cff', icon:'🌗'},
 };
 function spotType(sp){ return SPOT_TYPES[sp.type] || SPOT_TYPES.day; }
+// Welche Spot-Arten aktuell auf Karte + Liste angezeigt werden (alle drei per Default an).
+let spotTypeFilter = new Set(Object.keys(SPOT_TYPES));
+function toggleSpotTypeFilter(t){
+  if(spotTypeFilter.has(t)) spotTypeFilter.delete(t); else spotTypeFilter.add(t);
+  renderSpots();
+}
 function spotMarkers(sorted, withNum){
   return sorted.map((sp,i)=>{
     const p=pointOf(sp, sp.name);
@@ -2316,19 +2322,21 @@ function sortedSpots(){
   return [...state.spots].sort((a,b)=>b.votes.length - a.votes.length);
 }
 function renderSpots(){
-  const spots = sortedSpots();
+  const allSpots = sortedSpots();
+  const spots = allSpots.filter(sp=>spotTypeFilter.has(sp.type||'day'));
   document.getElementById('page-spots').innerHTML = sectionBackButton() + `
     <div class="card">
       <h2>🗺️ Spots auf der Karte</h2>
       ${buildSpotsMap(spots)}
       <div class="layerchips">
-        ${Object.values(SPOT_TYPES).map(t=>`<span class="lchip static on" style="--c:${t.color}"><span class="swatch"></span>${t.icon} ${esc(t.label)}</span>`).join('')}
+        ${Object.entries(SPOT_TYPES).map(([key,t])=>`<span class="lchip${spotTypeFilter.has(key)?' on':''}" style="--c:${t.color}" onclick="toggleSpotTypeFilter('${key}')"><span class="swatch"></span>${t.icon} ${esc(t.label)}</span>`).join('')}
       </div>
-      <div class="hint">Rauten = Spots (Nummern wie in der Liste unten), Farbe nach Art (s. o.) · Linie = gewählte Route. Position eines Spots per ✎ → Karte antippen setzen. Getaggte Orte der Gruppe: <a href="https://maps.app.goo.gl/JnPwkaBY46XwAN8g7?g_st=iw" target="_blank" rel="noopener" style="color:var(--sky)">Google-Maps-Liste öffnen ↗</a> (braucht Internet).</div>
+      <div class="hint">Rauten = Spots (Nummern wie in der Liste unten), Farbe nach Art (s. o.) · Linie = gewählte Route. Art antippen blendet sie auf Karte + Liste aus. Position eines Spots per ✎ → Karte antippen setzen. Getaggte Orte der Gruppe: <a href="https://maps.app.goo.gl/JnPwkaBY46XwAN8g7?g_st=iw" target="_blank" rel="noopener" style="color:var(--sky)">Google-Maps-Liste öffnen ↗</a> (braucht Internet).</div>
     </div>
     <div class="card">
       <h2>📍 Spot-Ideen unterwegs <span class="spacer"></span><button class="btn small" onclick="addSpot()">+ Spot</button></h2>
       <p class="hint" style="margin:0 0 12px">Markiere mit ⭐ alle Spots, die du besuchen möchtest — so viele wie du willst. Sortiert nach Anzahl Sterne, zeigt die Favoriten der Gruppe.</p>
+      ${allSpots.length && !spots.length ? '<div class="route-empty"><b>Keine Spots dieser Art</b><p class="hint" style="margin:5px 0 0">Alle Spots sind über die Karte ausgeblendet — oben eine Art antippen, um sie wieder zu zeigen.</p></div>' : ''}
       ${spots.map((sp,i)=>{
         const me = whoami();
         const mine = me && sp.votes.includes(me);
