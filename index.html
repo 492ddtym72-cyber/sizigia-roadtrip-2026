@@ -409,6 +409,12 @@ textarea{resize:vertical;min-height:70px}
   background:rgba(255,255,255,.032);
 }
 .route-create .emoji{color:var(--sun);font-size:24px;font-weight:900;line-height:1}
+.route-suggest-toggle{
+  display:flex;align-items:center;gap:7px;width:100%;text-align:left;padding:9px 4px;margin:-2px 0 4px;
+  background:none;border:none;color:var(--muted);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;
+}
+.route-suggest-toggle:hover{color:var(--text)}
+.route-suggest-toggle .chev{font-size:10px;color:var(--sun);width:10px;display:inline-block}
 .route-empty{
   border:1px dashed var(--border-strong);border-radius:14px;padding:18px;text-align:center;color:var(--muted);
   background:rgba(255,255,255,.025);
@@ -1663,6 +1669,8 @@ const ROUTE_COLORS={'r-kueste':'#54c8ff','r-alpen':'#5fd4a8','r-mix':'#ff8a5c'};
 function routeColor(route){ return route.color || ROUTE_COLORS[route.id] || '#8ea8ff'; }
 let mapLayers={alle:false, rueck:true, spots:true};
 function toggleMapLayer(k){ mapLayers[k]=!mapLayers[k]; renderRoute(); }
+let routesExpanded = false;
+function toggleSuggestedRoutes(){ routesExpanded = !routesExpanded; renderRoute(); }
 // Spot-Art: steuert Kartenfarbe + Badge in der Liste. Fehlt bei alten Spots (vor
 // Einführung dieses Felds) → Fallback 'day', damit sie weiter wie bisher orange erscheinen.
 const SPOT_TYPES = {
@@ -2145,8 +2153,12 @@ function renderRoute(){
 
     <div class="card">
       <h2>🧭 Routen-Option wählen <span class="spacer"></span><button class="btn small" onclick="addRoute()">+ Eigene Route</button></h2>
-      <div class="route-picker">
-        ${state.routes.map(r=>{
+      ${(()=>{
+        const customRoutes = state.routes.filter(r=>r.custom);
+        const suggestedRoutes = state.routes.filter(r=>!r.custom);
+        const selRoute = state.routes.find(r=>r.id===state.selectedRoute);
+        const selectedIsSuggested = selRoute && !selRoute.custom;
+        const routeCard = r=>{
           const t = routeTotals(r.stages);
           return `
           <button class="route-opt${r.id===state.selectedRoute?' sel':''}${r.custom?' custom':''}" onclick="selectRoute('${r.id}')">
@@ -2159,14 +2171,23 @@ function renderRoute(){
             <h3>${esc(r.name)}</h3>
             <p>${esc(r.desc)}</p>
             <p class="routetotal">${r.stages.length ? `ca. ${t.km} km · ~${t.hTxt} Std Fahrzeit` : 'Noch keine Etappen'}</p>
-          </button>`;}).join('')}
+          </button>`;};
+        return `
+      <div class="route-picker">
+        ${customRoutes.map(routeCard).join('')}
         <button class="route-opt route-create" onclick="addRoute()">
           <span class="emoji">+</span>
           <h3>Eigene Route</h3>
           <p>Von Grund auf planen und danach Etappen hinzufügen.</p>
         </button>
       </div>
-      <div class="hint">Die ersten Routen sind Vorschläge. Eigene Routen könnt ihr von Grund auf planen, auswählen und wieder löschen.</div>
+      <button class="route-suggest-toggle" onclick="toggleSuggestedRoutes()">
+        <span class="chev">${routesExpanded?'▾':'▸'}</span>
+        Vorschläge ${routesExpanded?'ausblenden':'anzeigen'} (${suggestedRoutes.length})${(!routesExpanded && selectedIsSuggested)?` · aktuell gewählt: ${esc(selRoute.emoji)} ${esc(selRoute.name)}`:''}
+      </button>
+      ${routesExpanded?`<div class="route-picker" style="margin-top:10px">${suggestedRoutes.map(routeCard).join('')}</div>`:''}
+      <div class="hint">Die ersten Routen sind Vorschläge. Eigene Routen könnt ihr von Grund auf planen, auswählen und wieder löschen.</div>`;
+      })()}
     </div>
 
     <div class="card">
