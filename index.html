@@ -492,9 +492,18 @@ a.maplink:hover{text-decoration:underline}
 .spot .head{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
 .spot h3{font-size:15.5px}
 .spot .region{font-size:12px;color:var(--sun);letter-spacing:.08em;text-transform:uppercase;font-weight:700}
+.spottype{display:inline-flex;align-items:center;gap:4px;margin:6px 0 0;padding:2px 9px;border-radius:999px;background:color-mix(in srgb,var(--c,var(--sun)) 18%,transparent);border:1px solid color-mix(in srgb,var(--c,var(--sun)) 45%,transparent);color:var(--c,var(--sun));font-size:11px;font-weight:700;white-space:nowrap}
 .spot .desc{font-size:13.5px;color:var(--muted);margin:5px 0 9px}
 .spot .foot{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .votecount{margin-left:auto;font-size:13px;color:var(--muted);font-weight:700}
+.spotpick-list{display:flex;flex-direction:column;gap:7px;max-height:52vh;overflow-y:auto;margin-bottom:14px}
+.spotpick-item{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;text-align:left;
+  padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--card);
+  color:var(--text);font-size:14px;font-weight:700;cursor:pointer;
+}
+.spotpick-item:hover{border-color:var(--border-strong);background:rgba(255,255,255,.07)}
+.spotpick-item span{font-size:11.5px;color:var(--muted);font-weight:600;white-space:nowrap;text-transform:uppercase;letter-spacing:.06em}
 /* Kurzes Aufblitzen, wenn ein Karten-Popup zu einem Listeneintrag springt (Spot- oder Etappen-Karte) */
 .map-flash{animation:mapflash 1.6s ease}
 @keyframes mapflash{
@@ -1315,7 +1324,7 @@ function applyRevert(u){
     case 'spotAdd':  { const i=state.spots.findIndex(s=>s.id===u.id); if(i<0) throw 0; state.spots.splice(i,1); break; }
     case 'spotDel':  state.spots.splice(Math.min(u.idx,state.spots.length),0,u.spot); break;
     case 'spotEdit': { const sp=need(state.spots.find(s=>s.id===u.id));
-      ['name','region','detour','desc','link'].forEach(k=>sp[k]=u.prev[k]);
+      ['name','region','type','detour','desc','link'].forEach(k=>sp[k]=u.prev[k]);
       if(u.prev.lat!=null){ sp.lat=u.prev.lat; sp.lng=u.prev.lng; } else { delete sp.lat; delete sp.lng; } break; }
     case 'driver':   { const v=need(state.vehicles.find(x=>x.id===u.vid)); const i=v.drivers.indexOf(u.cid);
       if(u.prev && i<0) v.drivers.push(u.cid); if(!u.prev && i>=0) v.drivers.splice(i,1); break; }
@@ -1654,11 +1663,19 @@ const ROUTE_COLORS={'r-kueste':'#54c8ff','r-alpen':'#5fd4a8','r-mix':'#ff8a5c'};
 function routeColor(route){ return route.color || ROUTE_COLORS[route.id] || '#8ea8ff'; }
 let mapLayers={alle:false, rueck:true, spots:true};
 function toggleMapLayer(k){ mapLayers[k]=!mapLayers[k]; renderRoute(); }
+// Spot-Art: steuert Kartenfarbe + Badge in der Liste. Fehlt bei alten Spots (vor
+// Einführung dieses Felds) → Fallback 'day', damit sie weiter wie bisher orange erscheinen.
+const SPOT_TYPES = {
+  day:  {label:'Tagesausflug', color:'#ff6b4a', icon:'☀️'},
+  camp: {label:'Camping', color:'#5fd4a8', icon:'⛺'},
+  both: {label:'Tagesausflug + Camping', color:'#b18cff', icon:'🌗'},
+};
+function spotType(sp){ return SPOT_TYPES[sp.type] || SPOT_TYPES.day; }
 function spotMarkers(sorted, withNum){
   return sorted.map((sp,i)=>{
     const p=pointOf(sp, sp.name);
     if(!p) return '';
-    return markerSvg(p,{num:i+1, color:'#ff6b4a', kind:'spot', label:{type:'spot', id:sp.id}});
+    return markerSvg(p,{num:i+1, color:spotType(sp).color, kind:'spot', label:{type:'spot', id:sp.id}});
   }).join('');
 }
 function routeViewInit(){
@@ -2153,7 +2170,7 @@ function renderRoute(){
     </div>
 
     <div class="card">
-      <h2>${route.emoji} Hinweg: ${esc(route.name)} <span class="spacer"></span><button class="btn small" onclick="addStage('${route.id}')">+ Etappe</button></h2>
+      <h2 style="flex-wrap:wrap">${route.emoji} Hinweg: ${esc(route.name)} <span class="spacer"></span><button class="btn small ghost" onclick="pickSpotForStage('${route.id}')">📍 Spot</button><button class="btn small" onclick="addStage('${route.id}')">+ Etappe</button></h2>
       <div>${route.stages.map((s,i)=>renderStage(s, route.id, i, route.stages.length)).join('')}</div>
       ${route.stages.length===0?`<div class="route-empty">
         <b>Noch keine Etappen</b>
@@ -2164,7 +2181,7 @@ function renderRoute(){
     </div>
 
     <div class="card">
-      <h2>🔙 Rückreise (ab 14.08., Vorschlag) <span class="spacer"></span><button class="btn small" onclick="addStage('return')">+ Etappe</button></h2>
+      <h2 style="flex-wrap:wrap">🔙 Rückreise (ab 14.08., Vorschlag) <span class="spacer"></span><button class="btn small ghost" onclick="pickSpotForStage('return')">📍 Spot</button><button class="btn small" onclick="addStage('return')">+ Etappe</button></h2>
       <div>${state.returnStages.map((s,i)=>renderStage(s, 'return', i, state.returnStages.length)).join('')}</div>
       ${state.returnStages.length?`<div class="routetotal">Gesamt Rückreise: ca. ${routeTotals(state.returnStages).km} km · ~${routeTotals(state.returnStages).hTxt} Std</div>`:''}
       <div class="hint">Nur ein Vorschlag — Datum & Route der Rückreise sind noch offen, alles anpassbar.</div>
@@ -2201,6 +2218,46 @@ function addStage(ref){
     logChange('hat Etappe „'+s.from+' → '+s.to+'" hinzugefügt', {t:'stageAdd', ref, id:s.id});
   });
 }
+// Vorhandenen Spot als nächste Etappe übernehmen: eigenes Popup (kein openModal-Picker,
+// da modalSave() nach onSave() immer closeModal() aufruft — ein zweites openModal()
+// direkt daraus würde vom eigenen Schließen sofort wieder zugeklappt).
+function pickSpotForStage(ref){
+  if(!state.spots.length){ toast('Noch keine Spots vorhanden — zuerst im Spots-Tab anlegen'); return; }
+  modalCtx = null;
+  document.getElementById('modalBox').innerHTML = `
+    <h3>📍 Spot als Etappe übernehmen</h3>
+    <p class="hint" style="margin:0 0 12px">Name, Position und Karten-Link werden für die neue Etappe vorausgefüllt.</p>
+    <div class="spotpick-list">
+      ${sortedSpots().map(sp=>`
+        <button type="button" class="spotpick-item" onclick="addStageFromSpot('${ref}','${sp.id}')">
+          <b>${esc(sp.name)}</b>
+          ${sp.region?`<span>${esc(sp.region)}</span>`:''}
+        </button>`).join('')}
+    </div>
+    <div class="btnrow"><button class="btn ghost" onclick="closeModal()">Abbrechen</button></div>`;
+  document.getElementById('modalBg').classList.add('open');
+}
+function addStageFromSpot(ref, spotId){
+  const sp = state.spots.find(s=>s.id===spotId);
+  if(!sp) return;
+  closeModal();
+  const list = getStageList(ref);
+  const prev = list[list.length-1];
+  const prefill = {
+    from: prev ? prev.to : '',
+    to: sp.name,
+    link: sp.link || '',
+    note: [sp.detour?'🛣️ '+sp.detour:'', sp.desc||''].filter(Boolean).join('\n\n'),
+    lat: sp.lat, lng: sp.lng,
+  };
+  openModal('Neue Etappe aus Spot', stageFields(prefill), v=>{
+    const {pos, ...rest} = v;
+    const s = {id:uid(), ...rest};
+    applyPos(s, pos);
+    list.push(s);
+    logChange('hat Etappe „'+s.from+' → '+s.to+'" aus Spot „'+sp.name+'" hinzugefügt', {t:'stageAdd', ref, id:s.id});
+  });
+}
 function editStage(ref, idx){
   const list = getStageList(ref);
   const s = list[idx];
@@ -2235,7 +2292,10 @@ function renderSpots(){
     <div class="card">
       <h2>🗺️ Spots auf der Karte</h2>
       ${buildSpotsMap(spots)}
-      <div class="hint">Rauten = Spots (Nummern wie in der Liste unten) · Linie = gewählte Route. Position eines Spots per ✎ → Karte antippen setzen. Getaggte Orte der Gruppe: <a href="https://maps.app.goo.gl/JnPwkaBY46XwAN8g7?g_st=iw" target="_blank" rel="noopener" style="color:var(--sky)">Google-Maps-Liste öffnen ↗</a> (braucht Internet).</div>
+      <div class="layerchips">
+        ${Object.values(SPOT_TYPES).map(t=>`<span class="lchip static on" style="--c:${t.color}"><span class="swatch"></span>${t.icon} ${esc(t.label)}</span>`).join('')}
+      </div>
+      <div class="hint">Rauten = Spots (Nummern wie in der Liste unten), Farbe nach Art (s. o.) · Linie = gewählte Route. Position eines Spots per ✎ → Karte antippen setzen. Getaggte Orte der Gruppe: <a href="https://maps.app.goo.gl/JnPwkaBY46XwAN8g7?g_st=iw" target="_blank" rel="noopener" style="color:var(--sky)">Google-Maps-Liste öffnen ↗</a> (braucht Internet).</div>
     </div>
     <div class="card">
       <h2>📍 Spot-Ideen unterwegs <span class="spacer"></span><button class="btn small" onclick="addSpot()">+ Spot</button></h2>
@@ -2248,6 +2308,7 @@ function renderSpots(){
             <span class="region">${esc(sp.region)}</span>
             <span style="margin-left:auto"><button class="btn ghost small" onclick="editSpot('${sp.id}')">✎</button></span>
           </div>
+          <span class="spottype" style="--c:${spotType(sp).color}">${spotType(sp).icon} ${esc(spotType(sp).label)}</span>
           <div class="desc">${esc(sp.desc)}</div>
           <div class="meta" style="display:flex;gap:14px;font-size:12.5px;color:var(--muted);margin-bottom:9px">
             ${sp.detour?`<span>🛣️ ${esc(sp.detour)}</span>`:''}
@@ -2276,7 +2337,8 @@ function openSpotInfo(id){
   document.getElementById('modalBox').innerHTML = `
     <h3>📍 ${esc(sp.name)}</h3>
     ${sp.region?`<div style="font-size:12px;color:var(--sun);letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin:-10px 0 12px">${esc(sp.region)}</div>`:''}
-    ${sp.desc?`<p style="font-size:13.5px;color:var(--muted);margin:0 0 12px">${esc(sp.desc)}</p>`:''}
+    <span class="spottype" style="--c:${spotType(sp).color}">${spotType(sp).icon} ${esc(spotType(sp).label)}</span>
+    ${sp.desc?`<p style="font-size:13.5px;color:var(--muted);margin:12px 0 12px">${esc(sp.desc)}</p>`:''}
     ${sp.detour?`<p class="hint" style="margin:0 0 12px">🛣️ ${esc(sp.detour)}</p>`:''}
     <div class="foot" style="margin-bottom:4px">
       <div class="chips">${voters.length ? voters.map(c=>`<span class="chip on" style="--c:${c.color}"><span class="dot"></span>${esc(c.name)}</span>`).join('') : '<span class="hint" style="margin:0">Noch keine Stimmen</span>'}</div>
@@ -2314,6 +2376,11 @@ function spotFields(s={}){
   return [
     {key:'name',label:'Name',value:s.name||''},
     {key:'region',label:'Region',value:s.region||''},
+    {key:'type',label:'Art des Spots',type:'select',value:s.type||'day',options:[
+      {value:'day',label:'☀️ Tagesausflug'},
+      {value:'camp',label:'⛺ Camping / Übernachtung'},
+      {value:'both',label:'🌗 Beides'},
+    ]},
     {key:'detour',label:'Umweg / Aufwand',value:s.detour||'',placeholder:'z. B. +45 Min'},
     {key:'desc',label:'Beschreibung',type:'textarea',value:s.desc||''},
     {key:'link',label:'Karten-Link',value:s.link||'',placeholder:'https://maps.google.com/…'},
@@ -2332,7 +2399,7 @@ function addSpot(){
 function editSpot(id){
   const sp = state.spots.find(s=>s.id===id);
   openModal('Spot bearbeiten', spotFields(sp), v=>{
-    const prev = {name:sp.name, region:sp.region, detour:sp.detour, desc:sp.desc, link:sp.link, lat:sp.lat, lng:sp.lng};
+    const prev = {name:sp.name, region:sp.region, type:sp.type, detour:sp.detour, desc:sp.desc, link:sp.link, lat:sp.lat, lng:sp.lng};
     const {pos, ...rest} = v;
     Object.assign(sp, rest);
     applyPos(sp, pos);
