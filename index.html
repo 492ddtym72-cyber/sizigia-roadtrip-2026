@@ -2326,7 +2326,7 @@ function renderSpots(){
     </div>
     <div class="card">
       <h2>📍 Spot-Ideen unterwegs <span class="spacer"></span><button class="btn small" onclick="addSpot()">+ Spot</button></h2>
-      <p class="hint" style="margin:0 0 12px">Du hast eine Stimme — tippe auf „Abstimmen" bei deinem Favoriten. Nochmal antippen zieht sie zurück, ein anderer Spot verschiebt sie. Sortiert nach Stimmen.</p>
+      <p class="hint" style="margin:0 0 12px">Markiere mit ⭐ alle Spots, die du besuchen möchtest — so viele wie du willst. Sortiert nach Anzahl Sterne, zeigt die Favoriten der Gruppe.</p>
       ${spots.map((sp,i)=>{
         const me = whoami();
         const mine = me && sp.votes.includes(me);
@@ -2350,7 +2350,7 @@ function renderSpots(){
               ${voters.length ? voters.map(c=>`<span class="chip on static" style="--c:${c.color}"><span class="dot"></span>${esc(c.name)}</span>`).join('') : '<span class="hint" style="margin:0">Noch keine Stimmen</span>'}
             </div>
             <span class="votecount">${sp.votes.length} ⭐</span>
-            <button class="btn small${mine?' primary':' ghost'}" onclick="voteSpot('${sp.id}')">${mine?'✓ Deine Wahl':'Abstimmen'}</button>
+            <button class="btn small${mine?' primary':' ghost'}" onclick="voteSpot('${sp.id}')">${mine?'★ Markiert':'⭐ Merken'}</button>
           </div>
         </div>`;}).join('')}
     </div>`;
@@ -2393,24 +2393,19 @@ function goToSpotInList(id){
   el.classList.add('map-flash');
   setTimeout(()=>el.classList.remove('map-flash'), 1600);
 }
-// Jede Person hat genau eine Stimme über alle Spots hinweg (identifiziert über whoami()).
-// Erneutes Antippen des schon gewählten Spots zieht die Stimme zurück; Antippen eines
-// anderen Spots verschiebt sie automatisch dorthin.
+// Jede Person kann beliebig viele Spots markieren (Stern an/aus, identifiziert über
+// whoami()) — die Liste soll am Ende zeigen, welche Spots die meiste Zustimmung
+// haben, nicht wer sich für einen einzigen entscheidet.
 function voteSpot(spotId){
   const me = whoami();
   if(!me){ askWho(); return; }
   const sp = state.spots.find(s=>s.id===spotId);
   if(!sp) return;
-  const already = sp.votes.includes(me);
-  const prevSpot = state.spots.find(s=>s.votes.includes(me));
-  const prevSpotId = prevSpot ? prevSpot.id : null;
-  state.spots.forEach(s=>{ const i=s.votes.indexOf(me); if(i>=0) s.votes.splice(i,1); });
-  const newSpotId = already ? null : spotId;
-  if(newSpotId) sp.votes.push(me);
-  const desc = already
-    ? 'hat die Stimme für „'+sp.name+'" zurückgezogen'
-    : (prevSpot ? 'hat die Stimme von „'+prevSpot.name+'" auf „'+sp.name+'" verschoben' : 'hat für „'+sp.name+'" gestimmt');
-  logChange(desc, {t:'voteSingle', crewId:me, prevSpotId, newSpotId}, me);
+  const i = sp.votes.indexOf(me);
+  const had = i>=0;
+  if(had) sp.votes.splice(i,1); else sp.votes.push(me);
+  logChange(had ? 'hat den Stern bei „'+sp.name+'" entfernt' : 'hat „'+sp.name+'" markiert',
+    {t:'vote', spotId, crewId:me, prev:had}, me);
   save(); renderAll();
 }
 function spotFields(s={}){
