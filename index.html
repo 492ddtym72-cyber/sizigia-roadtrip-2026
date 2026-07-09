@@ -397,7 +397,7 @@ textarea{resize:vertical;min-height:70px}
 .route-opt p{font-size:12.5px;color:var(--muted)}
 .route-opt .star{position:absolute;top:10px;right:12px;font-size:15px;opacity:.25}
 .route-opt.sel .star{opacity:1}
-.route-opt.custom .star{right:64px}
+.route-opt.custom .star{right:40px}
 .route-actions{position:absolute;right:9px;top:8px;display:flex;gap:4px;z-index:3}
 .route-action{
   width:25px;height:25px;border:1px solid rgba(255,255,255,.12);border-radius:8px;background:rgba(255,255,255,.045);
@@ -2143,9 +2143,6 @@ function deleteRoute(id){
   state.routes.splice(idx,1);
   if(state.selectedRoute === id) state.selectedRoute = state.routes[0]?.id || '';
 }
-function deleteRouteWithUndo(id){
-  withUndo('Route gelöscht', ()=>deleteRoute(id));
-}
 function renderRoute(){
   const route = state.routes.find(r=>r.id===state.selectedRoute);
   document.getElementById('page-route').innerHTML = sectionBackButton() + `
@@ -2180,7 +2177,6 @@ function renderRoute(){
             <span class="star">★</span>
             ${r.custom?`<span class="route-actions">
               <span class="route-action" onclick="event.stopPropagation();editRoute('${r.id}')" title="Route bearbeiten">✎</span>
-              <span class="route-action" onclick="event.stopPropagation();deleteRouteWithUndo('${r.id}')" title="Route löschen">×</span>
             </span>`:''}
             <span class="emoji">${r.emoji}</span>
             <h3>${esc(r.name)}</h3>
