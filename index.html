@@ -600,6 +600,23 @@ a.maplink:hover{text-decoration:underline}
 .camp-note{font-size:13px;color:var(--muted);margin:6px 0 0;white-space:pre-line}
 .camp-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
 .camp-actions .btn{text-decoration:none}
+.orga-section{
+  border:1px solid var(--border);border-radius:16px;margin-bottom:10px;overflow:hidden;
+  background:var(--card);
+}
+.orga-section summary{
+  display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer;list-style:none;user-select:none;
+}
+.orga-section summary::-webkit-details-marker{display:none}
+.orga-section-icon{flex:0 0 auto;display:flex;color:var(--sun)}
+.orga-section-icon svg{width:23px;height:23px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.orga-section-text{flex:1;min-width:0}
+.orga-section-text h3{font-family:var(--font-display);font-size:15.5px;letter-spacing:.02em;margin:0;color:var(--text)}
+.orga-section-meta{display:block;font-size:12px;color:var(--muted);font-weight:700;margin-top:2px}
+.orga-section-chevron{flex:0 0 auto;display:flex;color:var(--faint);transition:transform .18s}
+.orga-section-chevron svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.orga-section[open] .orga-section-chevron{transform:rotate(180deg)}
+.orga-section-body{padding:0 16px 16px}
 .poll-option{padding:9px 6px;margin:0 -6px;border-top:1px solid rgba(255,255,255,.06);border-radius:10px;cursor:pointer;transition:background .15s}
 .poll-option:first-of-type{border-top:0}
 .poll-option:hover{background:rgba(255,255,255,.035)}
@@ -647,10 +664,12 @@ a.maplink:hover{text-decoration:underline}
   .wrap{max-width:none;padding:0}
   *{color:#000!important;background:#fff!important;border-color:#bbb!important;box-shadow:none!important;animation:none!important}
   .title h1,.count-cell b{-webkit-text-fill-color:#000}
-  .card,.stage,.spot,.lineup-stage{break-inside:avoid;border:1px solid #ccc}
+  .card,.stage,.spot,.lineup-stage,.orga-section{break-inside:avoid;border:1px solid #ccc}
   .stage-connector{break-inside:avoid}
   .lineup-stage .tt-list{display:block!important}
   .lineup-stage-chevron{display:none}
+  .orga-section-body{display:block!important}
+  .orga-section-chevron{display:none}
   .progress i,.checkbox.done{background:#333!important}
   .item.done .txt{color:#888!important}
 }
@@ -1962,6 +1981,8 @@ function homeIconSvg(kind){
     bell:'<svg viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 7 3 7 3 9H3c0-2 3-2 3-9"/><path d="M10 21h4"/></svg>',
     poll:'<svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M8 12.5l2.7 2.7L16 9.5"/></svg>',
     check:'<svg viewBox="0 0 24 24"><path d="M4 12.5l5 5L20 6"/></svg>',
+    tent:'<svg viewBox="0 0 24 24"><path d="M1 20L23 20"/><path d="M4 20L12 4L20 20"/><path d="M12 4L12 20"/></svg>',
+    chevron:'<svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>',
   };
   return icons[kind] || icons.activity;
 }
@@ -3054,24 +3075,45 @@ function campContactRow(c){
     </div>
   </div>`;
 }
+// Jede Sektion ein eigenes <details> statt einer langen, immer sichtbaren Karte —
+// bei vielen Erinnerungen war der Scrollweg bis zu den Camping-Kontakten sonst lang.
+// name="orga-accordion" gruppiert sie nativ (nur eine Sektion gleichzeitig offen,
+// unterstützende Browser); ohne Unterstützung bleibt es einfach unabhängig klappbar.
+// orgaOpenSection merkt sich die offene Sektion über renderAll()-Neuaufbauten hinweg
+// (sonst würde z. B. das Abhaken einer Erinnerung die gerade geöffneten Camping-
+// Kontakte wieder zuklappen).
+let orgaOpenSection = 'reminder-erinnerungen';
+function orgaSection(id, icon, title, meta, bodyHtml){
+  return `
+  <details class="orga-section" name="orga-accordion"${orgaOpenSection===id?' open':''} ontoggle="if(this.open) orgaOpenSection='${id}'">
+    <summary>
+      <span class="orga-section-icon" aria-hidden="true">${homeIconSvg(icon)}</span>
+      <div class="orga-section-text">
+        <h3>${esc(title)}</h3>
+        <span class="orga-section-meta">${esc(meta)}</span>
+      </div>
+      <span class="orga-section-chevron" aria-hidden="true">${homeIconSvg('chevron')}</span>
+    </summary>
+    <div class="orga-section-body">${bodyHtml}</div>
+  </details>`;
+}
 function renderReminder(){
   const reminders = [...(state.reminders||[])].sort((a,b)=>(a.done===b.done ? new Date(b.createdAt)-new Date(a.createdAt) : (a.done?1:-1)));
   const polls = [...(state.polls||[])].sort((a,b)=>(a.closed===b.closed ? new Date(b.createdAt)-new Date(a.createdAt) : (a.closed?1:-1)));
   const campContacts = [...(state.campContacts||[])].sort((a,b)=>a.name.localeCompare(b.name,'de'));
-  document.getElementById('page-reminder').innerHTML = sectionBackButton() + `
-    <div class="card">
-      <h2>Erinnerungen <span class="spacer"></span><button class="btn small" onclick="addReminder()">+ Erinnerung</button></h2>
-      ${reminders.length ? reminders.map(reminderRow).join('') : '<p class="hint" style="margin:0">Keine Erinnerungen. Du kannst sie hier anlegen oder aus Packen, Einkauf, Checkliste und Fahrzeug-Dokumenten verknüpfen.</p>'}
-    </div>
-    <div class="card">
-      <h2>Umfragen <span class="spacer"></span><button class="btn small" onclick="addPoll()">+ Umfrage</button></h2>
-      ${polls.length ? `<p class="hint" style="margin:0 0 12px">Tippe eine Option an, um mit deinem eigenen Profil dafür zu stimmen (Mehrfachauswahl möglich).</p>${polls.map(pollRow).join('')}` : '<p class="hint" style="margin:0">Noch keine Umfragen.</p>'}
-    </div>
-    <div class="card">
-      <h2>🏕️ Camping-Kontakte <span class="spacer"></span><button class="btn small" onclick="addCampContact()">+ Kontakt</button></h2>
-      <p class="hint" style="margin:0 0 12px">Campingplätze zum spontanen Anrufen, falls der geplante Platz mal voll ist.</p>
-      ${campContacts.length ? campContacts.map(campContactRow).join('') : '<p class="hint" style="margin:0">Noch keine Kontakte hinterlegt.</p>'}
-    </div>`;
+  const openReminders = reminders.filter(r=>!r.done).length;
+  const openPolls = polls.filter(p=>!p.closed).length;
+  document.getElementById('page-reminder').innerHTML = sectionBackButton() +
+    orgaSection('reminder-erinnerungen', 'bell', 'Erinnerungen', openReminders ? openReminders+' offen' : 'Alles erledigt',
+      `<button class="btn small" onclick="addReminder()">+ Erinnerung</button>
+      ${reminders.length ? reminders.map(reminderRow).join('') : '<p class="hint" style="margin:0">Keine Erinnerungen. Du kannst sie hier anlegen oder aus Packen, Einkauf, Checkliste und Fahrzeug-Dokumenten verknüpfen.</p>'}`) +
+    orgaSection('reminder-umfragen', 'poll', 'Umfragen', openPolls ? openPolls+' offen' : (polls.length?'Alle geschlossen':'Keine'),
+      `<button class="btn small" onclick="addPoll()">+ Umfrage</button>
+      ${polls.length ? `<p class="hint" style="margin:12px 0">Tippe eine Option an, um mit deinem eigenen Profil dafür zu stimmen (Mehrfachauswahl möglich).</p>${polls.map(pollRow).join('')}` : '<p class="hint" style="margin:12px 0 0">Noch keine Umfragen.</p>'}`) +
+    orgaSection('reminder-camping', 'tent', 'Camping-Kontakte', campContacts.length ? campContacts.length+' Kontakt'+(campContacts.length===1?'':'e') : 'Keine',
+      `<button class="btn small" onclick="addCampContact()">+ Kontakt</button>
+      <p class="hint" style="margin:12px 0">Campingplätze zum spontanen Anrufen, falls der geplante Platz mal voll ist.</p>
+      ${campContacts.length ? campContacts.map(campContactRow).join('') : '<p class="hint" style="margin:0">Noch keine Kontakte hinterlegt.</p>'}`);
 }
 
 /* ============================================================
