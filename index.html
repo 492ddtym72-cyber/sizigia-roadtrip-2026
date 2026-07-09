@@ -1358,6 +1358,7 @@ function applyRevert(u){
     case 'toggle':   need(resolveList(u.ref)?.find(i=>i.id===u.id)).done = u.prev; break;
     case 'personDone': { const it=need(resolveList(u.ref)?.find(i=>i.id===u.id)); it.doneBy = u.prevDoneBy || []; it.done = !!u.prevDone; break; }
     case 'itemAdd':  { const l=need(resolveList(u.ref)); const i=l.findIndex(x=>x.id===u.id); if(i<0) throw 0; l.splice(i,1); break; }
+    case 'itemAddMulti': { const l=need(resolveList(u.ref)); u.ids.forEach(id=>{ const i=l.findIndex(x=>x.id===id); if(i>=0) l.splice(i,1); }); break; }
     case 'itemDel':  { const l=need(resolveList(u.ref)); l.splice(Math.min(u.idx,l.length),0,u.item); if(u.reminder) state.reminders.splice(Math.min(u.reminderIdx ?? state.reminders.length,state.reminders.length),0,u.reminder); break; }
     case 'itemEdit': Object.assign(need(resolveList(u.ref)?.find(i=>i.id===u.id)), u.prev); break;
     case 'remAdd':   { const i=state.reminders.findIndex(r=>r.id===u.id); if(i<0) throw 0; state.reminders.splice(i,1); break; }
@@ -1526,6 +1527,16 @@ const CITY_LABELS=[ // sichtbar ab Zoom ≥1.7
   ['Prag',50.08,14.44],['Rom',41.90,12.50],['Madrid',40.42,-3.70],
 ];
 const SEA_LABELS=[['Mittelmeer',40.6,6.6],['Atlantik',47.5,-8.6],['Nordsee',56.2,3.2],['Ostsee',58.4,19.8]];
+// Ortsvorschläge (Datalist) für Von/Nach/Spot-Name: bekannte Städte + eigene
+// Spots + bereits verwendete Etappen-Ziele. Rein additiv, kein Zwang — tippen
+// bleibt frei möglich, Auswahl erspart nur Tipparbeit.
+function placeSuggestions(){
+  const names = new Set(CITY_LABELS.map(c=>c[0]));
+  state.spots.forEach(sp=>{ if(sp.name) names.add(sp.name); });
+  state.routes.forEach(r=>r.stages.forEach(s=>{ if(s.to) names.add(s.to); }));
+  state.returnStages.forEach(s=>{ if(s.to) names.add(s.to); });
+  return [...names].sort((a,b)=>a.localeCompare(b,'de'));
+}
 
 /* --- Pan/Zoom-Engine: eine Ansicht {z,cx,cy} pro Karten-Instanz (data-mapid).
    Der Karteninhalt liegt in <g class="map-pan">; Gesten ändern nur dessen
@@ -1904,7 +1915,7 @@ function openModal(title, fields, onSave, onDelete, opts={}){
     else if(f.type==='map') input = pickMapField(i, f.value, f.auto);
     else if(f.type==='checkbox') input = '<label class="modal-check"><input id="mf'+i+'" type="checkbox" '+(f.value?'checked':'')+'> '+esc(f.text||'aktiv')+'</label>';
     else if(f.type==='crewMulti') input = crewMultiField(i, f.value || []);
-    else input = '<input id="mf'+i+'" type="'+(f.type==='number'?'number':'text')+'" '+(f.type==='number'?'step="0.01" inputmode="decimal"':'')+' value="'+esc(f.value||'')+'" placeholder="'+esc(f.placeholder||'')+'">';
+    else input = '<input id="mf'+i+'" type="'+(f.type==='number'?'number':'text')+'" '+(f.type==='number'?'step="0.01" inputmode="decimal"':'')+(f.datalist?' list="dl'+i+'" autocomplete="off"':'')+' value="'+esc(f.value||'')+'" placeholder="'+esc(f.placeholder||'')+'">'+(f.datalist?'<datalist id="dl'+i+'">'+f.datalist.map(o=>'<option value="'+esc(o)+'">').join('')+'</datalist>':'');
     return '<div class="field"><label>'+esc(f.label)+'</label>'+input+'</div>';
   }).join('') +
   '<div class="btnrow">' +
@@ -2391,9 +2402,10 @@ function nextStageDate(prevDate){
 function stageFields(s={}, isFirst=false){
   const stored = (s.lat!=null && s.lng!=null) ? {lat:+s.lat, lng:+s.lng} : null;
   const auto = stored ? null : (()=>{ const g=geoLookup(s.to); return g?{lat:g[0],lng:g[1]}:null; })();
+  const places = placeSuggestions();
   const fields = [
     {key:'date',label:'Datum / Tag',value:s.date||'',placeholder:'z. B. Mo 03.08.'},
-    {key:'from',label:'Von',value:s.from||''},
+    {key:'from',label:'Von',value:s.from||'',datalist:places},
   ];
   if(isFirst){
     const fromStored = (s.fromLat!=null && s.fromLng!=null) ? {lat:+s.fromLat, lng:+s.fromLng} : null;
@@ -2401,7 +2413,7 @@ function stageFields(s={}, isFirst=false){
     fields.push({key:'posFrom',label:'Start-Position auf der Karte',type:'map',value:fromStored,auto:fromAuto});
   }
   fields.push(
-    {key:'to',label:'Nach',value:s.to||''},
+    {key:'to',label:'Nach',value:s.to||'',datalist:places},
     {key:'km',label:'Distanz',value:s.km||'',placeholder:'z. B. 300 km'},
     {key:'time',label:'Fahrzeit',value:s.time||'',placeholder:'z. B. ~3,5 Std'},
     {key:'stay',label:'Übernachtung',value:s.stay||'',placeholder:'z. B. Camping am See'},
@@ -2639,7 +2651,7 @@ function spotFields(s={}){
   const stored = (s.lat!=null && s.lng!=null) ? {lat:+s.lat, lng:+s.lng} : null;
   const auto = stored ? null : (()=>{ const g=geoLookup(s.name); return g?{lat:g[0],lng:g[1]}:null; })();
   return [
-    {key:'name',label:'Name',value:s.name||''},
+    {key:'name',label:'Name',value:s.name||'',datalist:placeSuggestions()},
     {key:'region',label:'Region',value:s.region||''},
     {key:'type',label:'Art des Spots',type:'select',value:s.type||'day',options:[
       {value:'day',label:'☀️ Tagesausflug'},
@@ -2696,13 +2708,13 @@ function renderLogistics(){
         </div>
         <div style="margin:16px 0 4px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Dokumente & Vorbereitung</div>
         <div class="list">${v.docs.map(d=>itemRow(d, `vdoc:${v.id}`)).join('')}</div>
-        <div class="addrow"><input id="add-vdoc-${v.id}" placeholder="Neuer Punkt…" onkeydown="if(event.key==='Enter')addListItem('vdoc:${v.id}')"><button class="btn" onclick="addListItem('vdoc:${v.id}')">+</button></div>
+        <div class="addrow"><input id="add-vdoc-${v.id}" placeholder="Neuer Punkt…" onkeydown="if(event.key==='Enter')addListItem('vdoc:${v.id}')"><button class="btn" onclick="addListItem('vdoc:${v.id}')">+</button><button class="btn ghost" onclick="addListItemsBulk('vdoc:${v.id}')" title="Mehrere auf einmal hinzufügen">☰</button></div>
       </div>`).join('')}
 
     <div class="card">
       <h2>✅ Checkliste vor Abfahrt</h2>
       <div class="list">${state.checklist.map(d=>itemRow(d, 'checklist')).join('')}</div>
-      <div class="addrow"><input id="add-checklist" placeholder="Neuer Punkt…" onkeydown="if(event.key==='Enter')addListItem('checklist')"><button class="btn" onclick="addListItem('checklist')">+</button></div>
+      <div class="addrow"><input id="add-checklist" placeholder="Neuer Punkt…" onkeydown="if(event.key==='Enter')addListItem('checklist')"><button class="btn" onclick="addListItem('checklist')">+</button><button class="btn ghost" onclick="addListItemsBulk('checklist')" title="Mehrere auf einmal hinzufügen">☰</button></div>
     </div>`;
 }
 function editVehicle(id){
@@ -2863,6 +2875,23 @@ function addListItem(ref){
   const again = document.getElementById('add-' + ref.replace(':','-'));
   if(again) again.focus();
 }
+// Mehrere Einträge auf einmal (z. B. eine aus WhatsApp eingefügte Liste) —
+// ein Verlaufseintrag mit allen IDs, damit "Rückgängig" alle zusammen entfernt.
+function addListItemsBulk(ref){
+  openModal('Mehrere hinzufügen', [
+    {key:'lines', label:'Einträge (einer pro Zeile)', type:'textarea', value:''},
+  ], v=>{
+    const lines = v.lines.split('\n').map(x=>x.trim()).filter(Boolean);
+    if(!lines.length) return;
+    const list = resolveList(ref);
+    const ids = lines.map(text=>{
+      const item = {id:uid(), text, done:false, who:'', assignees:[], doneBy:[]};
+      list.push(item);
+      return item.id;
+    });
+    logChange('hat '+ids.length+' Einträge hinzugefügt (' + refLabel(ref) + ')', {t:'itemAddMulti', ref, ids});
+  });
+}
 function editItem(ref, id){
   const it = resolveList(ref).find(i=>i.id===id);
   normalizeListItem(it);
@@ -2902,7 +2931,7 @@ function renderCategoryLists(pageId, groups, kind, addCatLabel, prefix='', hideA
     <div class="card">
       <h2>${esc(g.name)} <span class="spacer"></span><span style="font-size:12px;color:var(--faint);letter-spacing:0;text-transform:none">${p.done}/${p.total}</span></h2>
       <div class="list">${g.items.map(i=>itemRow(i, kind+':'+g.id)).join('')}</div>
-      ${hideAdd?'':`<div class="addrow"><input id="add-${kind}-${g.id}" placeholder="Neuer Eintrag…" onkeydown="if(event.key==='Enter')addListItem('${kind}:${g.id}')"><button class="btn" onclick="addListItem('${kind}:${g.id}')">+</button></div>`}
+      ${hideAdd?'':`<div class="addrow"><input id="add-${kind}-${g.id}" placeholder="Neuer Eintrag…" onkeydown="if(event.key==='Enter')addListItem('${kind}:${g.id}')"><button class="btn" onclick="addListItem('${kind}:${g.id}')">+</button><button class="btn ghost" onclick="addListItemsBulk('${kind}:${g.id}')" title="Mehrere auf einmal hinzufügen">☰</button></div>`}
     </div>`;
   }).join('') +
   (groups.length===0 ? '<div class="card"><p class="hint" style="margin:0">Keine Einträge für diesen Filter.</p></div>' : '') +
@@ -2932,7 +2961,26 @@ function renderPacking(){
     .filter(g=>g.items.length);
   renderCategoryLists('page-packen', groups, 'pack', 'Kategorie hinzufügen', bar, !!packFilter);
 }
-function renderShopping(){ renderCategoryLists('page-einkauf', state.shopping, 'shop', 'Kategorie hinzufügen'); }
+// Offene Einkaufspunkte als Text kopieren (z. B. für die Gruppe, wer gerade im Supermarkt ist)
+function copyShoppingList(){
+  const groups = state.shopping
+    .map(g=>({name:g.name, items:g.items.filter(i=>!i.done).map(i=>i.text)}))
+    .filter(g=>g.items.length);
+  if(!groups.length){ toast('Einkaufsliste ist leer ✨'); return; }
+  const txt = '🛒 Einkaufsliste\n' + groups.map(g=>'\n'+g.name+':\n'+g.items.map(t=>'- '+t).join('\n')).join('');
+  const done = ()=>toast('Einkaufsliste kopiert — ab in die Gruppe 📋');
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(done, ()=>fallbackCopy(txt, done));
+  } else fallbackCopy(txt, done);
+}
+function renderShopping(){
+  const openCount = state.shopping.reduce((n,g)=>n+g.items.filter(i=>!i.done).length,0);
+  const bar = `<div class="card">
+    <h2>🛒 Einkaufsliste <span class="spacer"></span><button class="btn small" onclick="copyShoppingList()">📋 Teilen</button></h2>
+    <p class="hint" style="margin:0">${openCount ? openCount+' offene'+(openCount===1?'r Punkt':' Punkte') : 'Alles besorgt 🎉'} — „Teilen" kopiert die offenen Punkte als Text.</p>
+  </div>`;
+  renderCategoryLists('page-einkauf', state.shopping, 'shop', 'Kategorie hinzufügen', bar);
+}
 
 /* ============================================================
    ERINNERUNGEN & UMFRAGEN
