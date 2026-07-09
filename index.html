@@ -446,6 +446,7 @@ a.maplink:hover{text-decoration:underline}
   background:var(--card);border:1px solid var(--border);font-size:12px;font-weight:700;color:var(--muted);
 }
 .stage-connector-pill .maplink{color:var(--sky)}
+.stage-warn{color:var(--coral);font-size:11.5px;font-weight:800;white-space:nowrap}
 .stage-connector-add{
   margin-left:auto;flex:0 0 auto;width:22px;height:22px;border-radius:50%;border:1px solid var(--border);
   background:rgba(255,255,255,.04);color:var(--faint);font-size:14px;font-weight:800;cursor:pointer;
@@ -1376,14 +1377,19 @@ function applyRevert(u){
     case 'stageAdd': { const l=getStageList(u.ref); const i=l.findIndex(x=>x.id===u.id); if(i<0) throw 0; l.splice(i,1); break; }
     case 'stageDel': { const l=getStageList(u.ref); l.splice(Math.min(u.idx,l.length),0,u.stage);
       if(u.followFix){ const f=l.find(x=>x.id===u.followFix.id); if(f){ f.from=u.followFix.prevFrom; f.km=u.followFix.prevKm; f.time=u.followFix.prevTime;
+        if(u.followFix.prevEst) f.est=u.followFix.prevEst; else delete f.est;
         if(u.followFix.prevFromLat!=null){ f.fromLat=u.followFix.prevFromLat; f.fromLng=u.followFix.prevFromLng; } else { delete f.fromLat; delete f.fromLng; } } } break; }
     case 'stageEdit':{ const s=need(getStageList(u.ref).find(x=>x.id===u.id));
       ['date','from','to','km','time','stay','note','link'].forEach(k=>s[k]=u.prev[k]);
+      if(u.prev.est) s.est=u.prev.est; else delete s.est;
       if(u.prev.lat!=null){ s.lat=u.prev.lat; s.lng=u.prev.lng; } else { delete s.lat; delete s.lng; }
       if(u.prev.fromLat!=null){ s.fromLat=u.prev.fromLat; s.fromLng=u.prev.fromLng; } else { delete s.fromLat; delete s.fromLng; } break; }
     case 'stageMove':{ const l=getStageList(u.ref); if(u.from<0||u.from>=l.length) throw 0; const [s]=l.splice(u.from,1); l.splice(u.to,0,s); break; }
+    case 'stageListRestore': { const l=getStageList(u.ref); l.length=0; u.list.forEach(x=>l.push(x)); break; }
+    case 'datesShift': { const l=need(getStageList(u.ref)); u.prevDates.forEach(p=>{ const s=l.find(x=>x.id===p.id); if(s) s.date=p.date; }); break; }
     case 'stageInsert': { const l=getStageList(u.ref); const i=l.findIndex(x=>x.id===u.id); if(i<0) throw 0; l.splice(i,1);
-      if(u.followFix){ const f=l.find(x=>x.id===u.followFix.id); if(f){ f.from=u.followFix.prevFrom; f.km=u.followFix.prevKm; f.time=u.followFix.prevTime; } } break; }
+      if(u.followFix){ const f=l.find(x=>x.id===u.followFix.id); if(f){ f.from=u.followFix.prevFrom; f.km=u.followFix.prevKm; f.time=u.followFix.prevTime;
+        if(u.followFix.prevEst) f.est=u.followFix.prevEst; else delete f.est; } } break; }
     case 'routeAdd':  { const i=state.routes.findIndex(r=>r.id===u.id); if(i<0) throw 0; state.routes.splice(i,1); state.selectedRoute = u.prevSelected || state.routes[0]?.id; break; }
     case 'routeDel':  state.routes.splice(Math.min(u.idx,state.routes.length),0,u.route); state.selectedRoute = u.prevSelected || u.route.id; break;
     case 'routeEdit': Object.assign(need(state.routes.find(r=>r.id===u.id)), u.prev); break;
@@ -2163,15 +2169,22 @@ function stageRouteLink(s, prevStage){
   const d = part(pointOf(s, s.to), s.to);
   return (o && d) ? 'https://www.google.com/maps/dir/'+o+'/'+d : null;
 }
+// Fahrzeit-Text → Stunden (für den "lange Etappe"-Hinweis); unparsebar ⇒ null
+function stageHours(time){
+  const m = String(time||'').match(/(\d+(?:[.,]\d+)?)\s*Std/);
+  return m ? parseFloat(m[1].replace(',','.')) : null;
+}
 function renderStageConnector(s, ref, idx){
   const link = stageRouteLink(s, getStageList(ref)[idx-1]);
   const hasInfo = s.km || s.time || link;
+  const h = stageHours(s.time);
   return `
   <div class="stage-connector">
     <div class="stage-connector-line"></div>
     ${hasInfo?`<div class="stage-connector-pill">
       ${s.km?`<span>📏 ${esc(s.km)}</span>`:''}
       ${s.time?`<span>⏱ ${esc(s.time)}</span>`:''}
+      ${h!=null && h>=6?'<span class="stage-warn" title="Lange Fahr-Etappe — Pausen einplanen">⚠️ lang</span>':''}
       ${link?`<a class="maplink" href="${esc(link)}" target="_blank" rel="noopener">🗺️ Route</a>`:''}
     </div>`:''}
     ${idx>0?`<button class="stage-connector-add" title="Stopp dazwischen einfügen" onclick="openStageChooser('${ref}',${idx})">+</button>`:''}
@@ -2182,6 +2195,10 @@ function renderStage(s, listRef, idx, len){
   const m = String(s.date||'').match(/(\d{1,2})\.(\d{1,2})\./);
   const now = new Date();
   const isToday = m && +m[1]===now.getDate() && +m[2]===now.getMonth()+1;
+  // Datums-Reihenfolge prüfen: Etappe datiert vor ihrem Vorgänger ⇒ Hinweis
+  const prevS = getStageList(listRef)[idx-1];
+  const d = parseStageDate(s.date), dPrev = prevS ? parseStageDate(prevS.date) : null;
+  const dateWarn = d && dPrev && d < dPrev;
   return `
   <div class="stage${isToday?' today':''}" id="stage-${listRef}-${s.id}">
     <div class="actions">
@@ -2189,7 +2206,7 @@ function renderStage(s, listRef, idx, len){
       ${idx<len-1?`<button title="nach unten" onclick="moveStage('${listRef}',${idx},1)">↓</button>`:''}
       <button title="bearbeiten" onclick="editStage('${listRef}',${idx})">✎</button>
     </div>
-    <div class="toprow"><span class="date">${esc(s.date)}</span>${isToday?'<span class="todaybadge">HEUTE</span>':''}<span class="fromto">${esc(s.to)}</span></div>
+    <div class="toprow"><span class="date">${esc(s.date)}</span>${dateWarn?'<span class="stage-warn" title="Datum liegt vor der vorherigen Etappe">⚠️</span>':''}${isToday?'<span class="todaybadge">HEUTE</span>':''}<span class="fromto">${esc(s.to)}</span></div>
     ${s.stay?`<div class="stay">⛺ ${esc(s.stay)}</div>`:''}
     ${s.note?`<div class="note">${esc(s.note)}</div>`:''}
   </div>`;
@@ -2345,7 +2362,12 @@ function renderRoute(){
         <p class="hint" style="margin:5px 0 12px">Starte mit dem ersten Abschnitt, danach funktionieren Karte, Gesamtstrecke und Bearbeitung wie bei den Vorschlägen.</p>
         <button class="btn primary" onclick="openStageChooser('${route.id}')">Erste Etappe anlegen</button>
       </div>`:
-        `<div class="routetotal">Gesamt Hinweg: ca. ${routeTotals(route.stages).km} km · ~${routeTotals(route.stages).hTxt} Std reine Fahrzeit</div>`}
+        `<div class="routetotal">Gesamt Hinweg: ca. ${routeTotals(route.stages).km} km · ~${routeTotals(route.stages).hTxt} Std reine Fahrzeit</div>
+        ${(()=>{ // Ankunfts-Check: letzte datierte Hinweg-Etappe nach Festival-Start (10.08.)?
+          const dated = route.stages.map(s=>parseStageDate(s.date)).filter(Boolean);
+          return dated.length && dated[dated.length-1] > new Date(2026,7,10)
+            ? '<div class="stage-warn" style="margin-top:6px">⚠️ Letzte Etappe liegt nach dem Festival-Start (Mo 10.08.)</div>' : '';
+        })()}`}
     </div>
 
     <div class="card">
@@ -2389,21 +2411,49 @@ function stageFromPoint(prevStage, s){
   return pointOf({lat:s.fromLat, lng:s.fromLng}, s.from);
 }
 // Fehlen Distanz UND Fahrzeit, aus den Endpunkten vorbelegen (falls auflösbar).
+// s.est = true markiert automatisch geschätzte km/Fahrzeit: nur solche Werte
+// dürfen bei späteren Umstellungen (Verschieben/Einfügen/Löschen) automatisch
+// aktualisiert werden — handeingetragene Werte werden nie angefasst.
 function autoEstimateStage(s, prevStage){
   if(s.km || s.time) return;
   const est = estimateLeg(stageFromPoint(prevStage, s), pointOf(s, s.to));
-  if(est){ s.km = est.km; s.time = est.time; }
+  if(est){ s.km = est.km; s.time = est.time; s.est = true; }
 }
-// "So 02.08." → "Mo 03.08." — Folgetag der Vorgänger-Etappe als Datums-Vorschlag.
-// Jahr fest 2026 (Reisejahr); unparsebares Datum ⇒ leer.
-function nextStageDate(prevDate){
-  const m = String(prevDate||'').match(/(\d{1,2})\.(\d{1,2})\./);
-  if(!m) return '';
+// Etappen-Datum "So 02.08." ↔ Date (Jahr fest 2026 = Reisejahr); unparsebar ⇒ null/''.
+function parseStageDate(str){
+  const m = String(str||'').match(/(\d{1,2})\.(\d{1,2})\./);
+  if(!m) return null;
   const d = new Date(2026, +m[2]-1, +m[1]);
-  if(isNaN(d)) return '';
-  d.setDate(d.getDate()+1);
+  return isNaN(d) ? null : d;
+}
+function fmtStageDate(d){
   const pad = n=>String(n).padStart(2,'0');
   return ['So','Mo','Di','Mi','Do','Fr','Sa'][d.getDay()]+' '+pad(d.getDate())+'.'+pad(d.getMonth()+1)+'.';
+}
+// Folgetag der Vorgänger-Etappe als Datums-Vorschlag.
+function nextStageDate(prevDate){
+  const d = parseStageDate(prevDate);
+  if(!d) return '';
+  d.setDate(d.getDate()+1);
+  return fmtStageDate(d);
+}
+// Koordinaten aus einem eingefügten Google-Maps-Link ziehen (…!3d44.4!4d8.9…,
+// „@44.4,8.9", „q=44.4,8.9" / „query=44.4,8.9"). !3d/!4d zuerst — das ist der
+// Marker selbst, „@" nur die Kartenmitte. Kein Treffer ⇒ null.
+function coordsFromLink(url){
+  const s = String(url||'');
+  const m = s.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/)
+    || s.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
+    || s.match(/[?&]q(?:uery)?=(-?\d+\.\d+)(?:,|%2C)(-?\d+\.\d+)/i);
+  return m ? {lat:+m[1], lng:+m[2]} : null;
+}
+// Nach dem Speichern: keine Position gesetzt, aber der Karten-Link enthält
+// Koordinaten ⇒ automatisch übernehmen (die häufigste Realität: jemand teilt
+// einen Google-Maps-Link in der Gruppe, niemand tippt die Mini-Karte an).
+function applyLinkCoords(target){
+  if(target.lat != null) return;
+  const c = coordsFromLink(target.link);
+  if(c){ target.lat = c.lat; target.lng = c.lng; }
 }
 // isFirst: bei der allerersten Etappe einer Liste gibt es noch keine Vorgänger-
 // Etappe, deren Ziel-Position als "Von" übernommen werden könnte — dafür zusätzlich
@@ -2440,17 +2490,41 @@ function stageFields(s={}, isFirst=false){
 // wieder zugeklappt).
 function openStageChooser(ref, insertAt=null){
   modalCtx = null;
+  // Spots nach Umweg sortieren: das Etappen-Umfeld ist bekannt (A = Ziel der
+  // Vorgänger-Etappe, B = Ziel der bisher folgenden beim Einfügen) — der Umweg
+  // A→Spot→B minus A→B (Luftlinie × Straßenfaktor) macht aus der Liste eine
+  // echte Empfehlung "liegt praktisch auf dem Weg". Ohne Positionsdaten
+  // bleibt die bisherige Sortierung nach Sternen, diese Spots stehen hinten.
+  const list = getStageList(ref);
+  const prev = insertAt!=null ? list[insertAt-1] : list[list.length-1];
+  const next = insertAt!=null ? list[insertAt] : null;
+  const A = prev ? pointOf(prev, prev.to) : null;
+  const B = next ? pointOf(next, next.to) : null;
+  const spots = sortedSpots().map(sp=>{
+    const p = pointOf(sp, sp.name);
+    let detour = null;
+    if(p && A && B) detour = Math.max(0, (haversineKm(A,p)+haversineKm(p,B)-haversineKm(A,B))*1.25);
+    else if(p && A) detour = haversineKm(A,p)*1.25;
+    return {sp, detour};
+  }).sort((a,b)=>{
+    if(a.detour==null && b.detour==null) return 0;
+    if(a.detour==null) return 1;
+    if(b.detour==null) return -1;
+    return a.detour-b.detour;
+  });
+  const badge = d => d==null ? '' :
+    `<span>${B?'~+':'~'}${d<100?Math.max(5,Math.round(d/5)*5):Math.round(d/10)*10} km${B?' Umweg':''}</span>`;
   document.getElementById('modalBox').innerHTML = `
     <h3>${insertAt!=null?'Stopp einfügen':'Neue Etappe'}</h3>
-    <p class="hint" style="margin:0 0 12px">${insertAt!=null?'Wird zwischen die beiden Etappen eingefügt. ':''}Manuell eintragen oder einen vorhandenen Spot übernehmen — Name, Position und Karten-Link werden dann vorausgefüllt.</p>
+    <p class="hint" style="margin:0 0 12px">${insertAt!=null?'Wird zwischen die beiden Etappen eingefügt. ':''}Manuell eintragen oder einen vorhandenen Spot übernehmen — ${A?'sortiert nach '+(B?'Umweg':'Entfernung')+', ':''}Name, Position und Karten-Link werden vorausgefüllt.</p>
     <div class="spotpick-list">
       <button type="button" class="spotpick-item manual" onclick="closeModal();addStage('${ref}',${insertAt})">
         <b>✎ Manuell eintragen</b>
       </button>
-      ${sortedSpots().map(sp=>`
+      ${spots.map(({sp, detour})=>`
         <button type="button" class="spotpick-item" onclick="addStageFromSpot('${ref}','${sp.id}',${insertAt})">
           <b>📍 ${esc(sp.name)}</b>
-          ${sp.region?`<span>${esc(sp.region)}</span>`:''}
+          ${badge(detour) || (sp.region?`<span>${esc(sp.region)}</span>`:'')}
         </button>`).join('')}
     </div>
     <div class="btnrow"><button class="btn ghost" onclick="closeModal()">Abbrechen</button></div>`;
@@ -2466,11 +2540,12 @@ function insertStageAt(ref, insertAt, s){
   const following = list[insertAt];
   let followFix = null;
   if(following){
-    followFix = {id:following.id, prevFrom:following.from, prevKm:following.km, prevTime:following.time};
+    followFix = {id:following.id, prevFrom:following.from, prevKm:following.km, prevTime:following.time, prevEst:following.est};
     following.from = s.to;
     const est = estimateLeg(pointOf(s, s.to), pointOf(following, following.to));
     following.km = est ? est.km : '';
     following.time = est ? est.time : '';
+    if(est) following.est = true; else delete following.est;
   }
   list.splice(insertAt, 0, s);
   logChange('hat Etappe „'+s.from+' → '+s.to+'" eingefügt', {t:'stageInsert', ref, id:s.id, followFix});
@@ -2486,6 +2561,7 @@ function addStage(ref, insertAt=null){
     const {pos, posFrom, ...rest} = v;
     const s = {id:uid(), ...rest};
     applyPos(s, pos);
+    applyLinkCoords(s);
     if(isFirst) applyPos(s, posFrom, ['fromLat','fromLng']);
     autoEstimateStage(s, prevStage);
     if(insertAt!=null){ insertStageAt(ref, insertAt, s); return; }
@@ -2512,6 +2588,7 @@ function addStageFromSpot(ref, spotId, insertAt=null){
     const {pos, posFrom, ...rest} = v;
     const s = {id:uid(), ...rest};
     applyPos(s, pos);
+    applyLinkCoords(s);
     if(isFirst) applyPos(s, posFrom, ['fromLat','fromLng']);
     autoEstimateStage(s, prevStage);
     if(insertAt!=null){ insertStageAt(ref, insertAt, s); return; }
@@ -2524,23 +2601,28 @@ function editStage(ref, idx){
   const s = list[idx];
   const isFirst = idx===0;
   openModal('Etappe bearbeiten', stageFields(s, isFirst), v=>{
-    const prev = {date:s.date, from:s.from, to:s.to, km:s.km, time:s.time, stay:s.stay, note:s.note, link:s.link, lat:s.lat, lng:s.lng, fromLat:s.fromLat, fromLng:s.fromLng};
+    const prev = {date:s.date, from:s.from, to:s.to, km:s.km, time:s.time, stay:s.stay, note:s.note, link:s.link, lat:s.lat, lng:s.lng, fromLat:s.fromLat, fromLng:s.fromLng, est:s.est};
     const {pos, posFrom, ...rest} = v;
+    // Hand angefasste km/Fahrzeit sind ab jetzt manuell — nie mehr automatisch überschreiben
+    if(rest.km !== prev.km || rest.time !== prev.time) delete s.est;
     Object.assign(s, rest);
     applyPos(s, pos);
+    applyLinkCoords(s);
     if(isFirst) applyPos(s, posFrom, ['fromLat','fromLng']);
     logChange('hat Etappe „'+s.from+' → '+s.to+'" bearbeitet', {t:'stageEdit', ref, id:s.id, prev});
+    maybeOfferDateShift(ref, s.id, prev.date, s.date);
   }, ()=>{
     const following = list[idx+1];
     let followFix = null;
     if(following){
-      followFix = {id:following.id, prevFrom:following.from, prevKm:following.km, prevTime:following.time, prevFromLat:following.fromLat, prevFromLng:following.fromLng};
+      followFix = {id:following.id, prevFrom:following.from, prevKm:following.km, prevTime:following.time, prevFromLat:following.fromLat, prevFromLng:following.fromLng, prevEst:following.est};
       following.from = idx>0 ? list[idx-1].to : s.from;
       if(idx===0){ following.fromLat = s.fromLat; following.fromLng = s.fromLng; }
       const newPrevPt = idx>0 ? pointOf(list[idx-1], list[idx-1].to) : pointOf({lat:s.fromLat,lng:s.fromLng}, s.from);
       const est = estimateLeg(newPrevPt, pointOf(following, following.to));
       following.km = est ? est.km : '';
       following.time = est ? est.time : '';
+      if(est) following.est = true; else delete following.est;
     }
     logChange('hat Etappe „'+s.from+' → '+s.to+'" gelöscht'+(following?(following.km?' (Distanz zur nächsten Etappe neu geschätzt)':' (Distanz zur nächsten Etappe zurückgesetzt)'):''), {t:'stageDel', ref, stage:{...s}, idx, followFix});
     list.splice(idx,1);
@@ -2548,10 +2630,58 @@ function editStage(ref, idx){
 }
 function moveStage(ref, idx, dir){
   const list = getStageList(ref);
+  const prevList = copyData(list); // kompletter Vorher-Stand für sauberes Rückgängig
+  const start = {from:list[0].from, fromLat:list[0].fromLat, fromLng:list[0].fromLng};
   const [s] = list.splice(idx,1);
   list.splice(idx+dir,0,s);
-  logChange('hat Etappe „'+s.from+' → '+s.to+'" verschoben', {t:'stageMove', ref, from:idx+dir, to:idx});
+  // Nach dem Verschieben die ganze Kette reparieren: "Von" folgt wieder dem
+  // Vorgänger-Ziel, der Routen-Startpunkt bleibt an Position 0. Automatisch
+  // geschätzte km/Fahrzeit (est-Flag) werden neu gerechnet — handeingetragene
+  // Werte bleiben unangetastet (können also veraltet sein: bewusster Tausch).
+  list.forEach((st, i)=>{
+    if(i===0){
+      st.from = start.from;
+      if(start.fromLat!=null){ st.fromLat = start.fromLat; st.fromLng = start.fromLng; }
+      else { delete st.fromLat; delete st.fromLng; }
+    } else {
+      st.from = list[i-1].to;
+      delete st.fromLat; delete st.fromLng;
+    }
+    if(st.est){
+      const fromPt = i===0 ? pointOf({lat:st.fromLat,lng:st.fromLng}, st.from) : pointOf(list[i-1], list[i-1].to);
+      const est = estimateLeg(fromPt, pointOf(st, st.to));
+      if(est){ st.km = est.km; st.time = est.time; } else { st.km=''; st.time=''; delete st.est; }
+    }
+  });
+  logChange('hat Etappe „'+s.to+'" verschoben (Verkettung angepasst)', {t:'stageListRestore', ref, list:prevList});
   save(); renderAll();
+}
+// Datum einer Etappe geändert ⇒ anbieten, alle folgenden um dieselbe Differenz zu
+// verschieben (z. B. eine Nacht länger bleiben). Bewusst opt-in per Toast statt
+// automatisch — eine absichtliche Einzel-Korrektur soll nichts stillschweigend kaskadieren.
+function maybeOfferDateShift(ref, stageId, oldDate, newDate){
+  const d0 = parseStageDate(oldDate), d1 = parseStageDate(newDate);
+  if(!d0 || !d1) return;
+  const diff = Math.round((d1-d0)/86400000);
+  if(!diff) return;
+  if(!getStageList(ref).slice(getStageList(ref).findIndex(x=>x.id===stageId)+1).some(x=>parseStageDate(x.date))) return;
+  toast('Datum um '+Math.abs(diff)+' Tag'+(Math.abs(diff)===1?'':'e')+' '+(diff>0?'nach hinten':'nach vorn'), 'Folgende anpassen', ()=>{
+    // Zum Klick-Zeitpunkt frisch auflösen — zwischen Toast und Klick kann ein
+    // Cloud-Sync den State ersetzt haben, alte Objekt-Referenzen wären dann tot.
+    const list = getStageList(ref);
+    const idx = list.findIndex(x=>x.id===stageId);
+    if(idx<0){ toast('Etappe existiert nicht mehr'); return; }
+    const following = list.slice(idx+1).filter(x=>parseStageDate(x.date));
+    if(!following.length) return;
+    const prevDates = following.map(x=>({id:x.id, date:x.date}));
+    following.forEach(x=>{
+      const d = parseStageDate(x.date);
+      d.setDate(d.getDate()+diff);
+      x.date = fmtStageDate(d);
+    });
+    logChange('hat die Daten von '+following.length+' folgenden Etappen um '+diff+' Tag'+(Math.abs(diff)===1?'':'e')+' verschoben', {t:'datesShift', ref, prevDates});
+    save(); renderAll();
+  });
 }
 
 /* ============================================================
@@ -2679,6 +2809,7 @@ function addSpot(){
     const {pos, ...rest} = v;
     const sp = {id:uid(), votes:[], ...rest};
     applyPos(sp, pos);
+    applyLinkCoords(sp);
     state.spots.push(sp);
     logChange('hat Spot „'+sp.name+'" hinzugefügt', {t:'spotAdd', id:sp.id});
   });
@@ -2690,6 +2821,7 @@ function editSpot(id){
     const {pos, ...rest} = v;
     Object.assign(sp, rest);
     applyPos(sp, pos);
+    applyLinkCoords(sp);
     logChange('hat Spot „'+sp.name+'" bearbeitet', {t:'spotEdit', id, prev});
   }, ()=>{
     const idx = state.spots.findIndex(s=>s.id===id);
