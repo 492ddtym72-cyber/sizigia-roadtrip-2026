@@ -2205,18 +2205,18 @@ function renderRoute(){
     </div>
 
     <div class="card">
-      <h2 style="flex-wrap:wrap">${route.emoji} Hinweg: ${esc(route.name)} <span class="spacer"></span><button class="btn small ghost" onclick="pickSpotForStage('${route.id}')">📍 Spot</button><button class="btn small" onclick="addStage('${route.id}')">+ Etappe</button></h2>
+      <h2 style="flex-wrap:wrap">${route.emoji} Hinweg: ${esc(route.name)} <span class="spacer"></span><button class="btn small" onclick="chooseStageSource('${route.id}')">+ Etappe</button></h2>
       <div>${route.stages.map((s,i)=>renderStage(s, route.id, i, route.stages.length)).join('')}</div>
       ${route.stages.length===0?`<div class="route-empty">
         <b>Noch keine Etappen</b>
         <p class="hint" style="margin:5px 0 12px">Starte mit dem ersten Abschnitt, danach funktionieren Karte, Gesamtstrecke und Bearbeitung wie bei den Vorschlägen.</p>
-        <button class="btn primary" onclick="addStage('${route.id}')">Erste Etappe anlegen</button>
+        <button class="btn primary" onclick="chooseStageSource('${route.id}')">Erste Etappe anlegen</button>
       </div>`:
         `<div class="routetotal">Gesamt Hinweg: ca. ${routeTotals(route.stages).km} km · ~${routeTotals(route.stages).hTxt} Std reine Fahrzeit</div>`}
     </div>
 
     <div class="card">
-      <h2 style="flex-wrap:wrap">🔙 Rückreise (ab 14.08., Vorschlag) <span class="spacer"></span><button class="btn small ghost" onclick="pickSpotForStage('return')">📍 Spot</button><button class="btn small" onclick="addStage('return')">+ Etappe</button></h2>
+      <h2 style="flex-wrap:wrap">🔙 Rückreise (ab 14.08., Vorschlag) <span class="spacer"></span><button class="btn small" onclick="chooseStageSource('return')">+ Etappe</button></h2>
       <div>${state.returnStages.map((s,i)=>renderStage(s, 'return', i, state.returnStages.length)).join('')}</div>
       ${state.returnStages.length?`<div class="routetotal">Gesamt Rückreise: ca. ${routeTotals(state.returnStages).km} km · ~${routeTotals(state.returnStages).hTxt} Std</div>`:''}
       <div class="hint">Nur ein Vorschlag — Datum & Route der Rückreise sind noch offen, alles anpassbar.</div>
@@ -2243,6 +2243,25 @@ function stageFields(s={}){
     {key:'link',label:'Karten-Link (optional, sonst automatisch)',value:s.link||'',placeholder:'https://…'},
     {key:'pos',label:'Ziel-Position auf der Karte',type:'map',value:stored,auto},
   ];
+}
+// Einstieg für "+ Etappe": erst wählen, ob aus einem Spot übernommen oder komplett
+// neu eingetragen wird. Eigenes Popup statt openModal (siehe pickSpotForStage unten).
+function chooseStageSource(ref){
+  modalCtx = null;
+  document.getElementById('modalBox').innerHTML = `
+    <h3>Neue Etappe</h3>
+    <p class="hint" style="margin:0 0 12px">Aus einem vorhandenen Spot übernehmen oder komplett neu eintragen.</p>
+    <div class="spotpick-list">
+      <button type="button" class="spotpick-item" onclick="closeModal();pickSpotForStage('${ref}')">
+        <b>📍 Aus Spot-Liste wählen</b>
+        <span>${state.spots.length} Spot${state.spots.length===1?'':'s'}</span>
+      </button>
+      <button type="button" class="spotpick-item" onclick="closeModal();addStage('${ref}')">
+        <b>✎ Manuell eintragen</b>
+      </button>
+    </div>
+    <div class="btnrow"><button class="btn ghost" onclick="closeModal()">Abbrechen</button></div>`;
+  document.getElementById('modalBg').classList.add('open');
 }
 function addStage(ref){
   openModal('Neue Etappe', stageFields(), v=>{
