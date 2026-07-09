@@ -91,7 +91,9 @@ AGENTS.md                   # Diese Datei (CLAUDE.md verweist hierauf)
   (`COUNTRY_LABELS`, `CITY_LABELS`, `SEA_LABELS`) sowie Routen/Marker sind
   SVG-Overlays im `<g class="map-pan">`. Pan/Zoom pro Karten-Instanz
   (`MAP_VIEWS`, `data-mapid`: `route`, `spots`, `big`, `pick<i>`): Ziehen,
-  Pinch, Mausrad, +/−-Buttons. Gesten ändern nur das `transform`; am
+  Pinch, Mausrad, +/−-Buttons. ◎-Button (`locateMe`, nicht auf `pick`-Karten)
+  zeigt den GPS-Standort (`userPos`, nicht persistiert) und zentriert die
+  Ansicht. Gesten ändern nur das `transform`; am
   Gesten-Ende baut `mapSettle()` → `rebuild()` das Overlay mit Gegenskalierung
   (Modul-Variable `MZ`) neu, damit Marker/Labels konstant groß bleiben.
   Positionen kommen aus gespeichertem `lat`/`lng` am Objekt oder automatisch

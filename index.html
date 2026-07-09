@@ -1581,6 +1581,7 @@ function baseMapSvg(inner, id){
     <div class="map-tools">
       <button type="button" class="mtool" onclick="mapZoomBy('${id}',1.45)" aria-label="Hineinzoomen">+</button>
       <button type="button" class="mtool" onclick="mapZoomBy('${id}',${1/1.45})" aria-label="Herauszoomen">−</button>
+      ${id.startsWith('pick') ? '' : `<button type="button" class="mtool" onclick="locateMe('${id}')" aria-label="Mein Standort" title="Mein Standort">◎</button>`}
     </div>
   </div>`;
 }
@@ -1716,6 +1717,7 @@ function markerSvg(p, {num, color, kind, label}){
   const on=`class="map-pt" onclick="mapInfo(${idx})" transform="translate(${q.x.toFixed(1)} ${q.y.toFixed(1)}) scale(${(MU/MZ).toFixed(4)})"`;
   if(kind==='start') return `<g ${on}><circle r="7" fill="#fff" stroke="${color}" stroke-width="3.5"/></g>`;
   if(kind==='dot')   return `<g ${on}><circle r="5" fill="${color}" stroke="#fffef8" stroke-width="1.6"/></g>`;
+  if(kind==='me')    return `<g ${on}><circle r="11" fill="${color}" fill-opacity=".22"/><circle r="5.5" fill="${color}" stroke="#fff" stroke-width="2.2"/></g>`;
   if(kind==='spot')  return `<g ${on}><rect x="-9" y="-9" width="18" height="18" rx="4" transform="rotate(45)" fill="${color}" stroke="#fffef8" stroke-width="1.8"/><text y="3.9" text-anchor="middle" font-size="10.5" font-weight="800" fill="#1a0d05">${num}</text></g>`;
   return `<g ${on}><circle r="11" fill="${color}" stroke="#fffef8" stroke-width="1.8"/><text y="4.2" text-anchor="middle" font-size="12" font-weight="800" fill="#10131f">${num}</text></g>`;
 }
@@ -1735,6 +1737,31 @@ function routePts(stages, ref){
 }
 const ROUTE_COLORS={'r-kueste':'#54c8ff','r-alpen':'#5fd4a8','r-mix':'#ff8a5c'};
 function routeColor(route){ return route.color || ROUTE_COLORS[route.id] || '#8ea8ff'; }
+// „Mein Standort": einmalige GPS-Abfrage pro Tap (kein Netz nötig — GPS läuft
+// offline; nur die Berechtigung braucht ggf. https). Nicht persistiert, reine
+// Anzeige auf den Routen-/Spots-/Groß-Karten dieses Geräts.
+let userPos = null;
+function locateMe(id){
+  if(!navigator.geolocation){ toast('Standort wird von diesem Browser nicht unterstützt'); return; }
+  toast('Standort wird ermittelt …');
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const lat = pos.coords.latitude, lng = pos.coords.longitude;
+    if(lat<MAP.latMin || lat>MAP.latMax || lng<MAP.lonMin || lng>MAP.lonMax){
+      userPos = null;
+      toast('Dein Standort liegt außerhalb des Kartenausschnitts');
+      return;
+    }
+    userPos = {lat, lng};
+    const v = MAP_VIEWS[id];
+    if(v){ const q = project(lat, lng); v.cx = q.x; v.cy = q.y; v.z = Math.max(v.z, 4); mapSettle(id); }
+    toast('📍 Dein Standort');
+  }, err=>{
+    toast(err && err.code===1 ? 'Standort-Zugriff wurde abgelehnt' : 'Standort konnte nicht ermittelt werden');
+  }, {enableHighAccuracy:true, timeout:12000, maximumAge:60000});
+}
+function userPosMarker(){
+  return userPos ? markerSvg(userPos, {kind:'me', color:'#3d76d8', label:'📍 Dein Standort'}) : '';
+}
 let mapLayers={alle:false, rueck:true, spots:true};
 function toggleMapLayer(k){ mapLayers[k]=!mapLayers[k]; renderRoute(); }
 let routesExpanded = false;
@@ -1782,6 +1809,7 @@ function buildRouteMap(id='route', rebuild=renderRoute){
   inner+=lineSvg(pts,'#ffb257',{glow:true});
   inner+=pts.map(p=>markerSvg(p, p.start ? {color:'#ffb257', kind:'start', label:{type:'stage', ref:p.ref, id:p.id}}
                                          : {num:p.stage+1, color:'#ffb257', kind:'', label:{type:'stage', ref:p.ref, id:p.id}})).join('');
+  inner+=userPosMarker();
   return baseMapSvg(inner, id);
 }
 function buildSpotsMap(sorted){
@@ -1790,6 +1818,7 @@ function buildSpotsMap(sorted){
   const sel=state.routes.find(r=>r.id===state.selectedRoute);
   let inner=lineSvg(routePts(sel.stages),'#ffb257',{faint:true});
   inner+=spotMarkers(sorted, true);
+  inner+=userPosMarker();
   return baseMapSvg(inner, 'spots');
 }
 
@@ -2246,7 +2275,7 @@ function renderRoute(){
         <span class="lchip${mapLayers.rueck?' on':''}" style="--c:#b18cff" onclick="toggleMapLayer('rueck')"><span class="swatch"></span>Rückreise</span>
         <span class="lchip${mapLayers.spots?' on':''}" style="--c:#ff6b4a" onclick="toggleMapLayer('spots')"><span class="swatch"></span>Spots</span>
       </div>
-      <div class="hint">Echte Europakarte, komplett offline (Natural Earth). Ziehen verschiebt den Ausschnitt, Zoomen mit zwei Fingern, Mausrad oder den +/−-Buttons — hineinzoomen zeigt die geplante Route im Detail. Marker antippen für Infos. Getaggte Orte der Gruppe: <a href="https://maps.app.goo.gl/JnPwkaBY46XwAN8g7?g_st=iw" target="_blank" rel="noopener" style="color:var(--sky)">Google-Maps-Liste öffnen ↗</a> (braucht Internet).</div>
+      <div class="hint">Echte Europakarte, komplett offline (Natural Earth). Ziehen verschiebt den Ausschnitt, Zoomen mit zwei Fingern, Mausrad oder den +/−-Buttons — hineinzoomen zeigt die geplante Route im Detail. Marker antippen für Infos, ◎ zeigt deinen Standort (GPS). Getaggte Orte der Gruppe: <a href="https://maps.app.goo.gl/JnPwkaBY46XwAN8g7?g_st=iw" target="_blank" rel="noopener" style="color:var(--sky)">Google-Maps-Liste öffnen ↗</a> (braucht Internet).</div>
     </div>
 
     <div class="card">
@@ -2312,6 +2341,49 @@ function selectRoute(id){
   logChange('hat Route „' + (state.routes.find(r=>r.id===id)?.name||'?') + '" als Favorit gewählt', {t:'routeSel', prev});
   save(); renderAll();
 }
+// Luftlinie in km (Haversine) — Grundlage für die Offline-Schätzung von Strecken.
+function haversineKm(a, b){
+  const R=6371, toR=Math.PI/180;
+  const dLat=(b.lat-a.lat)*toR, dLng=(b.lng-a.lng)*toR;
+  const h=Math.sin(dLat/2)**2 + Math.cos(a.lat*toR)*Math.cos(b.lat*toR)*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(h));
+}
+// Grobe Fahr-Schätzung ohne Netz: Luftlinie × 1,25 Straßenfaktor, Ø ~80 km/h.
+// "~"-Präfix markiert beide Werte sichtbar als Schätzung; Felder bleiben editierbar.
+function estimateLeg(fromPt, toPt){
+  if(!fromPt || !toPt) return null;
+  const road = haversineKm(fromPt, toPt)*1.25;
+  if(road < 1) return null;
+  const km = road<100 ? Math.max(5,Math.round(road/5)*5) : Math.round(road/10)*10;
+  const h = road/80;
+  const time = h<0.9 ? '~'+Math.max(5,Math.round(h*60/5)*5)+' Min'
+                     : '~'+String(Math.round(h*2)/2).replace('.',',')+' Std';
+  return {km:'~'+km+' km', time};
+}
+// Von-Position einer (neuen) Etappe fürs Schätzen: entspricht das "Von" noch dem
+// Ziel der Vorgänger-Etappe, deren (ggf. manuell gesetzte) Position nutzen — sonst
+// eigene fromLat/fromLng (erste Etappe) bzw. GEO-Lexikon über den Text.
+function stageFromPoint(prevStage, s){
+  if(prevStage && prevStage.to === s.from) return pointOf(prevStage, prevStage.to);
+  return pointOf({lat:s.fromLat, lng:s.fromLng}, s.from);
+}
+// Fehlen Distanz UND Fahrzeit, aus den Endpunkten vorbelegen (falls auflösbar).
+function autoEstimateStage(s, prevStage){
+  if(s.km || s.time) return;
+  const est = estimateLeg(stageFromPoint(prevStage, s), pointOf(s, s.to));
+  if(est){ s.km = est.km; s.time = est.time; }
+}
+// "So 02.08." → "Mo 03.08." — Folgetag der Vorgänger-Etappe als Datums-Vorschlag.
+// Jahr fest 2026 (Reisejahr); unparsebares Datum ⇒ leer.
+function nextStageDate(prevDate){
+  const m = String(prevDate||'').match(/(\d{1,2})\.(\d{1,2})\./);
+  if(!m) return '';
+  const d = new Date(2026, +m[2]-1, +m[1]);
+  if(isNaN(d)) return '';
+  d.setDate(d.getDate()+1);
+  const pad = n=>String(n).padStart(2,'0');
+  return ['So','Mo','Di','Mi','Do','Fr','Sa'][d.getDay()]+' '+pad(d.getDate())+'.'+pad(d.getMonth()+1)+'.';
+}
 // isFirst: bei der allerersten Etappe einer Liste gibt es noch keine Vorgänger-
 // Etappe, deren Ziel-Position als "Von" übernommen werden könnte — dafür zusätzlich
 // ein Positionsfeld für den Startpunkt selbst (sonst landet er nur als Text ohne
@@ -2374,22 +2446,26 @@ function insertStageAt(ref, insertAt, s){
   if(following){
     followFix = {id:following.id, prevFrom:following.from, prevKm:following.km, prevTime:following.time};
     following.from = s.to;
-    following.km = '';
-    following.time = '';
+    const est = estimateLeg(pointOf(s, s.to), pointOf(following, following.to));
+    following.km = est ? est.km : '';
+    following.time = est ? est.time : '';
   }
   list.splice(insertAt, 0, s);
   logChange('hat Etappe „'+s.from+' → '+s.to+'" eingefügt', {t:'stageInsert', ref, id:s.id, followFix});
-  if(following) toast('Distanz/Fahrzeit zur nächsten Etappe „'+following.to+'" bitte prüfen');
+  if(following) toast(following.km
+    ? 'Distanz/Fahrzeit zur nächsten Etappe „'+following.to+'" geschätzt — bitte prüfen'
+    : 'Distanz/Fahrzeit zur nächsten Etappe „'+following.to+'" bitte prüfen');
 }
 function addStage(ref, insertAt=null){
   const list = getStageList(ref);
   const isFirst = (insertAt!=null ? insertAt : list.length) === 0;
   const prevStage = insertAt!=null ? list[insertAt-1] : list[list.length-1];
-  openModal('Neue Etappe', stageFields({from: prevStage ? prevStage.to : ''}, isFirst), v=>{
+  openModal('Neue Etappe', stageFields({from: prevStage ? prevStage.to : '', date: prevStage ? nextStageDate(prevStage.date) : ''}, isFirst), v=>{
     const {pos, posFrom, ...rest} = v;
     const s = {id:uid(), ...rest};
     applyPos(s, pos);
     if(isFirst) applyPos(s, posFrom, ['fromLat','fromLng']);
+    autoEstimateStage(s, prevStage);
     if(insertAt!=null){ insertStageAt(ref, insertAt, s); return; }
     list.push(s);
     logChange('hat Etappe „'+s.from+' → '+s.to+'" hinzugefügt', {t:'stageAdd', ref, id:s.id});
@@ -2404,6 +2480,7 @@ function addStageFromSpot(ref, spotId, insertAt=null){
   const prevStage = insertAt!=null ? list[insertAt-1] : list[list.length-1];
   const prefill = {
     from: prevStage ? prevStage.to : '',
+    date: prevStage ? nextStageDate(prevStage.date) : '',
     to: sp.name,
     link: sp.link || '',
     note: [sp.detour?'🛣️ '+sp.detour:'', sp.desc||''].filter(Boolean).join('\n\n'),
@@ -2414,6 +2491,7 @@ function addStageFromSpot(ref, spotId, insertAt=null){
     const s = {id:uid(), ...rest};
     applyPos(s, pos);
     if(isFirst) applyPos(s, posFrom, ['fromLat','fromLng']);
+    autoEstimateStage(s, prevStage);
     if(insertAt!=null){ insertStageAt(ref, insertAt, s); return; }
     list.push(s);
     logChange('hat Etappe „'+s.from+' → '+s.to+'" aus Spot „'+sp.name+'" hinzugefügt', {t:'stageAdd', ref, id:s.id});
@@ -2436,11 +2514,13 @@ function editStage(ref, idx){
     if(following){
       followFix = {id:following.id, prevFrom:following.from, prevKm:following.km, prevTime:following.time, prevFromLat:following.fromLat, prevFromLng:following.fromLng};
       following.from = idx>0 ? list[idx-1].to : s.from;
-      following.km = '';
-      following.time = '';
       if(idx===0){ following.fromLat = s.fromLat; following.fromLng = s.fromLng; }
+      const newPrevPt = idx>0 ? pointOf(list[idx-1], list[idx-1].to) : pointOf({lat:s.fromLat,lng:s.fromLng}, s.from);
+      const est = estimateLeg(newPrevPt, pointOf(following, following.to));
+      following.km = est ? est.km : '';
+      following.time = est ? est.time : '';
     }
-    logChange('hat Etappe „'+s.from+' → '+s.to+'" gelöscht'+(following?' (Distanz zur nächsten Etappe zurückgesetzt)':''), {t:'stageDel', ref, stage:{...s}, idx, followFix});
+    logChange('hat Etappe „'+s.from+' → '+s.to+'" gelöscht'+(following?(following.km?' (Distanz zur nächsten Etappe neu geschätzt)':' (Distanz zur nächsten Etappe zurückgesetzt)'):''), {t:'stageDel', ref, stage:{...s}, idx, followFix});
     list.splice(idx,1);
   });
 }
