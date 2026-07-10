@@ -599,9 +599,18 @@ a.maplink:hover{text-decoration:underline}
 .big-map-stage .mapwrap svg{height:100%;width:100%}
 .reminder-card,.poll-card,.camp-card{border:1px solid rgba(255,255,255,.08);border-radius:15px;padding:12px;margin-bottom:10px;background:rgba(255,255,255,.035)}
 .reminder-card.done,.poll-card.closed{opacity:.58}
+.reminder-card.priority{border-color:rgba(255,107,74,.34)}
 .reminder-head,.poll-head,.camp-head{display:flex;align-items:flex-start;gap:10px}
-.reminder-head b,.poll-head b,.camp-head b{flex:1;min-width:0}
-.reminder-meta,.poll-meta{color:var(--faint);font-size:12px;margin-top:4px}
+.reminder-title{flex:1;min-width:0;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.reminder-title b,.poll-head b,.camp-head b{flex:1;min-width:0}
+.reminder-priority{display:inline-flex;align-items:center;padding:2px 7px;border-radius:999px;background:rgba(255,107,74,.13);border:1px solid rgba(255,107,74,.34);color:var(--coral);font-size:9.5px;font-weight:900;letter-spacing:.07em;text-transform:uppercase;white-space:nowrap}
+.reminder-tools{display:flex;gap:3px;flex:0 0 auto}
+.reminder-tools button{width:23px;height:23px;padding:0;border:1px solid rgba(255,255,255,.09);border-radius:6px;background:rgba(255,255,255,.035);color:var(--muted);font-size:11px;line-height:1;cursor:pointer}
+.reminder-tools button:hover{color:var(--text);border-color:var(--border-strong)}
+.reminder-tools button:disabled{opacity:.18;cursor:default}
+.reminder-meta{display:flex;align-items:center;gap:8px;color:var(--faint);font-size:12px;margin-top:5px}
+.reminder-meta span:first-child{flex:1;min-width:0}
+.poll-meta{color:var(--faint);font-size:12px;margin-top:4px}
 .camp-head b{font-family:var(--font-display);font-size:15px;letter-spacing:.02em}
 .camp-region{font-size:11.5px;color:var(--sun);letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-top:2px}
 .camp-note{font-size:13px;color:var(--muted);margin:6px 0 0;white-space:pre-line}
@@ -750,7 +759,7 @@ a.maplink:hover{text-decoration:underline}
      später austauschbar gegen Cloud-Sync (gleiche Schnittstelle).
    ============================================================ */
 const STORAGE_KEY = 'sizigia-roadtrip-2026';
-const SCHEMA_VERSION = 2;
+const SCHEMA_VERSION = 3;
 const LOG_MAX = 60;
 const UNDO_MAX = 20;
 
@@ -981,6 +990,7 @@ function normalizeListItem(item){
 /* ---------- Laden + Migration ---------- */
 function migrate(s){
   if(!s || typeof s !== 'object') return defaultState();
+  const fromVersion = Number(s.schemaVersion) || 1;
   // Firebase RTDB speichert leere Arrays/Objekte NICHT — bei einem bereits
   // benutzten State (meta.lastSaved existiert) fehlende, leerbare Container
   // als leer wiederherstellen statt mit Defaults zu befüllen.
@@ -1008,10 +1018,14 @@ function migrate(s){
     id:r.id || uid(),
     title:String(r.title || ''),
     done:!!r.done,
+    priority:!!r.priority,
     createdAt:r.createdAt || new Date().toISOString(),
     createdBy:r.createdBy || null,
     link:r.link && r.link.type==='listItem' ? {type:'listItem', ref:r.link.ref, itemId:r.link.itemId} : undefined
   })).filter(r=>r.title);
+  // V3 übernimmt die bisherige sichtbare Reihenfolge einmalig als persistierte
+  // Ausgangsreihenfolge; danach bestimmen ausschließlich die Pfeil-Buttons.
+  if(fromVersion < 3) s.reminders.sort((a,b)=>(a.done===b.done ? new Date(b.createdAt)-new Date(a.createdAt) : (a.done?1:-1)));
   s.polls = (s.polls || []).map(p=>({
     id:p.id || uid(),
     question:String(p.question || ''),
@@ -1378,6 +1392,7 @@ function applyRevert(u){
     case 'remDel':   state.reminders.splice(Math.min(u.idx,state.reminders.length),0,u.reminder); break;
     case 'remEdit':  Object.assign(need(state.reminders.find(r=>r.id===u.id)), u.prev); break;
     case 'remToggle': need(state.reminders.find(r=>r.id===u.id)).done = u.prev; break;
+    case 'remMove': { const a=state.reminders.findIndex(r=>r.id===u.id), b=state.reminders.findIndex(r=>r.id===u.otherId); if(a<0||b<0) throw 0; [state.reminders[a],state.reminders[b]]=[state.reminders[b],state.reminders[a]]; break; }
     case 'pollAdd':  { const i=state.polls.findIndex(p=>p.id===u.id); if(i<0) throw 0; state.polls.splice(i,1); break; }
     case 'pollDel':  state.polls.splice(Math.min(u.idx,state.polls.length),0,u.poll); break;
     case 'pollEdit': Object.assign(need(state.polls.find(p=>p.id===u.id)), u.prev); break;
@@ -2067,7 +2082,7 @@ function reminderCounts(){
 // Kurzfassung, was gerade ansteht: offene Umfrage (Frage) schlägt fällige Erinnerung (Titel)
 function reminderHomeHighlight(){
   const openPolls = (state.polls||[]).filter(p=>!p.closed).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
-  const openRems = (state.reminders||[]).filter(r=>!r.done).sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt));
+  const openRems = (state.reminders||[]).filter(r=>!r.done);
   if(openPolls.length) return 'Umfrage offen: „'+esc(openPolls[0].question)+'"';
   if(openRems.length){
     const next = esc(openRems[0].title);
@@ -3196,7 +3211,7 @@ function reminderMeta(r){
 }
 function ensureLinkedReminder(ref, item){
   if(linkedReminder(ref, item.id)) return;
-  const reminder = {id:uid(), title:item.text, done:false, createdAt:new Date().toISOString(), createdBy:whoami(), link:{type:'listItem', ref, itemId:item.id}};
+  const reminder = {id:uid(), title:item.text, done:false, priority:false, createdAt:new Date().toISOString(), createdBy:whoami(), link:{type:'listItem', ref, itemId:item.id}};
   state.reminders.push(reminder);
   logChange('hat „'+item.text+'" in Erinnerungen angezeigt', {t:'remAdd', id:reminder.id});
 }
@@ -3210,10 +3225,11 @@ function removeLinkedReminderForItem(ref, itemId, withLog){
 function addReminder(){
   openModal('Neue Erinnerung', [
     {key:'title',label:'Titel',value:'',placeholder:'z. B. Tickets prüfen'},
+    {key:'priority',label:'Priorität',type:'checkbox',text:'Hohe Priorität',value:false},
   ], v=>{
     const title = v.title.trim();
     if(!title) return;
-    const reminder = {id:uid(), title, done:false, createdAt:new Date().toISOString(), createdBy:whoami()};
+    const reminder = {id:uid(), title, done:false, priority:!!v.priority, createdAt:new Date().toISOString(), createdBy:whoami()};
     state.reminders.push(reminder);
     logChange('hat Erinnerung „'+title+'" angelegt', {t:'remAdd', id:reminder.id});
   });
@@ -3223,9 +3239,11 @@ function editReminder(id){
   if(!r) return;
   openModal('Erinnerung bearbeiten', [
     {key:'title',label:'Titel',value:r.title},
+    {key:'priority',label:'Priorität',type:'checkbox',text:'Hohe Priorität',value:!!r.priority},
   ], v=>{
     const prev = copyData(r);
     r.title = v.title.trim() || r.title;
+    r.priority = !!v.priority;
     logChange('hat Erinnerung „'+r.title+'" bearbeitet', {t:'remEdit', id, prev});
   }, ()=>{
     const idx = state.reminders.findIndex(x=>x.id===id);
@@ -3243,6 +3261,19 @@ function toggleReminder(id){
   logChange((r.done?'hat Erinnerung erledigt: ':'hat Erinnerung wieder geöffnet: ') + '„'+r.title+'"', {t:'remToggle', id, prev});
   save(); renderAll();
 }
+function moveReminder(id, dir){
+  const r = state.reminders.find(x=>x.id===id);
+  if(!r) return;
+  const group = state.reminders.filter(x=>!!x.done===!!r.done);
+  const pos = group.findIndex(x=>x.id===id);
+  const target = group[pos+dir];
+  if(pos<0 || !target) return;
+  const from = state.reminders.findIndex(x=>x.id===r.id);
+  const to = state.reminders.findIndex(x=>x.id===target.id);
+  [state.reminders[from],state.reminders[to]] = [state.reminders[to],state.reminders[from]];
+  logChange('hat Erinnerung „'+r.title+'“ '+(dir<0?'nach oben':'nach unten')+' verschoben', {t:'remMove', id:r.id, otherId:target.id});
+  save(); renderAll();
+}
 let pendingHighlightKey = '';
 function openReminderLink(id){
   const r = state.reminders.find(x=>x.id===id);
@@ -3257,15 +3288,18 @@ function openReminderLink(id){
     setTimeout(()=>el.classList.remove('pulse-highlight'), 2200);
   }, 120);
 }
-function reminderRow(r){
-  return `<div class="reminder-card${r.done?' done':''}">
+function reminderRow(r, idx, total){
+  return `<div class="reminder-card${r.done?' done':''}${r.priority?' priority':''}">
     <div class="reminder-head">
       <button class="checkbox${r.done?' done':''}" onclick="toggleReminder('${r.id}')" aria-label="Erinnerung erledigen">${r.done?'✓':''}</button>
-      <b>${esc(r.title)}</b>
-      ${r.link?`<button class="btn ghost small" onclick="openReminderLink('${r.id}')">Öffnen</button>`:''}
-      <button class="btn ghost small" onclick="editReminder('${r.id}')">✎</button>
+      <div class="reminder-title"><b>${esc(r.title)}</b>${r.priority?'<span class="reminder-priority">Hohe Priorität</span>':''}</div>
+      <span class="reminder-tools">
+        <button onclick="moveReminder('${r.id}',-1)" aria-label="Erinnerung nach oben verschieben" title="nach oben"${idx===0?' disabled':''}>↑</button>
+        <button onclick="moveReminder('${r.id}',1)" aria-label="Erinnerung nach unten verschieben" title="nach unten"${idx===total-1?' disabled':''}>↓</button>
+        <button onclick="editReminder('${r.id}')" aria-label="Erinnerung bearbeiten" title="bearbeiten">✎</button>
+      </span>
     </div>
-    <div class="reminder-meta">${esc(reminderMeta(r))}${r.link?' · '+esc(refLabel(r.link.ref)):''}</div>
+    <div class="reminder-meta"><span>${esc(reminderMeta(r))}${r.link?' · '+esc(refLabel(r.link.ref)):''}</span>${r.link?`<button class="btn ghost small" onclick="openReminderLink('${r.id}')">Öffnen</button>`:''}</div>
   </div>`;
 }
 function addPoll(){
@@ -3430,7 +3464,7 @@ function orgaSection(id, icon, title, meta, bodyHtml){
   </details>`;
 }
 function renderReminder(){
-  const reminders = [...(state.reminders||[])].sort((a,b)=>(a.done===b.done ? new Date(b.createdAt)-new Date(a.createdAt) : (a.done?1:-1)));
+  const reminders = [...(state.reminders||[])];
   const polls = [...(state.polls||[])].sort((a,b)=>(a.closed===b.closed ? new Date(b.createdAt)-new Date(a.createdAt) : (a.closed?1:-1)));
   const campContacts = [...(state.campContacts||[])].sort((a,b)=>a.name.localeCompare(b.name,'de'));
   const openReminderItems = reminders.filter(r=>!r.done);
@@ -3440,8 +3474,8 @@ function renderReminder(){
   document.getElementById('page-reminder').innerHTML = sectionBackButton() +
     orgaSection('reminder-erinnerungen', 'bell', 'Erinnerungen', openReminders ? openReminders+' offen' : 'Alles erledigt',
       `<button class="btn small" onclick="addReminder()">+ Erinnerung</button>
-      ${openReminderItems.length ? openReminderItems.map(reminderRow).join('') : '<p class="hint" style="margin:12px 0 0">Keine offenen Erinnerungen.</p>'}
-      ${doneReminderItems.length ? `<details class="done-reminders"${doneRemindersOpen?' open':''} ontoggle="doneRemindersOpen=this.open"><summary>Erledigt (${doneReminderItems.length})</summary>${doneReminderItems.map(reminderRow).join('')}</details>` : ''}
+      ${openReminderItems.length ? openReminderItems.map((r,i)=>reminderRow(r,i,openReminderItems.length)).join('') : '<p class="hint" style="margin:12px 0 0">Keine offenen Erinnerungen.</p>'}
+      ${doneReminderItems.length ? `<details class="done-reminders"${doneRemindersOpen?' open':''} ontoggle="doneRemindersOpen=this.open"><summary>Erledigt (${doneReminderItems.length})</summary>${doneReminderItems.map((r,i)=>reminderRow(r,i,doneReminderItems.length)).join('')}</details>` : ''}
       ${!reminders.length ? '<p class="hint" style="margin:12px 0 0">Du kannst Erinnerungen hier anlegen oder aus Packen, Einkauf, Checkliste und Fahrzeug-Dokumenten verknüpfen.</p>' : ''}`) +
     orgaSection('reminder-umfragen', 'poll', 'Umfragen', openPolls ? openPolls+' offen' : (polls.length?'Alle geschlossen':'Keine'),
       `<button class="btn small" onclick="addPoll()">+ Umfrage</button>
