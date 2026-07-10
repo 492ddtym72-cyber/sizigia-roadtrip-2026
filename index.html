@@ -580,6 +580,12 @@ a.maplink:hover{text-decoration:underline}
 .modal h3{font-family:var(--font-display);letter-spacing:.1em;text-transform:uppercase;font-size:14px;color:var(--sun);margin-bottom:16px}
 .modal .field{margin-bottom:12px}
 .modal .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px;letter-spacing:.06em;text-transform:uppercase}
+.unit-field{display:flex;align-items:stretch}
+.unit-field input{border-radius:11px 0 0 11px}
+.unit-field span{
+  display:flex;align-items:center;padding:0 13px;border:1px solid var(--border-strong);border-left:0;border-radius:0 11px 11px 0;
+  background:rgba(255,255,255,.055);color:var(--muted);font-size:13px;font-weight:800;
+}
 .modal-check{display:flex;align-items:center;gap:10px;color:var(--text);font-weight:650}
 .modal-check input{width:auto}
 .crewselect .chip{margin:0 4px 6px 0}
@@ -618,6 +624,11 @@ a.maplink:hover{text-decoration:underline}
 .orga-section-chevron svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .orga-section[open] .orga-section-chevron{transform:rotate(180deg)}
 .orga-section-body{padding:0 16px 16px}
+.done-reminders{margin-top:12px;border-top:1px solid rgba(255,255,255,.08);padding-top:10px}
+.done-reminders summary{cursor:pointer;color:var(--muted);font-size:12.5px;font-weight:800;list-style:none;padding:4px 0 10px}
+.done-reminders summary::-webkit-details-marker{display:none}
+.done-reminders summary::before{content:'\25B8';display:inline-block;margin-right:7px;transition:transform .16s}
+.done-reminders[open] summary::before{transform:rotate(90deg)}
 .poll-option{padding:9px 6px;margin:0 -6px;border-top:1px solid rgba(255,255,255,.06);border-radius:10px;cursor:pointer;transition:background .15s}
 .poll-option:first-of-type{border-top:0}
 .poll-option:hover{background:rgba(255,255,255,.035)}
@@ -983,7 +994,8 @@ function migrate(s){
     if(s[k] === undefined) s[k] = def[k];
   }
   // Verschachtelte Pflicht-Arrays normalisieren (ebenfalls Firebase-Schutz)
-  (s.routes||[]).forEach(r=>{ r.stages = r.stages || []; r.custom = !!r.custom; });
+  (s.routes||[]).forEach(r=>{ r.stages = r.stages || []; r.custom = !!r.custom; r.stages.forEach(normalizeStageFields); });
+  (s.returnStages||[]).forEach(normalizeStageFields);
   if(!s.routes.find(r=>r.id===s.selectedRoute)) s.selectedRoute = s.routes[0]?.id || def.selectedRoute;
   (s.spots||[]).forEach(sp=>{ sp.votes = sp.votes || []; });
   (s.vehicles||[]).forEach(v=>{ v.drivers=v.drivers||[]; v.passengers=v.passengers||[]; v.docs=v.docs||[]; });
@@ -1908,7 +1920,7 @@ function applyPos(target, posStr, keys=['lat','lng']){
 
 /* ============================================================
    MODAL — generischer Editor
-   fields: [{key,label,type:'text'|'number'|'textarea'|'select',options,value,placeholder}]
+   fields: [{key,label,type:'text'|'number'|'tripDate'|'unit'|'textarea'|'select',options,value,placeholder}]
    ============================================================ */
 let modalCtx = null;
 function openModal(title, fields, onSave, onDelete, opts={}){
@@ -1921,6 +1933,8 @@ function openModal(title, fields, onSave, onDelete, opts={}){
     else if(f.type==='map') input = pickMapField(i, f.value, f.auto);
     else if(f.type==='checkbox') input = '<label class="modal-check"><input id="mf'+i+'" type="checkbox" '+(f.value?'checked':'')+'> '+esc(f.text||'aktiv')+'</label>';
     else if(f.type==='crewMulti') input = crewMultiField(i, f.value || []);
+    else if(f.type==='tripDate') input = '<input id="mf'+i+'" type="date" min="2026-01-01" max="2026-12-31" value="'+esc(f.value||'')+'">';
+    else if(f.type==='unit') input = '<div class="unit-field"><input id="mf'+i+'" type="number" min="0" step="'+esc(f.step||'0.25')+'" inputmode="decimal" value="'+esc(f.value??'')+'" placeholder="'+esc(f.placeholder||'')+'"><span>'+esc(f.unit)+'</span></div>';
     else input = '<input id="mf'+i+'" type="'+(f.type==='number'?'number':'text')+'" '+(f.type==='number'?'step="0.01" inputmode="decimal"':'')+(f.datalist?' list="dl'+i+'" autocomplete="off"':'')+' value="'+esc(f.value||'')+'" placeholder="'+esc(f.placeholder||'')+'">'+(f.datalist?'<datalist id="dl'+i+'">'+f.datalist.map(o=>'<option value="'+esc(o)+'">').join('')+'</datalist>':'');
     return '<div class="field"><label>'+esc(f.label)+'</label>'+input+'</div>';
   }).join('') +
@@ -1937,7 +1951,10 @@ function modalSave(){
   const vals = {};
   modalCtx.fields.forEach((f,i)=>{
     const el = document.getElementById('mf'+i);
-    vals[f.key] = f.type==='checkbox' ? el.checked : el.value;
+    let value = f.type==='checkbox' ? el.checked : el.value;
+    if(f.type==='tripDate') value = value ? fmtStageDate(parseTripDateInput(value)) : (f.legacyValue || '');
+    if(f.type==='unit') value = value!=='' ? formatStageUnit(value, f.unit, f.approx) : (f.legacyValue || '');
+    vals[f.key] = value;
   });
   const skipSave = !!modalCtx.skipSave;
   modalCtx.onSave(vals);
@@ -2171,8 +2188,11 @@ function stageRouteLink(s, prevStage){
 }
 // Fahrzeit-Text → Stunden (für den "lange Etappe"-Hinweis); unparsebar ⇒ null
 function stageHours(time){
-  const m = String(time||'').match(/(\d+(?:[.,]\d+)?)\s*Std/);
-  return m ? parseFloat(m[1].replace(',','.')) : null;
+  const s = String(time||'');
+  const hours = s.match(/(\d+(?:[.,]\d+)?)\s*(?:Std|Stunden?|h)\b/i);
+  if(hours) return parseFloat(hours[1].replace(',','.'));
+  const minutes = s.match(/(\d+(?:[.,]\d+)?)\s*(?:Min|Minuten?)\b/i);
+  return minutes ? parseFloat(minutes[1].replace(',','.'))/60 : null;
 }
 function renderStageConnector(s, ref, idx){
   const link = stageRouteLink(s, getStageList(ref)[idx-1]);
@@ -2392,15 +2412,14 @@ function haversineKm(a, b){
   return 2*R*Math.asin(Math.sqrt(h));
 }
 // Grobe Fahr-Schätzung ohne Netz: Luftlinie × 1,25 Straßenfaktor, Ø ~80 km/h.
-// "~"-Präfix markiert beide Werte sichtbar als Schätzung; Felder bleiben editierbar.
+// Distanz und Fahrzeit werden immer in den Standard-Einheiten km / Std gespeichert.
 function estimateLeg(fromPt, toPt){
   if(!fromPt || !toPt) return null;
   const road = haversineKm(fromPt, toPt)*1.25;
   if(road < 1) return null;
   const km = road<100 ? Math.max(5,Math.round(road/5)*5) : Math.round(road/10)*10;
   const h = road/80;
-  const time = h<0.9 ? '~'+Math.max(5,Math.round(h*60/5)*5)+' Min'
-                     : '~'+String(Math.round(h*2)/2).replace('.',',')+' Std';
+  const time = '~'+formatDecimal(Math.max(0.25,Math.round(h*4)/4))+' Std';
   return {km:'~'+km+' km', time};
 }
 // Von-Position einer (neuen) Etappe fürs Schätzen: entspricht das "Von" noch dem
@@ -2419,12 +2438,50 @@ function autoEstimateStage(s, prevStage){
   const est = estimateLeg(stageFromPoint(prevStage, s), pointOf(s, s.to));
   if(est){ s.km = est.km; s.time = est.time; s.est = true; }
 }
-// Etappen-Datum "So 02.08." ↔ Date (Jahr fest 2026 = Reisejahr); unparsebar ⇒ null/''.
+function formatDecimal(n){ return String(Math.round(Number(n)*100)/100).replace('.',','); }
+function parseTripDateInput(value){
+  const m = String(value||'').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(!m) return null;
+  const d = new Date(+m[1], +m[2]-1, +m[3]);
+  return d.getFullYear()===+m[1] && d.getMonth()===+m[2]-1 && d.getDate()===+m[3] ? d : null;
+}
+function stageDateInputValue(str){
+  const d = parseStageDate(str);
+  if(!d) return '';
+  const pad = n=>String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+}
+function stageMetricNumber(value, kind){
+  const s = String(value||'').trim();
+  if(!s) return null;
+  if(kind==='time') return stageHours(s);
+  const m = s.match(/-?\d+(?:[.,]\d+)?/);
+  return m ? parseFloat(m[0].replace(',','.')) : null;
+}
+function formatStageUnit(value, unit, approx=false){
+  const n = Number(value);
+  if(!isFinite(n)) return '';
+  return (approx?'~':'')+formatDecimal(n)+' '+unit;
+}
+function stripApprox(value){ return String(value||'').replace(/^~\s*/, ''); }
+function normalizeStageFields(stage){
+  if(!stage || typeof stage!=='object') return stage;
+  const date = parseStageDate(stage.date);
+  if(date) stage.date = fmtStageDate(date);
+  const km = stageMetricNumber(stage.km, 'km');
+  if(km!=null) stage.km = formatStageUnit(km, 'km', !!stage.est||String(stage.km||'').trim().startsWith('~'));
+  const hours = stageMetricNumber(stage.time, 'time');
+  if(hours!=null) stage.time = formatStageUnit(hours, 'Std', !!stage.est||String(stage.time||'').trim().startsWith('~'));
+  return stage;
+}
+// Etappen-Datum "So 02.08.", "02.08" oder ISO ↔ Date (Reisejahr 2026).
 function parseStageDate(str){
-  const m = String(str||'').match(/(\d{1,2})\.(\d{1,2})\./);
+  const iso = parseTripDateInput(str);
+  if(iso) return iso;
+  const m = String(str||'').match(/(?:^|\s)(\d{1,2})\.(\d{1,2})(?:\.|$)/);
   if(!m) return null;
   const d = new Date(2026, +m[2]-1, +m[1]);
-  return isNaN(d) ? null : d;
+  return d.getFullYear()===2026 && d.getMonth()===+m[2]-1 && d.getDate()===+m[1] ? d : null;
 }
 function fmtStageDate(d){
   const pad = n=>String(n).padStart(2,'0');
@@ -2463,8 +2520,10 @@ function stageFields(s={}, isFirst=false){
   const stored = (s.lat!=null && s.lng!=null) ? {lat:+s.lat, lng:+s.lng} : null;
   const auto = stored ? null : (()=>{ const g=geoLookup(s.to); return g?{lat:g[0],lng:g[1]}:null; })();
   const places = placeSuggestions();
+  const kmValue = stageMetricNumber(s.km, 'km');
+  const timeValue = stageMetricNumber(s.time, 'time');
   const fields = [
-    {key:'date',label:'Datum / Tag',value:s.date||'',placeholder:'z. B. Mo 03.08.'},
+    {key:'date',label:'Datum',type:'tripDate',value:stageDateInputValue(s.date),legacyValue:s.date&&!parseStageDate(s.date)?s.date:''},
     {key:'from',label:'Von',value:s.from||'',datalist:places},
   ];
   if(isFirst){
@@ -2474,8 +2533,8 @@ function stageFields(s={}, isFirst=false){
   }
   fields.push(
     {key:'to',label:'Nach',value:s.to||'',datalist:places},
-    {key:'km',label:'Distanz',value:s.km||'',placeholder:'z. B. 300 km'},
-    {key:'time',label:'Fahrzeit',value:s.time||'',placeholder:'z. B. ~3,5 Std'},
+    {key:'km',label:'Distanz',type:'unit',unit:'km',step:'1',value:kmValue,legacyValue:kmValue==null?s.km:'',approx:!!s.est||String(s.km||'').trim().startsWith('~'),placeholder:'300'},
+    {key:'time',label:'Fahrzeit',type:'unit',unit:'Std',step:'0.25',value:timeValue,legacyValue:timeValue==null?s.time:'',approx:!!s.est||String(s.time||'').trim().startsWith('~'),placeholder:'3,5'},
     {key:'stay',label:'Übernachtung',value:s.stay||'',placeholder:'z. B. Camping am See'},
     {key:'note',label:'Notizen',type:'textarea',value:s.note||''},
     {key:'link',label:'Karten-Link (optional, sonst automatisch)',value:s.link||'',placeholder:'https://…'},
@@ -2604,7 +2663,11 @@ function editStage(ref, idx){
     const prev = {date:s.date, from:s.from, to:s.to, km:s.km, time:s.time, stay:s.stay, note:s.note, link:s.link, lat:s.lat, lng:s.lng, fromLat:s.fromLat, fromLng:s.fromLng, est:s.est};
     const {pos, posFrom, ...rest} = v;
     // Hand angefasste km/Fahrzeit sind ab jetzt manuell — nie mehr automatisch überschreiben
-    if(rest.km !== prev.km || rest.time !== prev.time) delete s.est;
+    if(rest.km !== prev.km || rest.time !== prev.time){
+      delete s.est;
+      rest.km = stripApprox(rest.km);
+      rest.time = stripApprox(rest.time);
+    }
     Object.assign(s, rest);
     applyPos(s, pos);
     applyLinkCoords(s);
@@ -3345,17 +3408,16 @@ function campContactRow(c){
     </div>
   </div>`;
 }
-// Jede Sektion ein eigenes <details> statt einer langen, immer sichtbaren Karte —
-// bei vielen Erinnerungen war der Scrollweg bis zu den Camping-Kontakten sonst lang.
-// name="orga-accordion" gruppiert sie nativ (nur eine Sektion gleichzeitig offen,
-// unterstützende Browser); ohne Unterstützung bleibt es einfach unabhängig klappbar.
-// orgaOpenSection merkt sich die offene Sektion über renderAll()-Neuaufbauten hinweg
-// (sonst würde z. B. das Abhaken einer Erinnerung die gerade geöffneten Camping-
-// Kontakte wieder zuklappen).
-let orgaOpenSection = 'reminder-erinnerungen';
+// Die drei Orga-Sektionen sind unabhängig klappbar; mehrere dürfen gleichzeitig
+// geöffnet sein. Der Set-Zustand überlebt renderAll()-Neuaufbauten.
+let orgaOpenSections = new Set(['reminder-erinnerungen']);
+let doneRemindersOpen = false;
+function rememberOrgaSection(el, id){
+  if(el.open) orgaOpenSections.add(id); else orgaOpenSections.delete(id);
+}
 function orgaSection(id, icon, title, meta, bodyHtml){
   return `
-  <details class="orga-section" name="orga-accordion"${orgaOpenSection===id?' open':''} ontoggle="if(this.open) orgaOpenSection='${id}'">
+  <details class="orga-section"${orgaOpenSections.has(id)?' open':''} ontoggle="rememberOrgaSection(this,'${id}')">
     <summary>
       <span class="orga-section-icon" aria-hidden="true">${homeIconSvg(icon)}</span>
       <div class="orga-section-text">
@@ -3371,12 +3433,16 @@ function renderReminder(){
   const reminders = [...(state.reminders||[])].sort((a,b)=>(a.done===b.done ? new Date(b.createdAt)-new Date(a.createdAt) : (a.done?1:-1)));
   const polls = [...(state.polls||[])].sort((a,b)=>(a.closed===b.closed ? new Date(b.createdAt)-new Date(a.createdAt) : (a.closed?1:-1)));
   const campContacts = [...(state.campContacts||[])].sort((a,b)=>a.name.localeCompare(b.name,'de'));
-  const openReminders = reminders.filter(r=>!r.done).length;
+  const openReminderItems = reminders.filter(r=>!r.done);
+  const doneReminderItems = reminders.filter(r=>r.done);
+  const openReminders = openReminderItems.length;
   const openPolls = polls.filter(p=>!p.closed).length;
   document.getElementById('page-reminder').innerHTML = sectionBackButton() +
     orgaSection('reminder-erinnerungen', 'bell', 'Erinnerungen', openReminders ? openReminders+' offen' : 'Alles erledigt',
       `<button class="btn small" onclick="addReminder()">+ Erinnerung</button>
-      ${reminders.length ? reminders.map(reminderRow).join('') : '<p class="hint" style="margin:0">Keine Erinnerungen. Du kannst sie hier anlegen oder aus Packen, Einkauf, Checkliste und Fahrzeug-Dokumenten verknüpfen.</p>'}`) +
+      ${openReminderItems.length ? openReminderItems.map(reminderRow).join('') : '<p class="hint" style="margin:12px 0 0">Keine offenen Erinnerungen.</p>'}
+      ${doneReminderItems.length ? `<details class="done-reminders"${doneRemindersOpen?' open':''} ontoggle="doneRemindersOpen=this.open"><summary>Erledigt (${doneReminderItems.length})</summary>${doneReminderItems.map(reminderRow).join('')}</details>` : ''}
+      ${!reminders.length ? '<p class="hint" style="margin:12px 0 0">Du kannst Erinnerungen hier anlegen oder aus Packen, Einkauf, Checkliste und Fahrzeug-Dokumenten verknüpfen.</p>' : ''}`) +
     orgaSection('reminder-umfragen', 'poll', 'Umfragen', openPolls ? openPolls+' offen' : (polls.length?'Alle geschlossen':'Keine'),
       `<button class="btn small" onclick="addPoll()">+ Umfrage</button>
       ${polls.length ? `<p class="hint" style="margin:12px 0">Tippe eine Option an, um mit deinem eigenen Profil dafür zu stimmen (Mehrfachauswahl möglich).</p>${polls.map(pollRow).join('')}` : '<p class="hint" style="margin:12px 0 0">Noch keine Umfragen.</p>'}`) +
