@@ -1038,8 +1038,25 @@ function migrateSleepPlaces(s){
   const known=[
     {match:'camping belvedere',lat:46.0038,lng:11.2580,region:'Calceranica al Lago',phone:'+39 0461 723239'},
     {match:'camping al sole',lat:45.8781,lng:10.7678,region:'Molina di Ledro',email:'info@campingalsole.it',phone:'+39 0464 508496'},
+    {match:'al pescatore',lat:46.0023,lng:11.2552,region:'Calceranica al Lago',email:'trentino@campingpescatore.it',phone:'+39 0461 723062'},
+    {match:'pa-lo parking',lat:46.7347,lng:11.6491,region:'Vahrn / Varna',email:'info@loewenhof.it',phone:'+39 0472 836216'},
   ];
   known.forEach(k=>{const p=s.sleepPlaces.find(x=>String(x.name||'').toLowerCase().includes(k.match));if(p){['lat','lng','region','email','phone'].forEach(key=>{if(p[key]===undefined||p[key]==='')p[key]=k[key];});}});
+}
+function applyKnownCampingReplyBatch(s){
+  s.meta=s.meta||{}; if((s.meta.campingReplyBatch||0)>=1)return;
+  const search=(s.sleepSearches||[]).find(x=>/erste nacht/i.test(x.title||''))||s.sleepSearches?.[0]; if(!search)return;
+  const find=name=>search.candidates.find(c=>String(c.name||'').toLowerCase().includes(name));
+  const update=(name,data)=>{const c=find(name);if(c&&c.status!=='booked')Object.assign(c,data,{repliedAt:new Date().toISOString()});return c;};
+  update('piccolo',{status:'unavailable',reply:'Keine Plätze für den angefragten Zeitraum verfügbar; spontane Anrufe wurden nicht bestätigt.'});
+  update('moosbauer',{status:'unavailable',reply:'Für den angefragten Zeitraum vollständig ausgebucht.'});
+  update('löwenhof',{status:'unavailable',reply:'Campingplatz ausgebucht. Als separate Alternative wurde PA-LO Parking angeboten.'});
+  update('al pescatore',{status:'available',email:'trentino@campingpescatore.it',reply:'Ein Stellplatz für 02.–03.08. kann reserviert werden. Zur definitiven Reservierung auf die E-Mail antworten; danach folgt eine weitere Bestätigung.',nextAction:'Reservierung per E-Mail bestätigen'});
+  update('pilzone',{status:'followup',email:'campeggiopilzone@gmail.com',reply:'Keine telefonische Abstimmung; der Platz möchte alles per E-Mail klären.',nextAction:'Nur per E-Mail erneut fragen',nextActionDate:'01.–02.08.2026'});
+  update('maroadi',{status:'unavailable',reply:'Keine Verfügbarkeit. In der Hochsaison außerdem keine An- oder Abreise montags; daher sehr unwahrscheinlich.'});
+  update('passeier',{status:'followup',email:'info@campingpasseier.com',phone:'+39 0473 645454',reply:'Verfügbarkeit kann geprüft werden, sobald die Länge des Campers mitgeteilt wurde.',nextAction:'Camperlänge senden'});
+  if(!find('pa-lo parking'))search.candidates.push(normalizeSleepCandidate({name:'PA-LO Parking Löwenhof',region:'Vahrn / Varna',email:'info@loewenhof.it',phone:'+39 0472 836216',status:'available',price:'41 € pro Nacht',parking:'Kleinwagen darf mit in den Parkbereich, diagonal innerhalb der markierten Fläche.',reply:'Offiziell angebotene Ausweichfläche 50 m vom Löwenhof. Campingplatz selbst ist voll.',nextAction:'Reservierung per E-Mail anfragen',repliedAt:new Date().toISOString()}));
+  s.meta.campingReplyBatch=1;
 }
 function seedLegacySleepSearch(s){
   if((s.sleepSearches||[]).length) return;
@@ -1124,6 +1141,8 @@ function migrate(s){
   });
   if(fromVersion < 4) seedLegacySleepSearch(s);
   s.sleepSearches = (s.sleepSearches||[]).map(x=>Object.assign({id:uid(),title:'Schlafplatz-Suche',dateLabel:'',region:'',maxDrive:'',mode:'planned',createdAt:new Date().toISOString()},x,{candidates:(x.candidates||[]).map(normalizeSleepCandidate)}));
+  migrateSleepPlaces(s);
+  applyKnownCampingReplyBatch(s);
   migrateSleepPlaces(s);
   if(Array.isArray(s.log)){
     while(s.log.length > LOG_MAX) s.log.shift();

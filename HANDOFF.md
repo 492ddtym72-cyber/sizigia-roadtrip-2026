@@ -29,6 +29,10 @@
   Erinnerungen sowie Camping-Kontakten. Die Migration übernimmt bestehende
   Camping-Erinnerungen in „Erste Nacht“ und ergänzt die zuletzt ausgewerteten
   Antworten (Belvedere, Al Sole, Al Lago, Punta Lago, Schlosshof).
+- **Camping-Mail-Assistent:** Lokale Codex-Automation prüft alle zwei Stunden
+  ausschließlich campingbezogene Antworten im iCloud-Posteingang, klassifiziert
+  neue Ergebnisse und darf den Schlafplatz-Radar aktualisieren. Sie versendet
+  niemals E-Mails; nötige Antworten werden höchstens als Entwurf vorbereitet.
 
 ## Beim Sync gelernt (nicht kaputt machen!)
 
