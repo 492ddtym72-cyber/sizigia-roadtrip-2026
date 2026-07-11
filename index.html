@@ -644,6 +644,21 @@ a.maplink:hover{text-decoration:underline}
 .poll-option:hover{background:rgba(255,255,255,.035)}
 .poll-option.mine{background:color-mix(in srgb,var(--sun) 12%, transparent)}
 .poll-option-title{display:flex;justify-content:space-between;gap:10px;font-weight:750;margin-bottom:7px}
+.sleep-hero{border-color:rgba(95,212,168,.3);background:linear-gradient(145deg,rgba(95,212,168,.09),rgba(255,178,87,.045))}
+.sleep-hero h2{color:var(--mint)}
+.sleep-searches,.sleep-filters{display:flex;gap:7px;overflow-x:auto;padding:2px 0 8px;scrollbar-width:none}
+.sleep-searches::-webkit-scrollbar,.sleep-filters::-webkit-scrollbar{display:none}
+.sleep-search-chip{flex:0 0 auto;max-width:220px;text-align:left}
+.sleep-search-chip b,.sleep-search-chip span{display:block}.sleep-search-chip span{font-size:10.5px;color:var(--muted);margin-top:2px}
+.sleep-card{border:1px solid rgba(255,255,255,.09);border-radius:17px;padding:14px;margin-bottom:11px;background:rgba(255,255,255,.038)}
+.sleep-card.available{border-color:rgba(95,212,168,.42)}.sleep-card.call{border-color:rgba(255,178,87,.4)}.sleep-card.booked{border-color:rgba(142,168,255,.42)}.sleep-card.unavailable{opacity:.6}
+.sleep-head{display:flex;align-items:flex-start;gap:9px}.sleep-head-main{flex:1;min-width:0}.sleep-head h3{font-family:var(--font-display);font-size:16px;margin:0 0 2px}.sleep-sub{font-size:11.5px;color:var(--muted)}
+.sleep-status{display:inline-flex;padding:3px 8px;border-radius:999px;font-size:9.5px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;background:rgba(255,255,255,.08);color:var(--muted)}
+.sleep-status.available,.sleep-status.booked{background:rgba(95,212,168,.13);color:var(--mint)}.sleep-status.call,.sleep-status.followup{background:rgba(255,178,87,.14);color:var(--sun)}.sleep-status.unavailable{color:var(--faint)}
+.sleep-facts{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}.sleep-fact{font-size:11px;padding:4px 7px;border-radius:8px;background:rgba(255,255,255,.05);color:var(--muted)}
+.sleep-reply{font-size:13px;line-height:1.45;color:var(--muted);margin-top:9px;white-space:pre-line}.sleep-next{font-size:12px;color:var(--sun);font-weight:750;margin-top:8px}
+.sleep-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}.sleep-actions .btn{text-decoration:none}
+.sleep-empty{text-align:center;padding:24px 12px;color:var(--muted)}
 
 /* Toast */
 #toast{
@@ -733,6 +748,7 @@ a.maplink:hover{text-decoration:underline}
   <section class="page" id="page-packen" data-title="Packliste"></section>
   <section class="page" id="page-einkauf" data-title="Einkaufsliste"></section>
   <section class="page" id="page-budget" data-title="Budget"></section>
+  <section class="page" id="page-sleep" data-title="Schlafplätze"></section>
   <section class="page" id="page-festival" data-title="Festival"></section>
   <section class="page" id="page-reminder" data-title="Orga"></section>
   <section class="page" id="page-verlauf" data-title="Verlauf"></section>
@@ -760,7 +776,7 @@ a.maplink:hover{text-decoration:underline}
      später austauschbar gegen Cloud-Sync (gleiche Schnittstelle).
    ============================================================ */
 const STORAGE_KEY = 'sizigia-roadtrip-2026';
-const SCHEMA_VERSION = 3;
+const SCHEMA_VERSION = 4;
 const LOG_MAX = 60;
 const UNDO_MAX = 20;
 
@@ -958,6 +974,7 @@ function defaultState(){
     reminders:[],
     polls:[],
     campContacts:[],
+    sleepSearches:[],
     log:[],
     festival:[
       {id:uid(), title:'Sizigia Eclipse Gathering 2026', text:'10.–14.08.2026 · Provinz Huesca (Aragón, Spanien).\nGenauer Standort & Anfahrt: siehe Ticket-/Info-Mail — hier eintragen, sobald bekannt.'},
@@ -988,6 +1005,44 @@ function normalizeListItem(item){
   return item;
 }
 
+const SLEEP_STATUSES = {
+  new:{label:'Neu'}, awaiting:{label:'Angefragt'}, available:{label:'Verfügbar'},
+  call:{label:'Spontan anrufen'}, followup:{label:'Erneut fragen'},
+  unavailable:{label:'Nicht verfügbar'}, booked:{label:'Gebucht'}
+};
+function cleanCampName(title){
+  return String(title||'').replace(/2\.8\s*-\s*3\.8/gi,'').replace(/spontan\s+anrufen/gi,'').replace(/[✅❌🇨🇭]/gu,'').replace(/[·:–—-]+$/,'').replace(/\s+/g,' ').trim();
+}
+function normalizeSleepCandidate(c){
+  return Object.assign({id:uid(),name:'',region:'',email:'',phone:'',link:'',status:'new',price:'',tax:'',reply:'',pitchNote:'',parking:'',callWindow:'',nextAction:'',nextActionDate:'',notes:'',reminderId:null,contactId:null,contactedAt:null,repliedAt:null},c||{}, {status:SLEEP_STATUSES[c?.status]?c.status:'new'});
+}
+function seedLegacySleepSearch(s){
+  if((s.sleepSearches||[]).length) return;
+  const campsite = /camping|campeggio|fornace|spiaggia|ansitz gamp|löwenhof|schlosshof|passeier/i;
+  const reminders=(s.reminders||[]).filter(r=>campsite.test(r.title||'') && /2\.8\s*-\s*3\.8/i.test(r.title||''));
+  const search={id:uid(),title:'Erste Nacht',dateLabel:'02.–03.08.2026',region:'Ab Innsbruck · Norditalien',maxDrive:'realistische erste Etappe',mode:'planned',createdAt:new Date().toISOString(),candidates:[]};
+  reminders.forEach(r=>{
+    let status=!r.done?'awaiting':(/✅/.test(r.title)?'booked':/spontan/i.test(r.title)?'call':'unavailable');
+    search.candidates.push(normalizeSleepCandidate({name:cleanCampName(r.title),status,reminderId:r.id,contactedAt:r.createdAt}));
+  });
+  const upsert=(needle,data)=>{
+    let c=search.candidates.find(x=>x.name.toLowerCase().includes(needle));
+    if(!c){ c=normalizeSleepCandidate({name:data.name}); search.candidates.push(c); }
+    Object.assign(c,data);
+  };
+  upsert('belvedere',{name:'Camping Belvedere',email:'info@campingbelvedere.it',status:'available',price:'112 € pro Stellplatz',tax:'9 € Kurtaxe',pitchNote:'Standard-Camper: ein Stellplatz; bei größerem Camper zwei benachbarte Stellplätze empfohlen.',reply:'Einige Stellplätze frei. Anreise nur mit Reservierung, kein spontanes Erscheinen.',nextAction:'Reservierung entscheiden'});
+  upsert('al sole',{name:'Camping Al Sole',status:'call',phone:'+39 0464 508496',callWindow:'08:00–22:00',reply:'Anrufen ist ausdrücklich möglich, um nach kurzfristigen Stornierungen zu fragen.'});
+  upsert('al lago',{name:'Camping Al Lago',status:'unavailable',reply:'Voll ausgebucht; derzeit keine Chance auf einen Stellplatz am 2. August.'});
+  upsert('punta lago',{name:'Camping Punta Lago',status:'followup',reply:'Aktuell ausgebucht. Ein paar Tage vorher erneut per E-Mail nachfragen.',nextAction:'Erneut per E-Mail fragen',nextActionDate:'29.–30.07.2026'});
+  upsert('schlosshof',{name:'Schlosshof Resort',status:'unavailable',reply:'Campingresort laut aktuellem Buchungsstand vollständig ausgebucht.'});
+  (s.campContacts||[]).forEach(contact=>{
+    let c=search.candidates.find(x=>x.name.toLowerCase().includes(contact.name.toLowerCase())||contact.name.toLowerCase().includes(x.name.toLowerCase()));
+    if(!c){ c=normalizeSleepCandidate({name:contact.name}); search.candidates.push(c); }
+    Object.assign(c,{region:contact.region||c.region,phone:contact.phone||c.phone,link:contact.link||c.link,status:'call',contactId:contact.id,reply:contact.note||c.reply});
+  });
+  if(search.candidates.length) s.sleepSearches=[search];
+}
+
 /* ---------- Laden + Migration ---------- */
 function migrate(s){
   if(!s || typeof s !== 'object') return defaultState();
@@ -996,7 +1051,7 @@ function migrate(s){
   // benutzten State (meta.lastSaved existiert) fehlende, leerbare Container
   // als leer wiederherstellen statt mit Defaults zu befüllen.
   if(s.meta && s.meta.lastSaved){
-    ['checklist','returnStages','spots','festival','log','reminders','polls','campContacts'].forEach(k=>{ if(s[k] === undefined) s[k] = []; });
+    ['checklist','returnStages','spots','festival','log','reminders','polls','campContacts','sleepSearches'].forEach(k=>{ if(s[k] === undefined) s[k] = []; });
     if(s.budget === undefined) s.budget = {expenses:[]};
   }
   // Fehlende Top-Level-Schlüssel defensiv aus dem Standard ergänzen
@@ -1042,6 +1097,8 @@ function migrate(s){
       p.votes[cid] = Array.isArray(p.votes[cid]) ? p.votes[cid].filter(id=>optionIds.has(id)) : [];
     });
   });
+  if(fromVersion < 4) seedLegacySleepSearch(s);
+  s.sleepSearches = (s.sleepSearches||[]).map(x=>Object.assign({id:uid(),title:'Schlafplatz-Suche',dateLabel:'',region:'',maxDrive:'',mode:'planned',createdAt:new Date().toISOString()},x,{candidates:(x.candidates||[]).map(normalizeSleepCandidate)}));
   if(Array.isArray(s.log)){
     while(s.log.length > LOG_MAX) s.log.shift();
     let keep = UNDO_MAX;
@@ -1402,6 +1459,7 @@ function applyRevert(u){
     case 'campAdd':  { const i=state.campContacts.findIndex(c=>c.id===u.id); if(i<0) throw 0; state.campContacts.splice(i,1); break; }
     case 'campDel':  state.campContacts.splice(Math.min(u.idx,state.campContacts.length),0,u.contact); break;
     case 'campEdit': Object.assign(need(state.campContacts.find(c=>c.id===u.id)), u.prev); break;
+    case 'sleepState': state.sleepSearches=u.sleepSearches; state.reminders=u.reminders; state.campContacts=u.campContacts; break;
     case 'stageAdd': { const l=getStageList(u.ref); const i=l.findIndex(x=>x.id===u.id); if(i<0) throw 0; l.splice(i,1); break; }
     case 'stageDel': { const l=getStageList(u.ref); l.splice(Math.min(u.idx,l.length),0,u.stage);
       if(u.followFix){ const f=l.find(x=>x.id===u.followFix.id); if(f){ f.from=u.followFix.prevFrom; f.km=u.followFix.prevKm; f.time=u.followFix.prevTime;
@@ -2023,6 +2081,7 @@ const TABS = [
   {id:'packen',     label:'Packen'},
   {id:'einkauf',    label:'Einkaufen'},
   {id:'budget',     label:'Ausgaben'},
+  {id:'sleep',      label:'Schlafplätze'},
   {id:'festival',   label:'Festival'},
   {id:'reminder',   label:'Orga'},
   {id:'verlauf',    label:'Verlauf'},
@@ -2033,6 +2092,7 @@ const HOME_TILES = [
   {id:'packen', label:'Packen', icon:'suitcase', accent:'#d38cff'},
   {id:'einkauf', label:'Einkaufen', icon:'cart', accent:'#5fd4a8'},
   {id:'budget', label:'Ausgaben', icon:'money', accent:'#ffd76b'},
+  {id:'sleep', label:'Schlafplätze', icon:'tent', accent:'#5fd4a8'},
   {id:'festival', label:'Festival', icon:'ticket', accent:'#ffb257'},
 ];
 let activeTab = sessionStorage.getItem('sizigia-tab') || 'uebersicht';
@@ -3385,6 +3445,77 @@ function pollRow(p){
     }).join(''); })()}
   </div>`;
 }
+
+/* ============================================================
+   SCHLAFPLATZ-RADAR — wiederverwendbare Plan-B-Suchen
+   ============================================================ */
+let activeSleepSearchId=null, sleepFilter='planb';
+function sleepUndo(){ return {t:'sleepState',sleepSearches:copyData(state.sleepSearches||[]),reminders:copyData(state.reminders||[]),campContacts:copyData(state.campContacts||[])}; }
+function findSleep(searchId,candidateId){ const s=(state.sleepSearches||[]).find(x=>x.id===searchId); return {s,c:s?.candidates.find(x=>x.id===candidateId)}; }
+function addSleepSearch(today=false){
+  const d=new Date(), date=today?d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
+  openModal(today?'Suche für heute':'Schlafplatz-Suche hinzufügen',[
+    {key:'title',label:'Titel',value:today?'Heute Abend':'Neue Nacht',placeholder:'z. B. Nacht bei Cassis'},
+    {key:'dateLabel',label:'Nacht / Datum',value:date,placeholder:'z. B. 06.–07.08.2026'},
+    {key:'region',label:'Region / Korridor',value:'',placeholder:'z. B. rund um Cassis'},
+    {key:'maxDrive',label:'Maximale Fahrt / Umweg',value:'',placeholder:'z. B. 45 Min Umweg'},
+  ],v=>{ const undo=sleepUndo(), search={id:uid(),title:v.title.trim()||'Schlafplatz-Suche',dateLabel:v.dateLabel.trim(),region:v.region.trim(),maxDrive:v.maxDrive.trim(),mode:today?'today':'planned',createdAt:new Date().toISOString(),candidates:[]}; state.sleepSearches.push(search); activeSleepSearchId=search.id; logChange('hat Schlafplatz-Suche „'+search.title+'“ hinzugefügt',undo); });
+}
+function editSleepSearch(id){ const s=state.sleepSearches.find(x=>x.id===id); if(!s)return; openModal('Schlafplatz-Suche bearbeiten',[
+  {key:'title',label:'Titel',value:s.title},{key:'dateLabel',label:'Nacht / Datum',value:s.dateLabel||''},{key:'region',label:'Region / Korridor',value:s.region||''},{key:'maxDrive',label:'Maximale Fahrt / Umweg',value:s.maxDrive||''}
+],v=>{const undo=sleepUndo(); Object.assign(s,{title:v.title.trim()||s.title,dateLabel:v.dateLabel.trim(),region:v.region.trim(),maxDrive:v.maxDrive.trim()}); logChange('hat Schlafplatz-Suche „'+s.title+'“ bearbeitet',undo);},()=>{const undo=sleepUndo(),i=state.sleepSearches.findIndex(x=>x.id===id); state.sleepSearches.splice(i,1); activeSleepSearchId=null; logChange('hat Schlafplatz-Suche „'+s.title+'“ gelöscht',undo);}); }
+function sleepCandidateFields(c={}){ return [
+  {key:'name',label:'Campingplatz / Stellplatz',value:c.name||''},{key:'region',label:'Ort / Region',value:c.region||''},
+  {key:'status',label:'Status',type:'select',value:c.status||'new',options:Object.entries(SLEEP_STATUSES).map(([value,x])=>({value,label:x.label}))},
+  {key:'email',label:'E-Mail',value:c.email||''},{key:'phone',label:'Telefon',value:c.phone||''},{key:'link',label:'Karten-Link',value:c.link||''},
+  {key:'price',label:'Preis',value:c.price||''},{key:'tax',label:'Kurtaxe / Zusatzkosten',value:c.tax||''},
+  {key:'callWindow',label:'Anruf-Zeitfenster',value:c.callWindow||'',placeholder:'z. B. 08:00–22:00'},
+  {key:'nextAction',label:'Nächster Schritt',value:c.nextAction||''},{key:'nextActionDate',label:'Wann?',value:c.nextActionDate||''},
+  {key:'reply',label:'Antwort zusammengefasst',type:'textarea',value:c.reply||''},{key:'pitchNote',label:'Stellplatz / Fahrzeug-Bedingungen',type:'textarea',value:c.pitchNote||''},
+  {key:'parking',label:'Kleinwagen / Parken',type:'textarea',value:c.parking||''},{key:'notes',label:'Weitere Notizen',type:'textarea',value:c.notes||''}
+]; }
+function applyCandidateValues(c,v){ Object.keys(v).forEach(k=>c[k]=typeof v[k]==='string'?v[k].trim():v[k]); if(c.reply&&!c.repliedAt)c.repliedAt=new Date().toISOString(); }
+function syncSleepCandidate(s,c){
+  let r=state.reminders.find(x=>x.id===c.reminderId);
+  const reminderTitle=()=> c.status==='available'?`${c.name} reservieren · ${s.dateLabel}`:c.status==='followup'?`${c.name} erneut mailen${c.nextActionDate?' · '+c.nextActionDate:''}`:`${c.name} ${s.dateLabel}${c.status==='booked'?' ✅ gebucht':c.status==='unavailable'?' ❌':''}`;
+  if(['awaiting','available','followup','booked','unavailable'].includes(c.status)){
+    if(!r){r={id:uid(),title:reminderTitle(),done:false,priority:c.status==='available',createdAt:new Date().toISOString(),createdBy:whoami()||null};state.reminders.unshift(r);c.reminderId=r.id;}
+    r.title=reminderTitle(); r.done=['booked','unavailable'].includes(c.status); r.priority=c.status==='available';
+  }
+  if(c.status==='call'){
+    if(r)r.done=true;
+    let contact=state.campContacts.find(x=>x.id===c.contactId)||state.campContacts.find(x=>x.name.toLowerCase()===c.name.toLowerCase());
+    const note=[c.callWindow&&'Anrufen: '+c.callWindow,c.reply,c.notes].filter(Boolean).join('\n');
+    if(!contact){contact={id:uid(),name:c.name,region:c.region,phone:c.phone,link:c.link,note,createdAt:new Date().toISOString()};state.campContacts.push(contact);}
+    else Object.assign(contact,{name:c.name,region:c.region||contact.region,phone:c.phone||contact.phone,link:c.link||contact.link,note:note||contact.note});
+    c.contactId=contact.id;
+  }
+}
+function addSleepCandidate(searchId){ const s=state.sleepSearches.find(x=>x.id===searchId); if(!s)return; openModal('Option hinzufügen',sleepCandidateFields(),v=>{if(!v.name.trim()){toast('Bitte einen Namen eintragen');return;}const undo=sleepUndo(),c=normalizeSleepCandidate({id:uid(),contactedAt:v.status==='awaiting'?new Date().toISOString():null});applyCandidateValues(c,v);s.candidates.push(c);syncSleepCandidate(s,c);logChange('hat Schlafplatz-Option „'+c.name+'“ hinzugefügt',undo);}); }
+function editSleepCandidate(searchId,candidateId){ const {s,c}=findSleep(searchId,candidateId);if(!c)return;openModal('Schlafplatz-Option bearbeiten',sleepCandidateFields(c),v=>{if(!v.name.trim()){toast('Bitte einen Namen eintragen');return;}const undo=sleepUndo();applyCandidateValues(c,v);syncSleepCandidate(s,c);logChange('hat Schlafplatz-Option „'+c.name+'“ bearbeitet',undo);},()=>{const undo=sleepUndo(),i=s.candidates.findIndex(x=>x.id===candidateId);s.candidates.splice(i,1);logChange('hat Schlafplatz-Option „'+c.name+'“ gelöscht',undo);}); }
+function sleepEmailText(s,c,followup=false){
+  const night=s.dateLabel?` for the night of ${s.dateLabel}`:'';
+  if(followup) return `Dear ${c.name} team,\n\nI am following up regarding availability${night} for 6 adults traveling with one camper and one small car. Has a pitch become available in the meantime?\n\nIf you are still full, would it be possible to call you spontaneously on the day in case of a cancellation?\n\nThank you very much.\n\nKind regards,\nFrederic`;
+  return `Dear ${c.name} team,\n\nI would like to ask if you have availability${night} for 6 adults traveling with one camper and one small car.\n\nIf advance reservations are not available or you are currently full, would it still be possible to call you spontaneously on the day in case a pitch becomes available?\n\nCould you please also let me know the total price and whether the small car can be parked at or near the pitch?\n\nThank you very much.\n\nKind regards,\nFrederic`;
+}
+function sleepMailto(s,c,followup=false){return `mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent((followup?'Follow-up: ':'')+'Pitch availability '+(s.dateLabel||''))}&body=${encodeURIComponent(sleepEmailText(s,c,followup))}`;}
+function markSleepContacted(searchId,candidateId){const {s,c}=findSleep(searchId,candidateId);if(!c)return;const undo=sleepUndo();c.contactedAt=new Date().toISOString();if(c.status==='new')c.status='awaiting';syncSleepCandidate(s,c);logChange('hat „'+c.name+'“ per E-Mail kontaktiert',undo);save();}
+function copySleepEmail(searchId,candidateId,followup=false){const {s,c}=findSleep(searchId,candidateId);if(!c)return;const txt=sleepEmailText(s,c,followup),done=()=>toast('E-Mail-Text kopiert'); if(navigator.clipboard?.writeText)navigator.clipboard.writeText(txt).then(done,()=>fallbackCopy(txt,done));else fallbackCopy(txt,done);}
+function sleepCandidateCard(s,c){ const st=SLEEP_STATUSES[c.status], maps=c.link||'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(c.name+(c.region?', '+c.region:'')), follow=c.status==='followup'; return `<div class="sleep-card ${c.status}"><div class="sleep-head"><div class="sleep-head-main"><h3>${esc(c.name)}</h3><div class="sleep-sub">${esc(c.region||s.region||'Ort noch offen')}</div></div><span class="sleep-status ${c.status}">${esc(st.label)}</span></div>
+  <div class="sleep-facts">${c.price?`<span class="sleep-fact">💶 ${esc(c.price)}</span>`:''}${c.tax?`<span class="sleep-fact">+ ${esc(c.tax)}</span>`:''}${c.callWindow?`<span class="sleep-fact">📞 ${esc(c.callWindow)}</span>`:''}</div>
+  ${c.reply?`<div class="sleep-reply">${esc(c.reply)}</div>`:''}${c.pitchNote?`<div class="sleep-reply"><b>Stellplatz:</b> ${esc(c.pitchNote)}</div>`:''}${c.parking?`<div class="sleep-reply"><b>Auto:</b> ${esc(c.parking)}</div>`:''}${(c.nextAction||c.nextActionDate)?`<div class="sleep-next">Nächster Schritt: ${esc(c.nextAction||'Nachfassen')}${c.nextActionDate?' · '+esc(c.nextActionDate):''}</div>`:''}
+  <div class="sleep-actions">${c.email?`<a class="btn primary small" href="${esc(sleepMailto(s,c,follow))}" onclick="markSleepContacted('${s.id}','${c.id}')">✉️ ${follow?'Nachfragen':'E-Mail'}</a><button class="btn ghost small" onclick="copySleepEmail('${s.id}','${c.id}',${follow})">Kopieren</button>`:''}${c.phone?`<a class="btn primary small" href="tel:${esc(c.phone.replace(/[^\d+]/g,''))}">📞 Anrufen</a>`:''}<a class="btn ghost small" href="${esc(maps)}" target="_blank" rel="noopener">🗺️ Karte</a><button class="btn ghost small" onclick="editSleepCandidate('${s.id}','${c.id}')">✎ Details</button></div></div>`; }
+function setSleepFilter(f){sleepFilter=f;renderSleep();}
+function renderSleep(){
+  const searches=state.sleepSearches||[]; let s=searches.find(x=>x.id===activeSleepSearchId)||searches[0]; if(s)activeSleepSearchId=s.id;
+  const priority={booked:0,available:1,call:2,followup:3,awaiting:4,new:5,unavailable:6}; let candidates=s?[...s.candidates].sort((a,b)=>priority[a.status]-priority[b.status]):[];
+  if(sleepFilter==='planb')candidates=candidates.filter(c=>c.status!=='unavailable'); else if(sleepFilter!=='all')candidates=candidates.filter(c=>c.status===sleepFilter);
+  document.getElementById('page-sleep').innerHTML=sectionBackButton()+`<div class="card sleep-hero"><h2>Schlafplatz-Radar</h2><p>Ein Sicherheitsnetz für spontane Etappen: Optionen sammeln, Antworten festhalten und unterwegs direkt mailen, anrufen oder navigieren.</p><div class="actions"><button class="btn primary" onclick="addSleepSearch(true)">Heute Abend</button><button class="btn" onclick="addSleepSearch(false)">+ Weitere Nacht</button></div></div>
+  ${searches.length?`<div class="sleep-searches">${searches.map(x=>`<button class="chip sleep-search-chip${x.id===s.id?' on':''}" onclick="activeSleepSearchId='${x.id}';renderSleep()"><b>${esc(x.title)}</b><span>${esc([x.dateLabel,x.region].filter(Boolean).join(' · '))}</span></button>`).join('')}</div>`:''}
+  ${s?`<div class="card"><div class="sleep-head"><div class="sleep-head-main"><h2>${esc(s.title)}</h2><div class="sleep-sub">${esc([s.dateLabel,s.region,s.maxDrive].filter(Boolean).join(' · '))}</div></div><button class="btn ghost small" onclick="editSleepSearch('${s.id}')">✎</button></div><div class="actions"><button class="btn primary small" onclick="addSleepCandidate('${s.id}')">+ Option</button></div></div>
+  <div class="sleep-filters">${[['planb','Plan B'],['all','Alle'],['available','Verfügbar'],['call','Anrufen'],['followup','Nachfragen'],['awaiting','Angefragt'],['unavailable','Absagen']].map(([v,l])=>`<button class="chip${sleepFilter===v?' on':''}" onclick="setSleepFilter('${v}')">${l}${v==='all'?' · '+s.candidates.length:''}</button>`).join('')}</div>
+  ${candidates.length?candidates.map(c=>sleepCandidateCard(s,c)).join(''):'<div class="sleep-empty">Keine Optionen in diesem Filter.</div>'}`:'<div class="card sleep-empty">Lege die erste Nacht oder eine spontane Suche für heute an.</div>'}`;
+}
 // Camping-Kontakte: Notfall-Liste zum spontanen Anrufen, falls der geplante
 // Platz voll ist. Bewusst schlank (Name, Ort, Telefon, Karten-Link, Notiz) —
 // keine Priorisierung/Sortierlogik nötig für eine Handvoll Kontakte.
@@ -4124,6 +4255,7 @@ function renderAll(){
   renderPacking();
   renderShopping();
   renderBudget();
+  renderSleep();
   renderFestival();
   renderReminder();
   renderLog();

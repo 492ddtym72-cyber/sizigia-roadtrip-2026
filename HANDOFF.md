@@ -1,6 +1,6 @@
 # HANDOFF — Status
 
-> Stand: 08.07.2026 · **Keine offene Aufgabe.** Cloud-Sync ist eingerichtet,
+> Stand: 12.07.2026 · **Keine offene Aufgabe.** Cloud-Sync ist eingerichtet,
 > getestet und live. Projektüberblick & Konventionen: [AGENTS.md](AGENTS.md).
 
 ## Aktueller Zustand ✅
@@ -21,6 +21,11 @@
 - Firebase CLI: `export PATH="/Users/anonymous/.hermes/node/bin:$PATH"`,
   eingeloggt mit Freddis Google-Konto (`firebase login:list`).
   Regeln neu deployen: `firebase deploy --only database --project roadtrip-to-sizigia-eclipse`
+- **Schlafplatz-Radar (Schema V4):** Wiederverwendbare Suchen pro Nacht/Region
+  mit Plan-B-Status, E-Mail-/Anruf-/Karten-Aktionen und Verknüpfung zu
+  Erinnerungen sowie Camping-Kontakten. Die V4-Migration übernimmt bestehende
+  Camping-Erinnerungen in „Erste Nacht“ und ergänzt die zuletzt ausgewerteten
+  Antworten (Belvedere, Al Sole, Al Lago, Punta Lago, Schlosshof).
 
 ## Beim Sync gelernt (nicht kaputt machen!)
 
