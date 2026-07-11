@@ -659,9 +659,9 @@ a.maplink:hover{text-decoration:underline}
 .sleep-reply{font-size:13px;line-height:1.45;color:var(--muted);margin-top:9px;white-space:pre-line}.sleep-next{font-size:12px;color:var(--sun);font-weight:750;margin-top:8px}
 .sleep-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}.sleep-actions .btn{text-decoration:none}
 .sleep-empty{text-align:center;padding:24px 12px;color:var(--muted)}
-.sleep-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:4px 0 12px}.sleep-summary div{padding:8px 5px;border-radius:11px;background:rgba(255,255,255,.04);text-align:center}.sleep-summary b{display:block;font-family:var(--font-display);font-size:16px;color:var(--text)}.sleep-summary span{display:block;font-size:9px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.04em}
+.sleep-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin:4px 0 12px}.sleep-summary div{padding:9px 5px;border-radius:11px;background:rgba(255,255,255,.04);text-align:center}.sleep-summary b{display:block;font-family:var(--font-display);font-size:18px;color:var(--text)}.sleep-summary span{display:block;font-size:9px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.04em}
 .sleep-details{margin-top:8px;border-top:1px solid rgba(255,255,255,.06);padding-top:7px}.sleep-details summary{cursor:pointer;list-style:none;color:var(--faint);font-size:11.5px;font-weight:750}.sleep-details summary::-webkit-details-marker{display:none}.sleep-details summary::before{content:'＋';margin-right:5px}.sleep-details[open] summary::before{content:'−'}
-.sleep-viewbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:2px 0 10px}.sleep-viewbar .chips{margin:0}.sleep-map .mapwrap{height:58vh;min-height:390px;margin:0}.sleep-legend{display:flex;gap:10px;flex-wrap:wrap;margin:8px 2px 12px;font-size:10.5px;color:var(--muted)}.sleep-legend i{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px}
+.sleep-viewbar{display:flex;justify-content:space-between;align-items:center;gap:8px;margin:2px 0 10px}.sleep-viewbar .chips{margin:0}.sleep-map .mapwrap{height:auto;min-height:0;margin:0}.sleep-map .mapwrap svg{height:min(66vw,390px)}.sleep-legend{display:flex;gap:10px;flex-wrap:wrap;margin:8px 2px 12px;font-size:10.5px;color:var(--muted)}.sleep-legend i{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px}
 
 /* Toast */
 #toast{
@@ -1031,6 +1031,11 @@ function migrateSleepPlaces(s){
     applyLinkCoords(p);
     c.placeId=p.id;
   }));
+  const known=[
+    {match:'camping belvedere',lat:46.0038,lng:11.2580,region:'Calceranica al Lago',phone:'+39 0461 723239'},
+    {match:'camping al sole',lat:45.8781,lng:10.7678,region:'Molina di Ledro',email:'info@campingalsole.it',phone:'+39 0464 508496'},
+  ];
+  known.forEach(k=>{const p=s.sleepPlaces.find(x=>String(x.name||'').toLowerCase().includes(k.match));if(p){['lat','lng','region','email','phone'].forEach(key=>{if(p[key]===undefined||p[key]==='')p[key]=k[key];});}});
 }
 function seedLegacySleepSearch(s){
   if((s.sleepSearches||[]).length) return;
@@ -3467,7 +3472,7 @@ function pollRow(p){
 /* ============================================================
    SCHLAFPLATZ-RADAR — wiederverwendbare Plan-B-Suchen
    ============================================================ */
-let activeSleepSearchId=null, sleepFilter='planb', sleepView='list', sleepMapScope='night';
+let activeSleepSearchId=null, sleepFilter='action', sleepView='list', sleepMapScope='night';
 function sleepUndo(){ return {t:'sleepState',sleepSearches:copyData(state.sleepSearches||[]),sleepPlaces:copyData(state.sleepPlaces||[]),reminders:copyData(state.reminders||[]),campContacts:copyData(state.campContacts||[])}; }
 function findSleep(searchId,candidateId){ const s=(state.sleepSearches||[]).find(x=>x.id===searchId); return {s,c:s?.candidates.find(x=>x.id===candidateId)}; }
 function sleepPlace(c){return (state.sleepPlaces||[]).find(p=>p.id===c?.placeId);}
@@ -3536,31 +3541,31 @@ function sleepCandidateCard(s,raw){ const c=sleepCandidateView(raw), st=SLEEP_ST
 function setSleepFilter(f){sleepFilter=f;renderSleep();}
 function setSleepView(v){sleepView=v;renderSleep();}
 function setSleepMapScope(v){sleepMapScope=v;renderSleep();}
-function sleepVisible(c){return sleepFilter==='all'||(sleepFilter==='planb'&&c.status!=='unavailable')||c.status===sleepFilter;}
+function sleepVisible(c){return sleepFilter==='action'?['available','call'].includes(c.status):sleepFilter==='waiting'?['new','awaiting','followup'].includes(c.status):false;}
 const SLEEP_MAP_COLORS={booked:'#8ea8ff',available:'#5fd4a8',call:'#ffb257',followup:'#ffd76b',awaiting:'#54c8ff',new:'#b6bfcc',unavailable:'#737b8d'};
 function buildSleepMap(s,candidates){
-  let rows=candidates.map(c=>({search:s,c}));
+  let rows=(s.candidates||[]).filter(c=>['available','call'].includes(c.status)).map(c=>({search:s,c}));
   if(sleepMapScope==='route'){
-    const rank={booked:0,available:1,call:2,followup:3,awaiting:4,new:5,unavailable:6}, seen=new Map();
-    (state.sleepSearches||[]).forEach(search=>(search.candidates||[]).filter(sleepVisible).forEach(c=>{const key=c.placeId||c.id,prev=seen.get(key);if(!prev||rank[c.status]<rank[prev.c.status])seen.set(key,{search,c});}));
+    const rank={available:0,call:1}, seen=new Map();
+    (state.sleepSearches||[]).forEach(search=>(search.candidates||[]).filter(c=>['available','call'].includes(c.status)).forEach(c=>{const key=c.placeId||c.id,prev=seen.get(key);if(!prev||rank[c.status]<rank[prev.c.status])seen.set(key,{search,c});}));
     rows=[...seen.values()];
   }
   const plotted=rows.filter(row=>{const c=sleepCandidateView(row.c);return Number.isFinite(Number(c.lat))&&Number.isFinite(Number(c.lng));});
   const v=mapView('sleep',renderSleep,defaultCorridorView()); MZ=v.z;
   const inner=plotted.map(row=>{const c=sleepCandidateView(row.c);return markerSvg({lat:Number(c.lat),lng:Number(c.lng)},{kind:'dot',color:SLEEP_MAP_COLORS[c.status]||'#b6bfcc',label:{type:'sleep',searchId:row.search.id,candidateId:row.c.id}});}).join('')+userPosMarker();
-  return `<div class="sleep-map">${baseMapSvg(inner,'sleep')}</div><div class="sleep-legend"><span><i style="background:#5fd4a8"></i>verfügbar</span><span><i style="background:#ffb257"></i>anrufen</span><span><i style="background:#ffd76b"></i>nachfragen</span><span><i style="background:#54c8ff"></i>angefragt</span></div>${plotted.length<rows.length?`<p class="hint">${rows.length-plotted.length} Option${rows.length-plotted.length===1?'':'en'} noch ohne Kartenposition. Über „Bearbeiten“ einmal auf der Karte setzen.</p>`:''}`;
+  return `<div class="sleep-map">${baseMapSvg(inner,'sleep')}</div><div class="sleep-legend"><span><i style="background:#5fd4a8"></i>reservierbar</span><span><i style="background:#ffb257"></i>spontan anrufen</span></div>${plotted.length<rows.length?`<p class="hint">${rows.length-plotted.length} echte Option${rows.length-plotted.length===1?'':'en'} noch ohne Kartenposition.</p>`:''}`;
 }
 function openSleepMapInfo(searchId,candidateId){const {s,c}=findSleep(searchId,candidateId);if(!c)return;const box=document.getElementById('modalBox');box.innerHTML=`<h3>Schlafplatz</h3>${sleepCandidateCard(s,c)}<div class="btnrow"><button class="btn ghost" onclick="closeModal()">Schließen</button></div>`;document.getElementById('modalBg').classList.add('open');}
 function renderSleep(){
   const searches=state.sleepSearches||[]; let s=searches.find(x=>x.id===activeSleepSearchId)||searches[0]; if(s)activeSleepSearchId=s.id;
   const priority={booked:0,available:1,call:2,followup:3,awaiting:4,new:5,unavailable:6}; let candidates=s?[...s.candidates].sort((a,b)=>priority[a.status]-priority[b.status]):[];
-  if(sleepFilter==='planb')candidates=candidates.filter(c=>c.status!=='unavailable'); else if(sleepFilter!=='all')candidates=candidates.filter(c=>c.status===sleepFilter);
-  const counts={available:0,call:0,followup:0,open:0}; if(s)s.candidates.forEach(c=>{if(counts[c.status]!==undefined)counts[c.status]++;if(['new','awaiting'].includes(c.status))counts.open++;});
+  candidates=candidates.filter(sleepVisible);
+  const counts={available:0,call:0}; if(s)s.candidates.forEach(c=>{if(counts[c.status]!==undefined)counts[c.status]++;});
   document.getElementById('page-sleep').innerHTML=sectionBackButton()+`<div class="card sleep-hero"><div class="sleep-head"><div class="sleep-head-main"><h2>${s?esc(s.title):'Schlafplätze'}</h2><div class="sleep-sub">${s?esc([s.dateLabel,s.region,s.maxDrive].filter(Boolean).join(' · ')):'Optionen für die nächste Nacht sammeln'}</div></div>${s?`<button class="btn ghost small" onclick="editSleepSearch('${s.id}')">✎</button>`:''}</div><div class="sleep-hero-actions"><button class="btn primary small" onclick="${s?`addSleepCandidate('${s.id}')`:'addSleepSearch(true)'}">${s?'+ Campingplatz':'Heute suchen'}</button><button class="btn ghost small" onclick="addSleepSearch(false)">+ Nacht</button></div></div>
   ${searches.length?`<div class="sleep-searches">${searches.map(x=>`<button class="chip sleep-search-chip${x.id===s.id?' on':''}" onclick="activeSleepSearchId='${x.id}';renderSleep()"><b>${esc(x.title)}</b><span>${esc([x.dateLabel,x.region].filter(Boolean).join(' · '))}</span></button>`).join('')}</div>`:''}
-  ${s?`<div class="sleep-summary"><div><b>${counts.available}</b><span>verfügbar</span></div><div><b>${counts.call}</b><span>anrufen</span></div><div><b>${counts.followup}</b><span>nachfragen</span></div><div><b>${counts.open}</b><span>offen</span></div></div>
-  <div class="sleep-viewbar"><div class="sleep-filters">${[['planb','Nutzbar'],['all','Alle · '+s.candidates.length],['unavailable','Absagen']].map(([v,l])=>`<button class="chip${sleepFilter===v?' on':''}" onclick="setSleepFilter('${v}')">${l}</button>`).join('')}</div><div class="chips"><button class="chip${sleepView==='list'?' on':''}" onclick="setSleepView('list')">Liste</button><button class="chip${sleepView==='map'?' on':''}" onclick="setSleepView('map')">Karte</button></div></div>${sleepView==='map'?`<div class="chips" style="margin-bottom:10px"><button class="chip${sleepMapScope==='night'?' on':''}" onclick="setSleepMapScope('night')">Diese Nacht</button><button class="chip${sleepMapScope==='route'?' on':''}" onclick="setSleepMapScope('route')">Gesamte Route</button></div>`:''}
-  ${candidates.length?(sleepView==='map'?buildSleepMap(s,candidates):candidates.map(c=>sleepCandidateCard(s,c)).join('')):'<div class="sleep-empty">Keine Optionen in diesem Filter.</div>'}`:'<div class="card sleep-empty">Lege die erste Nacht oder eine spontane Suche für heute an.</div>'}`;
+  ${s?`<div class="sleep-summary"><div><b>${counts.available}</b><span>reservierbar</span></div><div><b>${counts.call}</b><span>spontan anrufen</span></div></div>
+  <div class="sleep-viewbar"><div class="sleep-filters">${[['action','Echte Optionen'],['waiting','Offene Anfragen']].map(([v,l])=>`<button class="chip${sleepFilter===v?' on':''}" onclick="setSleepFilter('${v}')">${l}</button>`).join('')}</div><div class="chips"><button class="chip${sleepView==='list'?' on':''}" onclick="setSleepView('list')">Liste</button><button class="chip${sleepView==='map'?' on':''}" onclick="setSleepView('map')">Karte</button></div></div>${sleepView==='map'?`<div class="chips" style="margin-bottom:10px"><button class="chip${sleepMapScope==='night'?' on':''}" onclick="setSleepMapScope('night')">Diese Nacht</button><button class="chip${sleepMapScope==='route'?' on':''}" onclick="setSleepMapScope('route')">Gesamte Route</button></div>`:''}
+  ${sleepView==='map'?buildSleepMap(s,candidates):(candidates.length?candidates.map(c=>sleepCandidateCard(s,c)).join(''):'<div class="sleep-empty">Keine Optionen in diesem Filter.</div>')}`:'<div class="card sleep-empty">Lege die erste Nacht oder eine spontane Suche für heute an.</div>'}`;
 }
 // Camping-Kontakte: Notfall-Liste zum spontanen Anrufen, falls der geplante
 // Platz voll ist. Bewusst schlank (Name, Ort, Telefon, Karten-Link, Notiz) —
