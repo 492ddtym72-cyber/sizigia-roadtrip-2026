@@ -21,7 +21,7 @@
 - Firebase CLI: `export PATH="/Users/anonymous/.hermes/node/bin:$PATH"`,
   eingeloggt mit Freddis Google-Konto (`firebase login:list`).
   Regeln neu deployen: `firebase deploy --only database --project roadtrip-to-sizigia-eclipse`
-- **Schlafplatz-Radar (Schema V5):** Dauerhaftes Campingplatz-Register
+- **Schlafplatz-Radar (Schema V6):** Dauerhaftes Campingplatz-Register
   (`sleepPlaces`) plus datumsbezogene Anfragen in den Nacht-Suchen. Positionen
   werden einmalig per Karten-Picker oder koordinatenhaltigem Maps-Link erfasst;
   die Offline-Karte zeigt Statusfarben wahlweise pro Nacht oder für die gesamte
@@ -29,10 +29,12 @@
   Erinnerungen sowie Camping-Kontakten. Die Migration übernimmt bestehende
   Camping-Erinnerungen in „Erste Nacht“ und ergänzt die zuletzt ausgewerteten
   Antworten (Belvedere, Al Sole, Al Lago, Punta Lago, Schlosshof).
-- **Camping-Mail-Assistent:** Lokale Codex-Automation prüft alle zwei Stunden
-  ausschließlich campingbezogene Antworten im iCloud-Posteingang, klassifiziert
-  neue Ergebnisse und darf den Schlafplatz-Radar aktualisieren. Sie versendet
-  niemals E-Mails; nötige Antworten werden höchstens als Entwurf vorbereitet.
+- **Camping-Mail-Assistent:** Lokale Codex-Automation prüft tagsüber um ca.
+  08:00, 14:00 und 20:00 ausschließlich campingbezogene Antworten in iCloud
+  Inbox/Sent. `tools/camping-mail-bridge.mjs` liefert konfliktgeschützte
+  Firebase-Updates (ETag), Message-ID-Deduplizierung und blanko signierte
+  Entwurfstexte. Die Automation erstellt höchstens ungesendete Reply-Entwürfe,
+  versendet nie und verändert keine Mailbox-Nachrichten.
 
 ## Beim Sync gelernt (nicht kaputt machen!)
 

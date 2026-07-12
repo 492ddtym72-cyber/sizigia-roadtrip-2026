@@ -660,6 +660,8 @@ a.maplink:hover{text-decoration:underline}
 .sleep-empty{text-align:center;padding:24px 12px;color:var(--muted)}
 .sleep-summary{display:grid;grid-template-columns:repeat(2,1fr);gap:6px;margin:4px 0 12px}.sleep-summary div{padding:9px 5px;border-radius:11px;background:rgba(255,255,255,.04);text-align:center}.sleep-summary b{display:block;font-family:var(--font-display);font-size:18px;color:var(--text)}.sleep-summary span{display:block;font-size:9px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.04em}
 .sleep-coverage{font-size:11.5px;color:var(--muted);margin:-4px 1px 11px}.sleep-coverage.good{color:var(--mint)}
+.sleep-secured{border:1px solid rgba(142,168,255,.42);background:rgba(142,168,255,.07);border-radius:14px;padding:12px;margin-bottom:12px}.sleep-secured-label{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#8ea8ff;font-weight:850;margin-bottom:7px}
+.mail-assistant{display:flex;gap:9px;align-items:flex-start;border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:9px 10px;margin-bottom:12px;background:rgba(255,255,255,.025);font-size:11.5px;color:var(--muted)}.mail-assistant b{color:var(--text)}.mail-assistant.error{border-color:rgba(255,107,74,.3)}
 .sleep-details{margin-top:8px;border-top:1px solid rgba(255,255,255,.06);padding-top:7px}.sleep-details summary{cursor:pointer;list-style:none;color:var(--faint);font-size:11.5px;font-weight:750}.sleep-details summary::-webkit-details-marker{display:none}.sleep-details summary::before{content:'＋';margin-right:5px}.sleep-details[open] summary::before{content:'−'}
 .sleep-viewbar{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;margin:2px 0 12px;border-bottom:1px solid rgba(255,255,255,.08)}
 .sleep-nav{display:flex;gap:18px;min-width:0;overflow-x:auto}.sleep-nav button{border:0;border-bottom:2px solid transparent;background:none;color:var(--muted);padding:8px 0 9px;font:inherit;font-size:12px;font-weight:750;white-space:nowrap;cursor:pointer}.sleep-nav button.active{color:var(--text);border-bottom-color:var(--mint)}
@@ -783,7 +785,7 @@ a.maplink:hover{text-decoration:underline}
      später austauschbar gegen Cloud-Sync (gleiche Schnittstelle).
    ============================================================ */
 const STORAGE_KEY = 'sizigia-roadtrip-2026';
-const SCHEMA_VERSION = 5;
+const SCHEMA_VERSION = 6;
 const LOG_MAX = 60;
 const UNDO_MAX = 20;
 
@@ -893,6 +895,7 @@ function defaultState(){
     vehicles:[
       {
         id:'v-camper', name:'Camper (Lukas)', pickup:'Übernahme: So 02.08. in Innsbruck', drivers:['c-lukas'], passengers:['c-lukas'],
+        model:'', lengthM:'', widthM:'', heightM:'', registration:'',
         notes:'Einweisung durch Lukas: Gas, Wasser, Abwasser, Strom (CEE), Markise.',
         docs:[
           {id:uid(), text:'Fahrzeugschein & Versicherung (Grüne Karte)', done:false},
@@ -983,6 +986,7 @@ function defaultState(){
     campContacts:[],
     sleepPlaces:[],
     sleepSearches:[],
+    mailAssistant:{processedMessageIds:[],draftRequests:[],lastSuccessAt:null,lastRunAt:null,lastError:'',nextRunAt:null},
     log:[],
     festival:[
       {id:uid(), title:'Sizigia Eclipse Gathering 2026', text:'10.–14.08.2026 · Provinz Huesca (Aragón, Spanien).\nGenauer Standort & Anfahrt: siehe Ticket-/Info-Mail — hier eintragen, sobald bekannt.'},
@@ -1015,15 +1019,20 @@ function normalizeListItem(item){
 
 const SLEEP_STATUSES = {
   new:{label:'Neu'}, awaiting:{label:'Angefragt'}, available:{label:'Verfügbar'},
-  reserving:{label:'Reservierung angefragt'},
+  draft_requested:{label:'Entwurf wird erstellt'}, reserving:{label:'Reservierung angefragt'},
+  deposit_required:{label:'Anzahlung nötig'}, booked:{label:'Bestätigt'},
   call:{label:'Spontan anrufen'}, followup:{label:'Erneut fragen'},
-  unavailable:{label:'Nicht verfügbar'}, booked:{label:'Gebucht'}
+  unavailable:{label:'Nicht verfügbar'}
 };
 function cleanCampName(title){
   return String(title||'').replace(/2\.8\s*-\s*3\.8/gi,'').replace(/spontan\s+anrufen/gi,'').replace(/[✅❌🇨🇭]/gu,'').replace(/[·:–—-]+$/,'').replace(/\s+/g,' ').trim();
 }
 function normalizeSleepCandidate(c){
-  return Object.assign({id:uid(),name:'',region:'',email:'',phone:'',link:'',status:'new',price:'',tax:'',reply:'',pitchNote:'',parking:'',callWindow:'',nextAction:'',nextActionDate:'',notes:'',reminderId:null,contactId:null,contactedAt:null,repliedAt:null},c||{}, {status:SLEEP_STATUSES[c?.status]?c.status:'new'});
+  return Object.assign({id:uid(),name:'',region:'',email:'',phone:'',link:'',status:'new',price:'',tax:'',finalPrice:'',deposit:'',bookingRef:'',cancellationDeadline:'',arrivalWindow:'',confirmedAt:null,confirmation:{dates:false,party:false,camper:false,car:false},reply:'',pitchNote:'',parking:'',callWindow:'',nextAction:'',nextActionDate:'',notes:'',reminderId:null,contactId:null,contactedAt:null,repliedAt:null,mailMessageId:'',mailThreadSubject:'',draftState:'none'},c||{}, {status:SLEEP_STATUSES[c?.status]?c.status:'new',confirmation:Object.assign({dates:false,party:false,camper:false,car:false},c?.confirmation||{})});
+}
+function inferSleepDates(label){
+  const m=String(label||'').match(/(\d{1,2})\D+(\d{1,2})\.(\d{1,2})\.(\d{4})/); if(!m)return {startDate:'',endDate:''};
+  const pad=n=>String(n).padStart(2,'0'); return {startDate:`${m[4]}-${pad(m[3])}-${pad(m[1])}`,endDate:`${m[4]}-${pad(m[3])}-${pad(m[2])}`};
 }
 const SLEEP_PLACE_KEYS=['name','region','email','phone','link','lat','lng','notes'];
 function migrateSleepPlaces(s){
@@ -1107,7 +1116,7 @@ function migrate(s){
   (s.returnStages||[]).forEach(normalizeStageFields);
   if(!s.routes.find(r=>r.id===s.selectedRoute)) s.selectedRoute = s.routes[0]?.id || def.selectedRoute;
   (s.spots||[]).forEach(sp=>{ sp.votes = sp.votes || []; });
-  (s.vehicles||[]).forEach(v=>{ v.drivers=v.drivers||[]; v.passengers=v.passengers||[]; v.docs=v.docs||[]; });
+  (s.vehicles||[]).forEach(v=>{ v.drivers=v.drivers||[]; v.passengers=v.passengers||[]; v.docs=v.docs||[]; ['model','lengthM','widthM','heightM','registration'].forEach(k=>{if(v[k]===undefined)v[k]='';}); });
   (s.packing||[]).forEach(c=>{ c.items = c.items || []; });
   (s.shopping||[]).forEach(c=>{ c.items = c.items || []; });
   allListItems(s).forEach(normalizeListItem);
@@ -1141,10 +1150,13 @@ function migrate(s){
     });
   });
   if(fromVersion < 4) seedLegacySleepSearch(s);
-  s.sleepSearches = (s.sleepSearches||[]).map(x=>Object.assign({id:uid(),title:'Schlafplatz-Suche',dateLabel:'',region:'',maxDrive:'',mode:'planned',createdAt:new Date().toISOString()},x,{candidates:(x.candidates||[]).map(normalizeSleepCandidate)}));
+  s.sleepSearches = (s.sleepSearches||[]).map(x=>{const inferred=inferSleepDates(x.dateLabel);return Object.assign({id:uid(),title:'Schlafplatz-Suche',dateLabel:'',startDate:'',endDate:'',region:'',maxDrive:'',mode:'planned',createdAt:new Date().toISOString()},x,{startDate:x.startDate||inferred.startDate,endDate:x.endDate||inferred.endDate,candidates:(x.candidates||[]).map(normalizeSleepCandidate)});});
   migrateSleepPlaces(s);
   applyKnownCampingReplyBatch(s);
   migrateSleepPlaces(s);
+  s.mailAssistant=Object.assign({processedMessageIds:[],draftRequests:[],lastSuccessAt:null,lastRunAt:null,lastError:'',nextRunAt:null},s.mailAssistant||{});
+  s.mailAssistant.processedMessageIds=Array.isArray(s.mailAssistant.processedMessageIds)?s.mailAssistant.processedMessageIds.slice(-200):[];
+  s.mailAssistant.draftRequests=Array.isArray(s.mailAssistant.draftRequests)?s.mailAssistant.draftRequests:[];
   if(Array.isArray(s.log)){
     while(s.log.length > LOG_MAX) s.log.shift();
     let keep = UNDO_MAX;
@@ -1505,7 +1517,7 @@ function applyRevert(u){
     case 'campAdd':  { const i=state.campContacts.findIndex(c=>c.id===u.id); if(i<0) throw 0; state.campContacts.splice(i,1); break; }
     case 'campDel':  state.campContacts.splice(Math.min(u.idx,state.campContacts.length),0,u.contact); break;
     case 'campEdit': Object.assign(need(state.campContacts.find(c=>c.id===u.id)), u.prev); break;
-    case 'sleepState': state.sleepSearches=u.sleepSearches; state.sleepPlaces=u.sleepPlaces||[]; state.reminders=u.reminders; state.campContacts=u.campContacts; break;
+    case 'sleepState': state.sleepSearches=u.sleepSearches; state.sleepPlaces=u.sleepPlaces||[]; state.mailAssistant=u.mailAssistant||state.mailAssistant; state.reminders=u.reminders; state.campContacts=u.campContacts; break;
     case 'stageAdd': { const l=getStageList(u.ref); const i=l.findIndex(x=>x.id===u.id); if(i<0) throw 0; l.splice(i,1); break; }
     case 'stageDel': { const l=getStageList(u.ref); l.splice(Math.min(u.idx,l.length),0,u.stage);
       if(u.followFix){ const f=l.find(x=>x.id===u.followFix.id); if(f){ f.from=u.followFix.prevFrom; f.km=u.followFix.prevKm; f.time=u.followFix.prevTime;
@@ -2054,7 +2066,7 @@ function openModal(title, fields, onSave, onDelete, opts={}){
     else if(f.type==='map') input = pickMapField(i, f.value, f.auto);
     else if(f.type==='checkbox') input = '<label class="modal-check"><input id="mf'+i+'" type="checkbox" '+(f.value?'checked':'')+'> '+esc(f.text||'aktiv')+'</label>';
     else if(f.type==='crewMulti') input = crewMultiField(i, f.value || []);
-    else if(f.type==='tripDate') input = '<input id="mf'+i+'" type="date" min="2026-01-01" max="2026-12-31" value="'+esc(f.value||'')+'">';
+    else if(f.type==='tripDate'||f.type==='isoDate') input = '<input id="mf'+i+'" type="date" min="2026-01-01" max="2026-12-31" value="'+esc(f.value||'')+'">';
     else if(f.type==='unit') input = '<div class="unit-field"><input id="mf'+i+'" type="number" min="0" step="'+esc(f.step||'0.25')+'" inputmode="decimal" value="'+esc(f.value??'')+'" placeholder="'+esc(f.placeholder||'')+'"><span>'+esc(f.unit)+'</span></div>';
     else input = '<input id="mf'+i+'" type="'+(f.type==='number'?'number':'text')+'" '+(f.type==='number'?'step="0.01" inputmode="decimal"':'')+(f.datalist?' list="dl'+i+'" autocomplete="off"':'')+' value="'+esc(f.value||'')+'" placeholder="'+esc(f.placeholder||'')+'">'+(f.datalist?'<datalist id="dl'+i+'">'+f.datalist.map(o=>'<option value="'+esc(o)+'">').join('')+'</datalist>':'');
     return '<div class="field"><label>'+esc(f.label)+'</label>'+input+'</div>';
@@ -3025,6 +3037,7 @@ function renderLogistics(){
       <div class="card">
         <h2>${v.id==='v-camper'?'🚐':'🚗'} ${esc(v.name)} <span class="spacer"></span><button class="btn ghost small" onclick="editVehicle('${v.id}')">✎</button></h2>
         <div class="factrow"><span class="k">Start</span><span class="v">${esc(v.pickup)}</span></div>
+        ${v.id==='v-camper'?`<div class="factrow"><span class="k">Camperdaten</span><span class="v">${esc([v.model,v.lengthM&&'L '+v.lengthM+' m',v.widthM&&'B '+v.widthM+' m',v.heightM&&'H '+v.heightM+' m',v.registration].filter(Boolean).join(' · ')||'Noch nicht vollständig')}</span></div>`:''}
         ${v.notes?`<div class="factrow"><span class="k">Notizen</span><span class="v">${esc(v.notes)}</span></div>`:''}
         <div style="margin:12px 0 4px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Fahrer (antippen)</div>
         <div class="chips">
@@ -3050,9 +3063,13 @@ function editVehicle(id){
   openModal('Fahrzeug bearbeiten', [
     {key:'name',label:'Bezeichnung',value:v.name},
     {key:'pickup',label:'Start / Übernahme',value:v.pickup},
+    ...(v.id==='v-camper'?[
+      {key:'model',label:'Modell / Typ',value:v.model||''},{key:'lengthM',label:'Länge in Metern',value:v.lengthM||'',placeholder:'z. B. 6,40'},
+      {key:'widthM',label:'Breite in Metern',value:v.widthM||''},{key:'heightM',label:'Höhe in Metern',value:v.heightM||''},{key:'registration',label:'Kennzeichen',value:v.registration||''}
+    ]:[]),
     {key:'notes',label:'Notizen',type:'textarea',value:v.notes},
   ], val=>{
-    const prev = {name:v.name, pickup:v.pickup, notes:v.notes};
+    const prev = {name:v.name, pickup:v.pickup, notes:v.notes,model:v.model||'',lengthM:v.lengthM||'',widthM:v.widthM||'',heightM:v.heightM||'',registration:v.registration||''};
     Object.assign(v,val);
     logChange('hat Fahrzeug „'+v.name+'" bearbeitet', {t:'vehEdit', vid:id, prev});
   });
@@ -3497,7 +3514,7 @@ function pollRow(p){
    SCHLAFPLATZ-RADAR — wiederverwendbare Plan-B-Suchen
    ============================================================ */
 let activeSleepSearchId=null, sleepFilter='action', sleepView='list', sleepMapScope='night';
-function sleepUndo(){ return {t:'sleepState',sleepSearches:copyData(state.sleepSearches||[]),sleepPlaces:copyData(state.sleepPlaces||[]),reminders:copyData(state.reminders||[]),campContacts:copyData(state.campContacts||[])}; }
+function sleepUndo(){ return {t:'sleepState',sleepSearches:copyData(state.sleepSearches||[]),sleepPlaces:copyData(state.sleepPlaces||[]),mailAssistant:copyData(state.mailAssistant||{}),reminders:copyData(state.reminders||[]),campContacts:copyData(state.campContacts||[])}; }
 function findSleep(searchId,candidateId){ const s=(state.sleepSearches||[]).find(x=>x.id===searchId); return {s,c:s?.candidates.find(x=>x.id===candidateId)}; }
 function sleepPlace(c){return (state.sleepPlaces||[]).find(p=>p.id===c?.placeId);}
 function sleepCandidateView(c){const v=Object.assign({},c,sleepPlace(c)||{});v.id=c?.id;v.placeId=c?.placeId;return v;}
@@ -3507,34 +3524,48 @@ function ensureSleepPlace(c){
   if(!p){p={id:uid(),createdAt:new Date().toISOString()};state.sleepPlaces.push(p);}
   SLEEP_PLACE_KEYS.forEach(k=>{if(c[k]!==undefined&&(linked||c[k]!==''))p[k]=c[k];}); c.placeId=p.id; return p;
 }
+function sleepDateLabelFromIso(start,end){
+  const fmt=iso=>{if(!iso)return '';const d=new Date(iso+'T12:00:00');return d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});};
+  return start&&end?fmt(start)+'–'+fmt(end):fmt(start)||fmt(end);
+}
+function sleepDateEnglish(s){
+  const fmt=iso=>iso?new Date(iso+'T12:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}):'';
+  return s.startDate&&s.endDate?`from ${fmt(s.startDate)} to ${fmt(s.endDate)}`:(s.dateLabel?`for the night of ${s.dateLabel}`:'');
+}
 function addSleepSearch(today=false){
-  const d=new Date(), date=today?d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
+  const d=new Date(), start=today?`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`:'', d2=new Date(d.getFullYear(),d.getMonth(),d.getDate()+1), end=today?`${d2.getFullYear()}-${String(d2.getMonth()+1).padStart(2,'0')}-${String(d2.getDate()).padStart(2,'0')}`:'';
   openModal(today?'Suche für heute':'Schlafplatz-Suche hinzufügen',[
     {key:'title',label:'Titel',value:today?'Heute Abend':'Neue Nacht',placeholder:'z. B. Nacht bei Cassis'},
-    {key:'dateLabel',label:'Nacht / Datum',value:date,placeholder:'z. B. 06.–07.08.2026'},
+    {key:'startDate',label:'Anreise',type:'isoDate',value:start},{key:'endDate',label:'Abreise',type:'isoDate',value:end},
     {key:'region',label:'Region / Korridor',value:'',placeholder:'z. B. rund um Cassis'},
     {key:'maxDrive',label:'Maximale Fahrt / Umweg',value:'',placeholder:'z. B. 45 Min Umweg'},
-  ],v=>{ const undo=sleepUndo(), search={id:uid(),title:v.title.trim()||'Schlafplatz-Suche',dateLabel:v.dateLabel.trim(),region:v.region.trim(),maxDrive:v.maxDrive.trim(),mode:today?'today':'planned',createdAt:new Date().toISOString(),candidates:[]}; state.sleepSearches.push(search); activeSleepSearchId=search.id; logChange('hat Schlafplatz-Suche „'+search.title+'“ hinzugefügt',undo); });
+  ],v=>{ const undo=sleepUndo(), search={id:uid(),title:v.title.trim()||'Schlafplatz-Suche',startDate:v.startDate,endDate:v.endDate,dateLabel:sleepDateLabelFromIso(v.startDate,v.endDate),region:v.region.trim(),maxDrive:v.maxDrive.trim(),mode:today?'today':'planned',createdAt:new Date().toISOString(),candidates:[]}; state.sleepSearches.push(search); activeSleepSearchId=search.id; logChange('hat Schlafplatz-Suche „'+search.title+'“ hinzugefügt',undo); });
 }
 function editSleepSearch(id){ const s=state.sleepSearches.find(x=>x.id===id); if(!s)return; openModal('Schlafplatz-Suche bearbeiten',[
-  {key:'title',label:'Titel',value:s.title},{key:'dateLabel',label:'Nacht / Datum',value:s.dateLabel||''},{key:'region',label:'Region / Korridor',value:s.region||''},{key:'maxDrive',label:'Maximale Fahrt / Umweg',value:s.maxDrive||''}
-],v=>{const undo=sleepUndo(); Object.assign(s,{title:v.title.trim()||s.title,dateLabel:v.dateLabel.trim(),region:v.region.trim(),maxDrive:v.maxDrive.trim()}); logChange('hat Schlafplatz-Suche „'+s.title+'“ bearbeitet',undo);},()=>{const undo=sleepUndo(),i=state.sleepSearches.findIndex(x=>x.id===id); state.sleepSearches.splice(i,1); activeSleepSearchId=null; logChange('hat Schlafplatz-Suche „'+s.title+'“ gelöscht',undo);}); }
+  {key:'title',label:'Titel',value:s.title},{key:'startDate',label:'Anreise',type:'isoDate',value:s.startDate||''},{key:'endDate',label:'Abreise',type:'isoDate',value:s.endDate||''},{key:'region',label:'Region / Korridor',value:s.region||''},{key:'maxDrive',label:'Maximale Fahrt / Umweg',value:s.maxDrive||''}
+],v=>{const undo=sleepUndo(); Object.assign(s,{title:v.title.trim()||s.title,startDate:v.startDate,endDate:v.endDate,dateLabel:sleepDateLabelFromIso(v.startDate,v.endDate),region:v.region.trim(),maxDrive:v.maxDrive.trim()}); logChange('hat Schlafplatz-Suche „'+s.title+'“ bearbeitet',undo);},()=>{const undo=sleepUndo(),i=state.sleepSearches.findIndex(x=>x.id===id); state.sleepSearches.splice(i,1); activeSleepSearchId=null; logChange('hat Schlafplatz-Suche „'+s.title+'“ gelöscht',undo);}); }
 function sleepCandidateFields(raw={}){ const c=sleepCandidateView(raw), stored=c.lat!=null?{lat:+c.lat,lng:+c.lng}:null, auto=stored?null:pointOf({},c.name+' '+c.region); return [
   {key:'name',label:'Campingplatz / Stellplatz',value:c.name||'',datalist:(state.sleepPlaces||[]).map(p=>p.name).filter(Boolean)},{key:'region',label:'Ort / Region',value:c.region||''},
   {key:'status',label:'Status',type:'select',value:c.status||'new',options:Object.entries(SLEEP_STATUSES).map(([value,x])=>({value,label:x.label}))},
   {key:'email',label:'E-Mail',value:c.email||''},{key:'phone',label:'Telefon',value:c.phone||''},{key:'link',label:'Karten-Link',value:c.link||''},
   {key:'pos',label:'Position auf der Karte',type:'map',value:stored,auto},
   {key:'price',label:'Preis',value:c.price||''},{key:'tax',label:'Kurtaxe / Zusatzkosten',value:c.tax||''},
+  {key:'finalPrice',label:'Bestätigter Gesamtpreis',value:c.finalPrice||''},{key:'deposit',label:'Anzahlung',value:c.deposit||''},{key:'bookingRef',label:'Buchungsnummer',value:c.bookingRef||''},{key:'cancellationDeadline',label:'Stornofrist',value:c.cancellationDeadline||''},
+  {key:'arrivalWindow',label:'Anreisezeit / Check-in',value:c.arrivalWindow||''},
+  {key:'confirmDates',label:'Bestätigung',type:'checkbox',value:!!c.confirmation?.dates,text:'Datum ausdrücklich bestätigt'},
+  {key:'confirmParty',label:'Bestätigung',type:'checkbox',value:!!c.confirmation?.party,text:'6 Erwachsene bestätigt'},
+  {key:'confirmCamper',label:'Bestätigung',type:'checkbox',value:!!c.confirmation?.camper,text:'Camper akzeptiert'},
+  {key:'confirmCar',label:'Bestätigung',type:'checkbox',value:!!c.confirmation?.car,text:'Kleinwagen / Parkplatz bestätigt'},
   {key:'callWindow',label:'Anruf-Zeitfenster',value:c.callWindow||'',placeholder:'z. B. 08:00–22:00'},
   {key:'nextAction',label:'Nächster Schritt',value:c.nextAction||''},{key:'nextActionDate',label:'Wann?',value:c.nextActionDate||''},
   {key:'reply',label:'Antwort zusammengefasst',type:'textarea',value:c.reply||''},{key:'pitchNote',label:'Stellplatz / Fahrzeug-Bedingungen',type:'textarea',value:c.pitchNote||''},
   {key:'parking',label:'Kleinwagen / Parken',type:'textarea',value:c.parking||''},{key:'notes',label:'Weitere Notizen',type:'textarea',value:c.notes||''}
 ]; }
-function applyCandidateValues(c,v){ const pos=v.pos; Object.keys(v).filter(k=>k!=='pos').forEach(k=>c[k]=typeof v[k]==='string'?v[k].trim():v[k]); const p=ensureSleepPlace(c); applyPos(p,pos); applyLinkCoords(p); if(c.reply&&!c.repliedAt)c.repliedAt=new Date().toISOString(); }
+function applyCandidateValues(c,v){ const pos=v.pos,confirmation={dates:!!v.confirmDates,party:!!v.confirmParty,camper:!!v.confirmCamper,car:!!v.confirmCar}; Object.keys(v).filter(k=>!['pos','confirmDates','confirmParty','confirmCamper','confirmCar'].includes(k)).forEach(k=>c[k]=typeof v[k]==='string'?v[k].trim():v[k]);c.confirmation=confirmation;if(c.status==='booked'&&!Object.values(confirmation).every(Boolean)){c.status='reserving';c.nextAction='Bestätigung für Datum, Gruppe, Camper und Auto vervollständigen';toast('„Bestätigt“ braucht alle vier Bestätigungen');}else if(c.status==='booked'&&!c.confirmedAt)c.confirmedAt=new Date().toISOString(); const p=ensureSleepPlace(c); applyPos(p,pos); applyLinkCoords(p); if(c.reply&&!c.repliedAt)c.repliedAt=new Date().toISOString(); }
 function syncSleepCandidate(s,c){
   let r=state.reminders.find(x=>x.id===c.reminderId);
-  const reminderTitle=()=> c.status==='available'?`${c.name} reservieren · ${s.dateLabel}`:c.status==='reserving'?`${c.name}: Reservierungsbestätigung abwarten · ${s.dateLabel}`:c.status==='followup'?`${c.name} erneut mailen${c.nextActionDate?' · '+c.nextActionDate:''}`:`${c.name} ${s.dateLabel}${c.status==='booked'?' ✅ gebucht':c.status==='unavailable'?' ❌':''}`;
-  if(['awaiting','available','reserving','followup','booked','unavailable'].includes(c.status)){
+  const reminderTitle=()=> c.status==='available'?`${c.name} reservieren · ${s.dateLabel}`:c.status==='draft_requested'?`${c.name}: E-Mail-Entwurf prüfen · ${s.dateLabel}`:c.status==='reserving'?`${c.name}: Reservierungsbestätigung abwarten · ${s.dateLabel}`:c.status==='deposit_required'?`${c.name}: Anzahlung prüfen · ${s.dateLabel}`:c.status==='followup'?`${c.name} erneut mailen${c.nextActionDate?' · '+c.nextActionDate:''}`:`${c.name} ${s.dateLabel}${c.status==='booked'?' ✅ bestätigt':c.status==='unavailable'?' ❌':''}`;
+  if(['awaiting','available','draft_requested','reserving','deposit_required','followup','booked','unavailable'].includes(c.status)){
     if(!r){r={id:uid(),title:reminderTitle(),done:false,priority:c.status==='available',createdAt:new Date().toISOString(),createdBy:whoami()||null};state.reminders.unshift(r);c.reminderId=r.id;}
     r.title=reminderTitle(); r.done=['booked','unavailable'].includes(c.status); r.priority=c.status==='available';
   }
@@ -3549,25 +3580,41 @@ function syncSleepCandidate(s,c){
 }
 function addSleepCandidate(searchId){ const s=state.sleepSearches.find(x=>x.id===searchId); if(!s)return; openModal('Option hinzufügen',sleepCandidateFields(),v=>{if(!v.name.trim()){toast('Bitte einen Namen eintragen');return;}const undo=sleepUndo(),c=normalizeSleepCandidate({id:uid(),contactedAt:v.status==='awaiting'?new Date().toISOString():null});applyCandidateValues(c,v);s.candidates.push(c);syncSleepCandidate(s,c);logChange('hat Schlafplatz-Option „'+c.name+'“ hinzugefügt',undo);}); }
 function editSleepCandidate(searchId,candidateId){ const {s,c}=findSleep(searchId,candidateId);if(!c)return;const view=sleepCandidateView(c);openModal('Schlafplatz-Option bearbeiten',sleepCandidateFields(c),v=>{if(!v.name.trim()){toast('Bitte einen Namen eintragen');return;}const undo=sleepUndo();applyCandidateValues(c,v);syncSleepCandidate(s,c);logChange('hat Schlafplatz-Option „'+v.name.trim()+'“ bearbeitet',undo);},()=>{const undo=sleepUndo(),i=s.candidates.findIndex(x=>x.id===candidateId);s.candidates.splice(i,1);logChange('hat Schlafplatz-Option „'+view.name+'“ gelöscht',undo);}); }
+function camperProfile(){return state.vehicles.find(v=>v.id==='v-camper')||{};}
 function sleepEmailText(s,c,mode='inquiry'){
-  const night=s.dateLabel?` for the night of ${s.dateLabel}`:'';
-  if(mode==='reserve') return `Dear ${c.name} team,\n\nThank you for confirming that you can offer us a place${night}.\n\nWe would like to accept your offer and reserve it for six adults travelling with one camper and one small car.\n\nCould you please confirm when the reservation is definitive? If not already confirmed, please also let us know the total price and whether the small car can be parked at or near the place.\n\nThank you very much.\n\nKind regards,\nThe Sizigia roadtrip group`;
-  if(mode==='followup') return `Dear ${c.name} team,\n\nI am following up regarding availability${night} for 6 adults traveling with one camper and one small car. Has a pitch become available in the meantime?\n\nIf you are still full, would it be possible to call you spontaneously on the day in case of a cancellation?\n\nThank you very much.\n\nKind regards,\nFrederic`;
-  return `Dear ${c.name} team,\n\nI would like to ask if you have availability${night} for 6 adults traveling with one camper and one small car.\n\nIf advance reservations are not available or you are currently full, would it still be possible to call you spontaneously on the day in case a pitch becomes available?\n\nCould you please also let me know the total price and whether the small car can be parked at or near the pitch?\n\nThank you very much.\n\nKind regards,\nFrederic`;
+  const dates=sleepDateEnglish(s), party=`${state.crew.length} adults travelling with one camper and one small car`, end=`Thank you very much.\n\nKind regards,\n\n`;
+  if(mode==='reserve') return `Dear ${c.name} team,\n\nThank you for confirming that you can offer us a place ${dates}.\n\nWe would like to accept your offer and reserve it for ${party}.\n\nCould you please confirm when the reservation is definitive? If not already confirmed, please also let us know the total price and whether the small car can be parked at or near the place.\n\n${end}`;
+  if(mode==='followup') return `Dear ${c.name} team,\n\nI am following up regarding availability ${dates} for ${party}. Has a pitch become available in the meantime?\n\nIf you are still full, would it be possible to call you spontaneously on the day in case of a cancellation?\n\n${end}`;
+  if(mode==='dimensions'){const v=camperProfile();if(!v.lengthM)return '';return `Dear ${c.name} team,\n\nThank you for your reply. The camper is ${v.lengthM} metres long${v.widthM?`, ${v.widthM} metres wide`:''}${v.heightM?` and ${v.heightM} metres high`:''}${v.model?` (${v.model})`:''}.\n\nCould you please check whether a suitable place is available ${dates}?\n\n${end}`;}
+  if(mode==='missing') return `Dear ${c.name} team,\n\nThank you for your reply regarding our stay ${dates}. Could you please also confirm the total price and whether our small car can be parked at or near the place?\n\n${end}`;
+  if(mode==='deposit') return `Dear ${c.name} team,\n\nThank you for the booking information for our stay ${dates}. Before we arrange the deposit, could you please confirm the required amount, payment deadline and reference we should include with the payment?\n\n${end}`;
+  if(mode==='clarify') return `Dear ${c.name} team,\n\nThank you for your reply. Before we proceed, could you please confirm that the offer applies ${dates} to ${party}, including parking for the small car?\n\n${end}`;
+  return `Dear ${c.name} team,\n\nI would like to ask if you have availability ${dates} for ${party}.\n\nIf advance reservations are not available or you are currently full, would it still be possible to call you spontaneously on the day in case a pitch becomes available?\n\nCould you please also let me know the total price and whether the small car can be parked at or near the pitch?\n\n${end}`;
 }
-function sleepMailto(s,c,mode='inquiry'){const subject=mode==='reserve'?`Reservation request – ${s.dateLabel||''} – ${c.name}`:mode==='followup'?`Follow-up: Pitch availability ${s.dateLabel||''}`:`Pitch availability ${s.dateLabel||''}`;return `mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(sleepEmailText(s,c,mode))}`;}
-function markSleepContacted(searchId,candidateId,mode='inquiry'){const {s,c}=findSleep(searchId,candidateId);if(!c)return;const undo=sleepUndo();c.contactedAt=new Date().toISOString();if(c.status==='new')c.status='awaiting';if(mode==='reserve'&&c.status==='available'){c.status='reserving';c.nextAction='Auf definitive Bestätigung warten';}syncSleepCandidate(s,c);logChange('hat „'+c.name+'“ per E-Mail kontaktiert',undo);save();}
+function sleepMailto(s,c,mode='inquiry'){const subject=mode==='reserve'?`Reservation request – ${s.dateLabel||''} – ${c.name}`:mode==='followup'?`Follow-up: Pitch availability ${s.dateLabel||''}`:`Re: ${c.mailThreadSubject||'Pitch availability '+(s.dateLabel||'')}`;return `mailto:${encodeURIComponent(c.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(sleepEmailText(s,c,mode))}`;}
+function sleepActionMode(c){const action=c.nextAction||'';if(c.status==='deposit_required')return 'deposit';if(/camperlänge|camper length|length of the camper/i.test(action+' '+(c.reply||'')))return 'dimensions';if(/preis|price|parken|parking|parkplatz/i.test(action))return 'missing';if(/klären|clarif|bestätigen lassen|confirm details/i.test(action))return 'clarify';if(c.status==='available')return 'reserve';if(c.status==='followup')return 'followup';return 'inquiry';}
+function prepareSleepReply(searchId,candidateId,mode,force=false){
+  const {s,c}=findSleep(searchId,candidateId);if(!c)return;const view=sleepCandidateView(c), body=sleepEmailText(s,view,mode);
+  if(!body){toast('Zuerst die Camperlänge unter Fahrzeuge eintragen');return;}
+  if(mode==='reserve'&&!force){const conflict=s.candidates.find(x=>x.id!==c.id&&['draft_requested','reserving','deposit_required','booked'].includes(x.status));if(conflict){toast('Für diese Nacht läuft bereits: '+sleepCandidateView(conflict).name,'Trotzdem',()=>prepareSleepReply(searchId,candidateId,mode,true));return;}}
+  const undo=sleepUndo(), req={id:uid(),searchId,candidateId,template:mode,messageId:c.mailMessageId||'',threadSubject:c.mailThreadSubject||'',createdAt:new Date().toISOString(),status:c.mailMessageId?'requested':'fallback',previousStatus:c.status};
+  state.mailAssistant.draftRequests.push(req);c.status='draft_requested';c.draftState=req.status;c.nextAction=c.mailMessageId?'Apple-Mail-Entwurf abwarten':'Entwurf prüfen und manuell senden';
+  logChange('hat einen E-Mail-Entwurf für „'+view.name+'“ angefordert',undo);save();renderAll();
+  if(!c.mailMessageId)window.location.href=sleepMailto(s,view,mode);
+}
+function markSleepDraftSent(searchId,candidateId){const {s,c}=findSleep(searchId,candidateId);if(!c)return;const undo=sleepUndo(),req=[...state.mailAssistant.draftRequests].reverse().find(x=>x.candidateId===candidateId&&['requested','ready','fallback'].includes(x.status));if(req){req.status='sent_manual';req.sentAt=new Date().toISOString();}c.status='reserving';c.draftState='sent';c.contactedAt=new Date().toISOString();c.nextAction='Auf definitive Bestätigung warten';syncSleepCandidate(s,c);logChange('hat den Reservierungsversand für „'+sleepCandidateView(c).name+'“ bestätigt',undo);save();renderAll();}
+function cancelSleepDraft(searchId,candidateId){const {c}=findSleep(searchId,candidateId);if(!c)return;const undo=sleepUndo(),req=[...state.mailAssistant.draftRequests].reverse().find(x=>x.candidateId===candidateId&&['requested','ready','fallback'].includes(x.status));c.status=req?.previousStatus||'available';c.draftState='none';c.nextAction='';if(req)req.status='cancelled';logChange('hat den E-Mail-Entwurf für „'+sleepCandidateView(c).name+'“ verworfen',undo);save();renderAll();}
 function copySleepEmail(searchId,candidateId,mode='inquiry'){const {s,c}=findSleep(searchId,candidateId);if(!c)return;const txt=sleepEmailText(s,sleepCandidateView(c),mode),done=()=>toast('E-Mail-Text kopiert'); if(navigator.clipboard?.writeText)navigator.clipboard.writeText(txt).then(done,()=>fallbackCopy(txt,done));else fallbackCopy(txt,done);}
-function sleepCandidateCard(s,raw){ const c=sleepCandidateView(raw), st=SLEEP_STATUSES[c.status], maps=c.link||'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(c.name+(c.region?', '+c.region:'')), mode=c.status==='available'?'reserve':c.status==='followup'?'followup':'inquiry', hasDetails=c.reply||c.pitchNote||c.parking||c.notes; return `<div class="sleep-card ${c.status}"><div class="sleep-head"><div class="sleep-head-main"><h3>${esc(c.name)}</h3><div class="sleep-sub">${esc(c.region||s.region||'Ort noch offen')}</div></div><span class="sleep-status ${c.status}">${esc(st.label)}</span></div>
-  <div class="sleep-facts">${c.price?`<span class="sleep-fact">💶 ${esc(c.price)}</span>`:''}${c.tax?`<span class="sleep-fact">+ ${esc(c.tax)}</span>`:''}${c.callWindow?`<span class="sleep-fact">📞 ${esc(c.callWindow)}</span>`:''}</div>
+function sleepCandidateCard(s,raw){ const c=sleepCandidateView(raw), st=SLEEP_STATUSES[c.status], maps=c.link||'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(c.name+(c.region?', '+c.region:'')), mode=sleepActionMode(c), hasDetails=c.reply||c.pitchNote||c.parking||c.notes, statusLabel=c.status==='draft_requested'&&c.draftState==='ready'?'Entwurf bereit':st.label; return `<div class="sleep-card ${c.status}"><div class="sleep-head"><div class="sleep-head-main"><h3>${esc(c.name)}</h3><div class="sleep-sub">${esc(c.region||s.region||'Ort noch offen')}</div></div><span class="sleep-status ${c.status}">${esc(statusLabel)}</span></div>
+  <div class="sleep-facts">${(c.finalPrice||c.price)?`<span class="sleep-fact">💶 ${esc(c.finalPrice||c.price)}</span>`:''}${c.tax?`<span class="sleep-fact">+ ${esc(c.tax)}</span>`:''}${c.deposit?`<span class="sleep-fact">Anzahlung ${esc(c.deposit)}</span>`:''}${c.bookingRef?`<span class="sleep-fact">Nr. ${esc(c.bookingRef)}</span>`:''}${c.arrivalWindow?`<span class="sleep-fact">Anreise ${esc(c.arrivalWindow)}</span>`:''}${c.callWindow?`<span class="sleep-fact">📞 ${esc(c.callWindow)}</span>`:''}</div>
   ${(c.nextAction||c.nextActionDate)?`<div class="sleep-next">${esc(c.nextAction||'Nachfassen')}${c.nextActionDate?' · '+esc(c.nextActionDate):''}</div>`:''}
   ${hasDetails?`<details class="sleep-details"><summary>Antwort & Bedingungen</summary>${c.reply?`<div class="sleep-reply">${esc(c.reply)}</div>`:''}${c.pitchNote?`<div class="sleep-reply"><b>Stellplatz:</b> ${esc(c.pitchNote)}</div>`:''}${c.parking?`<div class="sleep-reply"><b>Auto:</b> ${esc(c.parking)}</div>`:''}${c.notes?`<div class="sleep-reply">${esc(c.notes)}</div>`:''}</details>`:''}
-  <div class="sleep-actions">${c.status==='call'&&c.phone?`<a class="btn primary small" href="tel:${esc(c.phone.replace(/[^\d+]/g,''))}">📞 Jetzt anrufen</a>`:c.email&&!['reserving','booked'].includes(c.status)?`<a class="btn primary small" href="${esc(sleepMailto(s,c,mode))}" onclick="markSleepContacted('${s.id}','${c.id}','${mode}')">✉️ ${mode==='followup'?'Erneut fragen':mode==='reserve'?'Reservieren':'Anfragen'}</a>`:''}<a class="btn ghost small" href="${esc(maps)}" target="_blank" rel="noopener">Karte</a><button class="btn ghost small" onclick="editSleepCandidate('${s.id}','${c.id}')">Bearbeiten</button></div></div>`; }
+  <div class="sleep-actions">${c.status==='call'&&c.phone?`<a class="btn primary small" href="tel:${esc(c.phone.replace(/[^\d+]/g,''))}">📞 Jetzt anrufen</a>`:c.status==='draft_requested'?`${['ready','fallback'].includes(c.draftState)?`<button class="btn primary small" onclick="markSleepDraftSent('${s.id}','${c.id}')">Als gesendet markieren</button>`:`<button class="btn small" disabled>Entwurf wird erstellt</button>`}<button class="btn ghost small" onclick="cancelSleepDraft('${s.id}','${c.id}')">Verwerfen</button>`:c.email&&!['reserving','booked'].includes(c.status)?`<button class="btn primary small" onclick="prepareSleepReply('${s.id}','${c.id}','${mode}')">✉️ ${mode==='dimensions'?'Camperdaten senden':mode==='followup'?'Erneut fragen':mode==='reserve'?'Antwort vorbereiten':mode==='missing'?'Details nachfragen':mode==='deposit'?'Anzahlung klären':mode==='clarify'?'Buchung klären':'Anfragen'}</button>`:''}<a class="btn ghost small" href="${esc(maps)}" target="_blank" rel="noopener">Karte</a><button class="btn ghost small" onclick="editSleepCandidate('${s.id}','${c.id}')">Bearbeiten</button></div></div>`; }
 function setSleepFilter(f){sleepFilter=f;renderSleep();}
 function setSleepView(v){sleepView=v;renderSleep();}
 function setSleepMapScope(v){sleepMapScope=v;renderSleep();}
-function sleepVisible(c){return sleepFilter==='action'?['available','call'].includes(c.status):sleepFilter==='waiting'?['new','awaiting','reserving','followup'].includes(c.status):false;}
-const SLEEP_MAP_COLORS={booked:'#8ea8ff',available:'#5fd4a8',call:'#ffb257',followup:'#ffd76b',awaiting:'#54c8ff',new:'#b6bfcc',unavailable:'#737b8d'};
+function sleepVisible(c){return sleepFilter==='action'?['available','call'].includes(c.status):sleepFilter==='waiting'?['new','awaiting','draft_requested','reserving','deposit_required','followup'].includes(c.status):false;}
+const SLEEP_MAP_COLORS={booked:'#8ea8ff',available:'#5fd4a8',call:'#ffb257',draft_requested:'#54c8ff',reserving:'#54c8ff',deposit_required:'#ffd76b',followup:'#ffd76b',awaiting:'#54c8ff',new:'#b6bfcc',unavailable:'#737b8d'};
 function buildSleepMap(s,candidates){
   let rows=(s.candidates||[]).filter(c=>['available','call'].includes(c.status)).map(c=>({search:s,c}));
   if(sleepMapScope==='route'){
@@ -3581,15 +3628,17 @@ function buildSleepMap(s,candidates){
   return `<div class="sleep-map">${baseMapSvg(inner,'sleep')}</div><div class="sleep-legend"><span><i style="background:#5fd4a8"></i>reservierbar</span><span><i style="background:#ffb257"></i>spontan anrufen</span></div>${plotted.length<rows.length?`<p class="hint">${rows.length-plotted.length} echte Option${rows.length-plotted.length===1?'':'en'} noch ohne Kartenposition.</p>`:''}`;
 }
 function openSleepMapInfo(searchId,candidateId){const {s,c}=findSleep(searchId,candidateId);if(!c)return;const box=document.getElementById('modalBox');box.innerHTML=`<h3>Schlafplatz</h3>${sleepCandidateCard(s,c)}<div class="btnrow"><button class="btn ghost" onclick="closeModal()">Schließen</button></div>`;document.getElementById('modalBg').classList.add('open');}
+function nextMailAssistantRun(a){if(a.nextRunAt&&new Date(a.nextRunAt)>new Date())return new Date(a.nextRunAt);const now=new Date(),hours=[8,14,20];for(const h of hours){const d=new Date(now);d.setHours(h,0,0,0);if(d>now)return d;}const d=new Date(now);d.setDate(d.getDate()+1);d.setHours(8,0,0,0);return d;}
+function renderMailAssistantStatus(){const a=state.mailAssistant||{},pending=(a.draftRequests||[]).filter(x=>['requested','ready','fallback'].includes(x.status)).length,missing=!camperProfile().lengthM,last=a.lastSuccessAt?new Date(a.lastSuccessAt).toLocaleString('de-DE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):'noch nie',next=nextMailAssistantRun(a).toLocaleString('de-DE',{weekday:'short',hour:'2-digit',minute:'2-digit'});return `<div class="mail-assistant${a.lastError?' error':''}"><span>✉️</span><div><b>Mail-Assistent</b> · letzter Check ${esc(last)} · nächster Check ${esc(next)}${pending?' · '+pending+' Entwurf'+(pending===1?'':'e')+' offen':''}${missing?' · Camperlänge fehlt':''}${a.lastError?`<br>${esc(a.lastError)}`:''}</div></div>`;}
 function renderSleep(){
   const searches=state.sleepSearches||[]; let s=searches.find(x=>x.id===activeSleepSearchId)||searches[0]; if(s)activeSleepSearchId=s.id;
-  const priority={booked:0,available:1,call:2,followup:3,awaiting:4,new:5,unavailable:6}; let candidates=s?[...s.candidates].sort((a,b)=>priority[a.status]-priority[b.status]):[];
+  const priority={booked:0,deposit_required:1,reserving:2,draft_requested:3,available:4,call:5,followup:6,awaiting:7,new:8,unavailable:9}; let candidates=s?[...s.candidates].sort((a,b)=>(priority[a.status]??99)-(priority[b.status]??99)):[];
   candidates=candidates.filter(sleepVisible);
   const counts={available:0,call:0}; if(s)s.candidates.forEach(c=>{if(counts[c.status]!==undefined)counts[c.status]++;});
   const coverage=counts.available+counts.call, coverageTarget=3;
   document.getElementById('page-sleep').innerHTML=sectionBackButton()+`<div class="card sleep-hero"><div class="sleep-head"><div class="sleep-head-main"><h2>${s?esc(s.title):'Schlafplätze'}</h2><div class="sleep-sub">${s?esc([s.dateLabel,s.region,s.maxDrive].filter(Boolean).join(' · ')):'Optionen für die nächste Nacht sammeln'}</div></div>${s?`<button class="btn ghost small" onclick="editSleepSearch('${s.id}')">✎</button>`:''}</div><div class="sleep-hero-actions"><button class="btn primary small" onclick="${s?`addSleepCandidate('${s.id}')`:'addSleepSearch(true)'}">${s?'+ Campingplatz':'Heute suchen'}</button><button class="btn ghost small" onclick="addSleepSearch(false)">+ Nacht</button></div></div>
-  ${searches.length?`<div class="sleep-searches">${searches.map(x=>`<button class="sleep-search-tab${x.id===s.id?' active':''}" onclick="activeSleepSearchId='${x.id}';renderSleep()"><b>${esc(x.title)}</b><span>${esc([x.dateLabel,x.region].filter(Boolean).join(' · '))}</span></button>`).join('')}</div>`:''}
-  ${s?`<div class="sleep-summary"><div><b>${counts.available}</b><span>reservierbar</span></div><div><b>${counts.call}</b><span>spontan anrufen</span></div></div><div class="sleep-coverage${coverage>=coverageTarget?' good':''}">${coverage>=coverageTarget?'✓ Solides Sicherheitsnetz für diese Nacht':`Noch ${coverageTarget-coverage} echte Option${coverageTarget-coverage===1?'':'en'} für ein solides Sicherheitsnetz ergänzen`}</div>
+  ${searches.length?`<div class="sleep-searches">${searches.map(x=>`<button class="sleep-search-tab${x.id===s.id?' active':''}" onclick="activeSleepSearchId='${x.id}';renderSleep()"><b>${esc(x.title)}</b><span>${esc([x.dateLabel,x.region].filter(Boolean).join(' · '))}</span></button>`).join('')}</div>`:''}${renderMailAssistantStatus()}
+  ${s?`${s.candidates.filter(c=>c.status==='booked').map(c=>`<div class="sleep-secured"><div class="sleep-secured-label">Unterkunft gesichert</div>${sleepCandidateCard(s,c)}</div>`).join('')}<div class="sleep-summary"><div><b>${counts.available}</b><span>reservierbar</span></div><div><b>${counts.call}</b><span>spontan anrufen</span></div></div><div class="sleep-coverage${coverage>=coverageTarget?' good':''}">${coverage>=coverageTarget?'✓ Solides Sicherheitsnetz für diese Nacht':`Noch ${coverageTarget-coverage} echte Option${coverageTarget-coverage===1?'':'en'} für ein solides Sicherheitsnetz ergänzen`}</div>
   <div class="sleep-viewbar"><div class="sleep-nav">${[['action','Echte Optionen'],['waiting','Offene Anfragen']].map(([v,l])=>`<button class="${sleepFilter===v?'active':''}" onclick="setSleepFilter('${v}')">${l}</button>`).join('')}</div><div class="sleep-segment"><button class="${sleepView==='list'?'active':''}" onclick="setSleepView('list')">Liste</button><button class="${sleepView==='map'?'active':''}" onclick="setSleepView('map')">Karte</button></div></div>${sleepView==='map'?`<div class="sleep-scope"><button class="${sleepMapScope==='night'?'active':''}" onclick="setSleepMapScope('night')">Diese Nacht</button><button class="${sleepMapScope==='route'?'active':''}" onclick="setSleepMapScope('route')">Gesamte Route</button></div>`:''}
   ${sleepView==='map'?buildSleepMap(s,candidates):(candidates.length?candidates.map(c=>sleepCandidateCard(s,c)).join(''):'<div class="sleep-empty">Keine Optionen in diesem Filter.</div>')}`:'<div class="card sleep-empty">Lege die erste Nacht oder eine spontane Suche für heute an.</div>'}`;
 }

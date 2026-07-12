@@ -15,6 +15,7 @@ und Menschen, die am Projekt arbeiten.
 
 ```
 index.html                  # Die gesamte App: HTML + CSS + JS inline, keine Dependencies
+tools/camping-mail-bridge.mjs # Lokale Mail-Automation: Firebase-ETag + Entwurfs-Payloads
 docs/specs/                 # Design-Spezifikationen
 AGENTS.md                   # Diese Datei (CLAUDE.md verweist hierauf)
 ```
