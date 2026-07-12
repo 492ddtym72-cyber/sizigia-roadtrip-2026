@@ -1,0 +1,28 @@
+name: Camping mail safety net
+
+on:
+  schedule:
+    - cron: '13,43 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: camping-mail-runner
+  cancel-in-progress: false
+
+jobs:
+  check-mail:
+    if: ${{ vars.MAIL_RUNNER_MODE == 'shadow' || vars.MAIL_RUNNER_MODE == 'cloud' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      MAIL_RUNNER_MODE: ${{ vars.MAIL_RUNNER_MODE }}
+      ICLOUD_EMAIL: ${{ secrets.ICLOUD_EMAIL }}
+      ICLOUD_APP_PASSWORD: ${{ secrets.ICLOUD_APP_PASSWORD }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - run: npm ci --prefix cloud-mail --ignore-scripts
+      - run: npm test --prefix cloud-mail
+      - run: node cloud-mail/runner.mjs

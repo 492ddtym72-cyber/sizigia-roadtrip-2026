@@ -14,17 +14,23 @@ und Menschen, die am Projekt arbeiten.
 ## Projektstruktur
 
 ```
-index.html                  # Die gesamte App: HTML + CSS + JS inline, keine Dependencies
-tools/camping-mail-bridge.mjs # Lokale Mail-Automation: Firebase-ETag + Entwurfs-Payloads
+index.html                  # Statische HTML-Struktur und klassische Asset-Reihenfolge
+styles.css                  # Gesamtes App-CSS
+map-data.js                 # Eingebettete Offline-Karte (große Data-URI)
+app.js                      # Gesamte Browser-Logik, ohne Build-Schritt
+sw.js                       # Offline-Cache für die gehostete App
+tools/camping-mail-*.mjs    # Lokale/Cloud-Maillogik, Tests und Firebase-Brücke
+cloud-mail/                 # Deaktivierter GitHub/iCloud-Runner mit eigenem Lockfile
 docs/specs/                 # Design-Spezifikationen
 AGENTS.md                   # Diese Datei (CLAUDE.md verweist hierauf)
 ```
 
 ## Harte Regeln
 
-1. **Eine Datei, kein Build.** `index.html` muss weiterhin per Doppelklick
-   (`file://`) auf jedem Gerät funktionieren. Keine externen Requests
-   (keine CDNs, Fonts, Bilder-URLs) — die App muss offline laufen.
+1. **Statisch, kein Build.** `index.html` lädt ausschließlich die klassischen
+   lokalen Assets `styles.css`, `map-data.js` und `app.js` und muss weiterhin
+   per Doppelklick (`file://`) funktionieren. Keine CDNs, Module, Fonts oder
+   Bilder-URLs — die App muss offline laufen.
 2. **UI-Sprache Deutsch.** Code/Kommentare deutsch oder englisch, UI-Texte deutsch.
 3. **Kein Datenverlust.** Jede Zustandsänderung ruft `save()` auf. Das Schema
    nie umbenennen/entfernen ohne Migration in `migrate()` (siehe unten).
@@ -32,8 +38,8 @@ AGENTS.md                   # Diese Datei (CLAUDE.md verweist hierauf)
 
 ## Datenmodell & Persistenz
 
-- Ein einziges State-Objekt (`state`) mit `schemaVersion` (aktuell `1`),
-  definiert in `defaultState()` in `index.html`.
+- Ein einziges State-Objekt (`state`) mit `schemaVersion` (aktuell `8`),
+  definiert in `defaultState()` in `app.js`.
 - **`StorageAdapter`** (`load()` / `save(state)`) kapselt die lokale Persistenz:
   `localStorage` unter dem Key `sizigia-roadtrip-2026`.
 - **Cloud-Sync (optional, local-first):** Konstante `CLOUD_URL` oben im Script —
@@ -70,7 +76,7 @@ AGENTS.md                   # Diese Datei (CLAUDE.md verweist hierauf)
   aus `defaultState()` ergänzt). Optionale Felder (z. B. `lat`/`lng` an
   Etappen/Spots) brauchen keine Migration.
 
-## Architektur (in `index.html`)
+## Architektur (in `app.js`)
 
 - Vanilla JS, kein Framework. Jeder Tab hat eine `render<Tab>()`-Funktion,
   die ihren `<section id="page-…">`-Inhalt komplett aus `state` neu aufbaut.

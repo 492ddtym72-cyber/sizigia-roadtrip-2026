@@ -1,7 +1,8 @@
 # HANDOFF — Status
 
-> Stand: 12.07.2026 · **Keine offene Aufgabe.** Cloud-Sync ist eingerichtet,
-> getestet und live. Projektüberblick & Konventionen: [AGENTS.md](AGENTS.md).
+> Stand: 12.07.2026 · Migration auf Branch
+> `codex/cloud-mail-and-file-split`; `main` bleibt der stabile Live-Stand.
+> Projektüberblick & Konventionen: [AGENTS.md](AGENTS.md).
 
 ## Aktueller Zustand ✅
 
@@ -13,7 +14,7 @@
   können das Repo direkt auf GitHub ändern; nach einem Push auf `main` ist die
   Änderung für alle sichtbar. Für geteilte App-Daten nutzt die Live-App
   Firebase Realtime Database, nicht den lokalen Rechner.
-- **Cloud-Sync aktiv:** `CLOUD_URL` in `index.html` zeigt auf die Firebase
+- **Cloud-Sync aktiv:** `CLOUD_URL` in `app.js` zeigt auf die Firebase
   Realtime Database des Projekts `roadtrip-to-sizigia-eclipse`
   (Instanz `roadtrip-to-sizigia-eclipse-default-rtdb`, Region us-central1,
   geheimer Pfad unter `/planner/…`). Regeln: Root gesperrt, nur der geheime
@@ -21,14 +22,17 @@
 - Firebase CLI: `export PATH="/Users/anonymous/.hermes/node/bin:$PATH"`,
   eingeloggt mit Freddis Google-Konto (`firebase login:list`).
   Regeln neu deployen: `firebase deploy --only database --project roadtrip-to-sizigia-eclipse`
-- **Schlafplatz-Radar (Schema V7):** Dauerhaftes Campingplatz-Register
+- **Schlafplatz-Radar (Schema V8 auf dem Migrationsbranch, V7 live):** Dauerhaftes Campingplatz-Register
   (`sleepPlaces`) plus datumsbezogene Anfragen in den Nacht-Suchen. Positionen
   werden einmalig per Karten-Picker oder koordinatenhaltigem Maps-Link erfasst;
   die Offline-Karte zeigt Statusfarben wahlweise pro Nacht oder für die gesamte
   Route. Dazu Plan-B-Status, E-Mail-/Anruf-Aktionen und Verknüpfung zu
-  Erinnerungen sowie Camping-Kontakten. Die Migration übernimmt bestehende
-  Camping-Erinnerungen in „Erste Nacht“ und ergänzt die zuletzt ausgewerteten
-  Antworten (Belvedere, Al Sole, Al Lago, Punta Lago, Schlosshof).
+  Erinnerungen. Die frühere, unvollständige „Camping-Kontakte“-Liste ist nur
+  noch ein unsichtbares Legacy-Archiv; ihre fehlenden Telefon-, Karten- und
+  Notizangaben werden verlustfrei in den Schlafplatz-Radar übernommen. Die
+  Migration übernimmt bestehende Camping-Erinnerungen in „Erste Nacht“ und
+  ergänzt die zuletzt ausgewerteten Antworten (Belvedere, Al Sole, Al Lago,
+  Punta Lago, Schlosshof).
 - **Camping-Mail-Assistent:** Lokale Codex-Automation prüft tagsüber um ca.
   08:00, 14:00 und 20:00 ausschließlich campingbezogene Antworten in iCloud
   Inbox/Sent. `tools/camping-mail-bridge.mjs` liefert konfliktgeschützte
@@ -38,6 +42,12 @@
   zeigt zunächst nur eine zustandslose Vorschau; erst „In Apple Mail öffnen“
   legt einen Send-Intent an. Der fachliche Status ändert sich ausschließlich
   nach Sent-Mail-Erkennung oder manueller Versandbestätigung.
+- **Migrationsbranch:** Die Web-App ist ohne Build-Schritt in `index.html`,
+  `styles.css`, `map-data.js` und `app.js` getrennt. V8 ergänzt lokale/cloud
+  Runner-Gesundheit und eine begrenzte manuelle Prüfwarteschlange. Der
+  GitHub-iCloud-Runner liegt unter `cloud-mail/` und ist ohne die Repository-
+  Variable `MAIL_RUNNER_MODE=shadow|cloud` vollständig deaktiviert. Keine
+  iCloud-Secrets sind eingerichtet; der lokale Mac-Runner bleibt maßgeblich.
 
 ## Beim Sync gelernt (nicht kaputt machen!)
 
