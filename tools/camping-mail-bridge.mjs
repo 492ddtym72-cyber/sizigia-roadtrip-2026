@@ -43,7 +43,7 @@ async function applyEvents(encoded){
       if(e.reviewItem){if(!a.reviewQueue.some(x=>x.id===e.reviewItem.id))a.reviewQueue.push({...e.reviewItem,excerpt:String(e.reviewItem.excerpt||'').slice(0,600)});changed=true;continue;}
       if(e.messageId&&a.processedMessageIds.includes(e.messageId))continue;
       const {candidate,place}=locate(state,e.searchId,e.candidateId);if(!candidate)continue;
-      ['status','reply','replyQuote','nextAction','nextActionDate','price','tax','finalPrice','deposit','bookingRef','cancellationDeadline','arrivalWindow','parking','pitchNote','callWindow','mailMessageId','mailThreadSubject','repliedAt','draftState','confirmedAt'].forEach(k=>{if(e[k]!==undefined)candidate[k]=e[k];});
+      ['status','reply','replyQuote','nextAction','nextActionDate','price','tax','finalPrice','deposit','bookingRef','cancellationDeadline','arrivalWindow','parking','pitchNote','callWindow','mailMessageId','mailThreadSubject','contactedAt','repliedAt','draftState','confirmedAt'].forEach(k=>{if(e[k]!==undefined)candidate[k]=e[k];});
       ['region','email','phone','link','lat','lng'].forEach(k=>{if(e[k]===undefined)return;const target=place||candidate;if(place?.contactVerified===true)return;target[k]=e[k];if(['email','phone','link'].includes(k))target.contactVerified=false;});
       if(e.requestId){const req=a.draftRequests.find(x=>x.id===e.requestId);if(req){if(e.requestStatus)req.status=e.requestStatus;if(e.readyAt)req.readyAt=e.readyAt;if(e.sentAt)req.sentAt=e.sentAt;if(e.error)req.error=e.error;}}
       if(e.messageId&&!a.processedMessageIds.includes(e.messageId))a.processedMessageIds.push(e.messageId);changed=true;
