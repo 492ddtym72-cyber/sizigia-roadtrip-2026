@@ -1,0 +1,563 @@
+{
+  "checkedAt": "2026-07-12",
+  "method": "Research on 2026-07-12. Direct HTTP fetches of campsite websites are blocked by this session's network egress policy, so all facts were taken from search-indexed pages of the campsites' own official domains (domain-restricted queries). Third-party directories, booking platforms and review sites were NOT used as confirmation. Confidence is capped accordingly; 'high' is only used where several official pages and verbatim official documents agree.",
+  "records": [
+    {
+      "originalName": "Camping Mare Monti",
+      "verdict": "corrected",
+      "officialName": "Camping Mare Monti",
+      "area": "Sestri Levante (Riva Trigoso), Liguria",
+      "officialUrl": "https://www.campingmaremonti.com/",
+      "email": "info@campingmaremonti.com",
+      "phone": "+39 0185 44348",
+      "address": "Via Aurelia km 469, 16039 Sestri Levante (GE), Italy",
+      "latitude": 44.2639,
+      "longitude": 9.4419,
+      "acceptsTouringCampers": true,
+      "touringPitchEvidence": {
+        "summary": "Official site has a pitch rates page ('Tariffe') and the official brochure (depliant.pdf) covers pitches; site also advertises camper service. Exact pitch wording could not be read directly (fetch blocked), so evidence is indirect.",
+        "quote": "",
+        "sourceUrl": "https://campingmaremonti.com/rates/"
+      },
+      "policies": {
+        "oneNightStay": "unclear",
+        "minimumStay": "Not published on accessible pages.",
+        "sameDayCall": "unclear",
+        "walkInArrival": "unclear",
+        "receptionHours": "",
+        "additionalCarParking": "unclear"
+      },
+      "corrections": [
+        "Coordinates corrected from 44.2908,9.4147 (Sestri Levante town centre) to 44.2639,9.4419 — official brochure GPS 'N44°15'50\" E9°26'31\"'; campsite is in the hills near Riva Trigoso, ~5 km from town, 1.5 km from the sea."
+      ],
+      "sources": [
+        "https://www.campingmaremonti.com/depliant.pdf",
+        "https://campingmaremonti.com/rates/",
+        "https://campingmaremonti.com/"
+      ],
+      "confidence": "high",
+      "notes": "Recorded phone and email match the official brochure exactly ('Tel. +39 018544348', 'info@campingmaremonti.com'). Mobile +39 347 8901199 also published. Note: campsite is NOT at the beach — hillside location, 1.5 km from the sea. Verified via search-indexed official-domain pages; direct fetch blocked by sandbox network policy.",
+      "replacement": null
+    },
+    {
+      "originalName": "Camping La Pierre Verte",
+      "verdict": "corrected",
+      "officialName": "Camping La Pierre Verte",
+      "area": "Fréjus, Provence East",
+      "officialUrl": "https://www.campinglapierreverte.com/",
+      "email": "com@campinglapierreverte.com",
+      "phone": "+33 4 94 40 88 30",
+      "address": "1880 Route Départementale 4, 83600 Fréjus, France",
+      "latitude": 43.4707,
+      "longitude": 6.7277,
+      "acceptsTouringCampers": true,
+      "touringPitchEvidence": {
+        "summary": "Official site sells camping pitches of 80–100 m² explicitly for tents and camping-cars (classic, comfort+, premium categories), plus a motorhome dump station.",
+        "quote": "Emplacement Camping à Fréjus Classique : Tente ou Camping-car",
+        "sourceUrl": "https://www.campinglapierreverte.com/emplacement-camping/classique/"
+      },
+      "policies": {
+        "oneNightStay": "unclear",
+        "minimumStay": "Rentals: 7-night minimum on some July 2026 offers; no minimum published for touring pitches on accessible pages.",
+        "sameDayCall": "unclear",
+        "walkInArrival": "unclear",
+        "receptionHours": "Pitch arrivals 14:00–19:00 per FAQ; full reception hours not readable.",
+        "additionalCarParking": "unclear"
+      },
+      "corrections": [
+        "Email corrected from contact@campinglapierreverte.com to com@campinglapierreverte.com (address published on the official site)."
+      ],
+      "sources": [
+        "https://www.campinglapierreverte.com/contacter-camping/",
+        "https://www.campinglapierreverte.com/faq/",
+        "https://www.campinglapierreverte.com/emplacement-camping/classique/",
+        "https://www.campinglapierreverte.com/emplacement-camping/premium/"
+      ],
+      "confidence": "medium",
+      "notes": "Phone matches record. FAQ: 1 parking space included at rentals, 2nd space paid supplement — rule for pitches not published. Late arrivals (rentals) handled by night security until midnight. 'Dernière minute' booking page exists. Inland location (~7 km from beaches). Verified via search-indexed official-domain pages; direct fetch blocked by sandbox network policy.",
+      "replacement": null
+    },
+    {
+      "originalName": "Camping Les Restanques",
+      "verdict": "corrected",
+      "officialName": "Camping Les Restanques (Camping Gorges du Verdon)",
+      "area": "Bauduen, Provence East",
+      "officialUrl": "https://www.camping-gorge-verdon.com/",
+      "email": "contact@campinglesrestanques83.com",
+      "phone": "+33 4 94 67 06 00",
+      "address": "Quartier Brun, 83630 Bauduen, France",
+      "latitude": 43.7354,
+      "longitude": 6.1769,
+      "acceptsTouringCampers": true,
+      "touringPitchEvidence": {
+        "summary": "Official site offers touring pitches, e.g. 'Emplacement Eco' of ~80 m² (some with 10A electricity), and describes pitches for tents, caravans, vans and motorhomes.",
+        "quote": "spacious pitches for tents, caravans, vans and motorhomes",
+        "sourceUrl": "https://www.camping-gorge-verdon.com/camping-paca/"
+      },
+      "policies": {
+        "oneNightStay": "unclear",
+        "minimumStay": "Not published on accessible pages.",
+        "sameDayCall": "unclear",
+        "walkInArrival": "unclear",
+        "receptionHours": "",
+        "additionalCarParking": "unclear"
+      },
+      "corrections": [
+        "Website corrected: recorded domain camping-les-restanques.com does not exist (no DNS); official site is camping-gorge-verdon.com.",
+        "Email corrected from info@camping-les-restanques.com to contact@campinglesrestanques83.com.",
+        "Phone corrected from +33 4 94 70 08 67 to +33 4 94 67 06 00."
+      ],
+      "sources": [
+        "https://www.camping-gorge-verdon.com/contact-acces/",
+        "https://www.camping-gorge-verdon.com/hebergement/emplacement-eco/",
+        "https://www.camping-gorge-verdon.com/camping-paca/",
+        "https://www.camping-gorge-verdon.com/mentions-legales/"
+      ],
+      "confidence": "medium",
+      "notes": "3-star family campsite, 20-ha estate, ~3 km from Lac de Sainte-Croix. Coordinates from record kept (not contradicted; not officially published). Verified via search-indexed official-domain pages; direct fetch blocked by sandbox network policy.",
+      "replacement": null
+    },
+    {
+      "originalName": "Camping Rives du Lac de Sainte-Croix",
+      "verdict": "corrected",
+      "officialName": "Camping Tikayan Rives du Lac de Sainte Croix",
+      "area": "Bauduen, Provence East",
+      "officialUrl": "https://www.tikayan.com/fr/camping-rives-du-lac-de-sainte-croix-accueil",
+      "email": "contact@camping-lac-sainte-croix.fr",
+      "phone": "+33 4 94 70 05 44",
+      "address": "Quartier Notre Dame, Chemin de la Blache, RD 71, 83630 Bauduen, France",
+      "latitude": 43.7379,
+      "longitude": 6.1725,
+      "acceptsTouringCampers": true,
+      "touringPitchEvidence": {
+        "summary": "Official Tikayan pages describe stays in tent, caravan or motorhome on an 11-ha shaded site with motorhome emptying area; beach reachable via 300 m footpath.",
+        "quote": "During your stay in tent, caravan or motorhome in the Verdon",
+        "sourceUrl": "https://www.tikayan.com/en/rives-du-lac-de-sainte-croix-services"
+      },
+      "policies": {
+        "oneNightStay": "unclear",
+        "minimumStay": "Not published on accessible pages.",
+        "sameDayCall": "unclear",
+        "walkInArrival": "unclear",
+        "receptionHours": "Office: Mon–Thu 09:00–13:00 / 14:00–18:00; Fri–Sat 09:00–13:00 / 14:00–19:00.",
+        "additionalCarParking": "unclear"
+      },
+      "corrections": [
+        "Website corrected: recorded domain camping-rivesdulac.com does not exist (no DNS); campsite is operated by the Tikayan chain, official page on tikayan.com.",
+        "Email corrected from info@camping-rivesdulac.com to contact@camping-lac-sainte-croix.fr.",
+        "Phone corrected from +33 4 94 70 08 08 to +33 4 94 70 05 44."
+      ],
+      "sources": [
+        "https://www.tikayan.com/en/rives-du-lac-de-sainte-croix-access-contact",
+        "https://www.tikayan.com/en/rives-du-lac-de-sainte-croix-services",
+        "https://www.tikayan.com/en/rives-du-lac-de-sainte-croix-home-page"
+      ],
+      "confidence": "medium",
+      "notes": "3-star campsite ~300 m from Lac de Sainte-Croix. Coordinates from record kept (consistent with published address; not officially published as GPS). Verified via search-indexed official-domain pages; direct fetch blocked by sandbox network policy.",
+      "replacement": null
+    },
+    {
+      "originalName": "Camping Cayola",
+      "verdict": "corrected",
+      "officialName": "Camping Paradis Le Cayola",
+      "area": "Vias-Plage, Languedoc",
+      "officialUrl": "https://www.campingcayola.fr/",
+      "email": "campingcayola@orange.fr",
+      "phone": "+33 4 67 90 01 85",
+      "address": "La Kabylie, Côte Ouest, 34450 Vias-Plage, France",
+      "latitude": 43.2877,
+      "longitude": 3.3702,
+      "acceptsTouringCampers": true,
+      "touringPitchEvidence": {
+        "summary": "Official site has a dedicated page for touring pitches of 80–100 m² for tents, caravans and motorhomes; 172 pitches total, 450 m from the beach.",
+        "quote": "Camping pitches Vias : Pitches for tents, caravans, motorhomes",
+        "sourceUrl": "https://www.campingcayola.fr/en/pitches-campsite-caravanning-vias/"
+      },
+      "policies": {
+        "oneNightStay": "unclear",
+        "minimumStay": "Not published on accessible pages.",
+        "sameDayCall": "unclear",
+        "walkInArrival": "unclear",
+        "receptionHours": "",
+        "additionalCarParking": "unclear"
+      },
+      "corrections": [
+        "Official name is 'Camping Paradis Le Cayola' (Camping Paradis network, 4 stars).",
+        "Phone corrected from +33 4 67 21 66 66 to +33 4 67 90 01 85 (published reception number).",
+        "Email corrected from info@campingcayola.fr to campingcayola@orange.fr (address published on the official site)."
+      ],
+      "sources": [
+        "https://www.campingcayola.fr/en/pitches-campsite-caravanning-vias/",
+        "https://www.campingcayola.fr/en/contact-access-campsite-vias/",
+        "https://www.campingcayola.fr/camping-derniere-minute/"
+      ],
+      "confidence": "medium",
+      "notes": "Recorded website URL was correct. A 'camping dernière minute' (last-minute) page exists, suggesting short-notice bookings are normal, but same-day/walk-in policy is not explicitly published. Coordinates from record kept (not officially published; not verifiable here). Verified via search-indexed official-domain pages; direct fetch blocked by sandbox network policy.",
+      "replacement": null
+    },
+    {
+      "originalName": "Camping Club Farret",
+      "verdict": "corrected",
+      "officialName": "Yelloh! Village Le Club Farret",
+      "area": "Vias-Plage, Languedoc",
+      "officialUrl": "https://www.camping-farret.com/",
+      "email": "info@farret.com",
+      "phone": "+33 4 67 21 64 45",
+      "address": "Chemin des Rosses, 34450 Vias-Plage, France",
+      "latitude": 43.2946,
+      "longitude": 3.4176,
+      "acceptsTouringCampers": true,
+      "touringPitchEvidence": {
+        "summary": "Official site rents touring pitches (e.g. 'Beach Farret' pitch category); 5-star beachfront campsite with pitches and rentals.",
+        "quote": "Beach Farret pitches rental in Vias Plage",
+        "sourceUrl": "https://www.camping-farret.com/en/locations-vias/beach-farret"
+      },
+      "policies": {
+        "oneNightStay": "unclear",
+        "minimumStay": "Not published on accessible pages.",
+        "sameDayCall": "unclear",
+        "walkInArrival": "unclear",
+        "receptionHours": "",
+        "additionalCarParking": "unclear"
+      },
+      "corrections": [
+        "Website corrected: official site is camping-farret.com (recorded farret.com resolves and is the campsite's e-mail domain, but the published site is camping-farret.com).",
+        "Official name is 'Yelloh! Village Le Club Farret' (Yelloh! Village network)."
+      ],
+      "sources": [
+        "https://www.camping-farret.com/en/",
+        "https://www.camping-farret.com/media/site/bf2993fdfb-1699292112/club-farret-vias-hebergements-2024_compressed.pdf",
+        "https://www.camping-farret.com/en/locations-vias/beach-farret"
+      ],
+      "confidence": "high",
+      "notes": "Recorded email and phone confirmed verbatim by the official brochure PDF hosted on camping-farret.com: 'LE CLUB FARRET 34450 VIAS-PLAGE info@farret.com • +33 (0)467 21 64 45'. Verified via search-indexed official-domain pages; direct fetch blocked by sandbox network policy.",
+      "replacement": null
+    },
+    {
+      "originalName": "Camping Les Mimosas",
+      "verdict": "corrected",
+      "officialName": "Camping Les Mimosas (Portiragnes-Plage)",
+      "area": "Portiragnes, Languedoc",
+      "officialUrl": "https://www.mimosas.com/",
+      "email": "mimosas@mimosas.com",
+      "phone": "+33 4 67 90 92 92",
+      "address": "Port Cassafières, 34420 Portiragnes-Plage, France",
+      "latitude": 43.2818,
+      "longitude": 3.3457,
+      "acceptsTouringCampers": true,
+      "touringPitchEvidence": {
+        "summary": "Official site states the 5-star campsite has 400 camping-caravanning pitches in addition to rental accommodation.",
+        "quote": "400 emplacements pour camping-caravaning",
+        "sourceUrl": "https://www.mimosas.com/fr/"
+      },
+      "policies": {
+        "oneNightStay": "unclear",
+        "minimumStay": "Not published on accessible pages.",
+        "sameDayCall": "unclear",
+        "walkInArrival": "unclear",
+        "receptionHours": "",
+        "additionalCarParking": "unclear"
+      },
+      "corrections": [
+        "Website corrected: recorded camping-les-mimosas.com is a parked 'Domain Default page' with no content; the official site is mimosas.com.",
+        "Email corrected from contact@campinglesmimosas.com to mimosas@mimosas.com.",
+        "Phone corrected from +33 4 67 90 90 55 to +33 4 67 90 92 92."
+      ],
+      "sources": [
+        "https://www.mimosas.com/fr/contact-acces",
+        "https://www.mimosas.com/fr/mentions-legales",
+        "https://www.mimosas.com/fr/tarifs"
+      ],
+      "confidence": "medium",
+      "notes": "Do not confuse with same-named campsites elsewhere (e.g. Narbonne). Coordinates from record kept (not contradicted; not officially published). Verified via search-indexed official-domain pages; direct fetch blocked by sandbox network policy.",
+      "replacement": null
+    },
+    {
+      "originalName": "Camping Beau Rivage",
+      "verdict": "corrected",
+      "officialName": "Camping Beau Rivage (Ciela Village / Koawa)",
+      "area": "Mèze, Languedoc",
+      "officialUrl": "https://www.camping-beaurivage.fr/",
+      "email": "beau-rivage@koawa.com",
+      "phone": "+33 4 66 60 07 00",
+      "address": "34140 Mèze, France (shore of the Étang de Thau)",
+      "latitude": 43.4257,
+      "longitude": 3.6123,
+      "acceptsTouringCampers": true,
+      "touringPitchEvidence": {
+        "summary": "Official site sells ~80 m² touring pitches for tents, caravans and camping-cars with electricity, e.g. the 'Grand Confort' pitch product page.",
+        "quote": "Pitch Grand Confort, 6 Amp - Evacuation",
+        "sourceUrl": "https://www.camping-beaurivage.fr/en/c-pitches/pitch-grand-confort-6-amp-evacuation-15179"
+      },
+      "policies": {
+        "oneNightStay": "unclear",
+        "minimumStay": "Not published for pitches on accessible pages.",
+        "sameDayCall": "unclear",
+        "walkInArrival": "unclear",
+        "receptionHours": "Pitch check-in from 14:00, departure by 12:00 (FAQ); full reception hours not readable.",
+        "additionalCarParking": "unclear"
+      },
+      "corrections": [
+        "Campsite now operated within the Ciela Village / Koawa group.",
+        "Email corrected from contact@camping-beaurivage.fr to beau-rivage@koawa.com (published on official contact page).",
+        "Phone corrected from +33 4 67 43 81 58 to +33 4 66 60 07 00 (published on official contact page; group booking line)."
+      ],
+      "sources": [
+        "https://www.camping-beaurivage.fr/contact/",
+        "https://www.camping-beaurivage.fr/fr/faq-camping-meze",
+        "https://www.camping-beaurivage.fr/en/c-pitches/pitch-grand-confort-6-amp-evacuation-15179"
+      ],
+      "confidence": "medium",
+      "notes": "Recorded website URL was correct. FAQ: outside July/August late checkout possible for a fee (8 EUR pitches). Exact street address not readable on accessible pages. Coordinates from record kept. Verified via search-indexed official-domain pages; direct fetch blocked by sandbox network policy.",
+      "replacement": null
+    },
+    {
+      "originalName": "Les Criques de Porteils",
+      "verdict": "corrected",
+      "officialName": "Camping Les Criques de Porteils",
+      "area": "Argelès-sur-Mer / Collioure, Côte Vermeille",
+      "officialUrl": "https://www.lescriques.com/",
+      "email": "contactcdp@lescriques.com",
+      "phone": "+33 4 68 81 12 73",
+      "address": "RD114, Route de Collioure, 66700 Argelès-sur-Mer, France",
+      "latitude": 42.5362,
+      "longitude": 3.0729,
+      "acceptsTouringCampers": true,
+      "touringPitchEvidence": {
+        "summary": "Official prices page: pitch prices include the pitch, one car and one or two people; pitches for tents, caravans and camping-cars (242 pitches, 5 stars, clifftop above coves).",
+        "quote": "",
+        "sourceUrl": "https://www.lescriques.co.uk/prices-special-offers-camping-argeles-sur-mer/"
+      },
+      "policies": {
+        "oneNightStay": "unclear",
+        "minimumStay": "Not published on accessible pages (see general booking conditions page).",
+        "sameDayCall": "unclear",
+        "walkInArrival": "unclear",
+        "receptionHours": "Phone contact Mon–Fri 09:00–16:00 (contact page); on-site reception hours not readable.",
+        "additionalCarParking": "unclear"
+      },
+      "corrections": [
+        "Phone corrected from +33 4 68 81 05 42 to +33 4 68 81 12 73.",
+        "Email corrected from contact@lescriques.com to contactcdp@lescriques.com."
+      ],
+      "sources": [
+        "https://www.lescriques.co.uk/contact-us/",
+        "https://www.lescriques.co.uk/prices-special-offers-camping-argeles-sur-mer/",
+        "https://www.lescriques.co.uk/general-booking-conditions/"
+      ],
+      "confidence": "medium",
+      "notes": "lescriques.co.uk is the campsite's own English-language site (same establishment as lescriques.com; source URLs use the indexed .co.uk pages). Pitch price includes only ONE car — an additional small car is likely a paid extra; confirm when contacting. Coordinates from record kept. Verified via search-indexed official-domain pages; direct fetch blocked by sandbox network policy.",
+      "replacement": null
+    },
+    {
+      "originalName": "Camping La Chapelle",
+      "verdict": "corrected",
+      "officialName": "Camping La Chapelle (Marvilla Parks)",
+      "area": "Argelès-sur-Mer, Côte Vermeille",
+      "officialUrl": "https://www.camping-la-chapelle.com/",
+      "email": null,
+      "phone": "+33 9 77 55 52 58",
+      "address": "Avenue du Tech, 66700 Argelès-sur-Mer, France",
+      "latitude": 42.5518,
+      "longitude": 3.0376,
+      "acceptsTouringCampers": true,
+      "touringPitchEvidence": {
+        "summary": "Official site has a dedicated touring-pitches page: pitches for tents and motorhomes for up to 6 people with electricity connections.",
+        "quote": "Our campsite pitches in Argelès-sur-Mer | Camping La Chapelle",
+        "sourceUrl": "https://www.camping-la-chapelle.com/en/campsite-pitches/"
+      },
+      "policies": {
+        "oneNightStay": "unclear",
+        "minimumStay": "Not published on accessible pages.",
+        "sameDayCall": "unclear",
+        "walkInArrival": "unclear",
+        "receptionHours": "Low season 08:00–13:00 / 14:00–19:00; high season 08:00–13:00 / 14:00–20:00; Saturdays 11 Jul–20 Aug 08:00–20:00.",
+        "additionalCarParking": "unclear"
+      },
+      "corrections": [
+        "Website corrected: recorded domain camping-lachapelle.com does not exist (no DNS); official site is camping-la-chapelle.com (Marvilla Parks).",
+        "Phone corrected from +33 4 68 81 03 83 to +33 9 77 55 52 58 (published on official contact page).",
+        "Recorded email contact@camping-lachapelle.com is invalid (dead domain); no e-mail address published on accessible official pages — contact is via phone or the website contact form."
+      ],
+      "sources": [
+        "https://www.camping-la-chapelle.com/en/contact-access/",
+        "https://www.camping-la-chapelle.com/en/campsite-pitches/",
+        "https://www.camping-la-chapelle.com/en/faq/"
+      ],
+      "confidence": "medium",
+      "notes": "5-star campsite opposite the Argelès-sur-Mer tourist office, near the beach. E-mail unknown — the app's e-mail action should stay locked for this record; use phone/contact form. Coordinates from record kept. Verified via search-indexed official-domain pages; direct fetch blocked by sandbox network policy.",
+      "replacement": null
+    },
+    {
+      "originalName": "Camping Les Marsouins",
+      "verdict": "corrected",
+      "officialName": "Camping Les Marsouins (Ciela Village)",
+      "area": "Argelès-sur-Mer, Côte Vermeille",
+      "officialUrl": "https://lesmarsouins.cielavillage.fr/",
+      "email": "lesmarsouins@cielavillage.com",
+      "phone": "+33 4 68 81 14 81",
+      "address": "Avenue de la Retirada 1939, 66700 Argelès-sur-Mer, France",
+      "latitude": 42.5686,
+      "longitude": 3.0298,
+      "acceptsTouringCampers": true,
+      "touringPitchEvidence": {
+        "summary": "Official pitches page: classic (60–80 m², tents only), comfort (90 m² for tents, caravans or campers, electricity included) and luxury pitches with water/electricity/drainage; RV service area on site.",
+        "quote": "Nos emplacements camping à Argelès-sur-Mer",
+        "sourceUrl": "https://lesmarsouins.cielavillage.fr/en/pitches-argeles-sur-mer/"
+      },
+      "policies": {
+        "oneNightStay": "unclear",
+        "minimumStay": "Not published on accessible pages.",
+        "sameDayCall": "unclear",
+        "walkInArrival": "unclear",
+        "receptionHours": "",
+        "additionalCarParking": "unclear"
+      },
+      "corrections": [
+        "Website corrected: official site is lesmarsouins.cielavillage.fr (Ciela Village); recorded camping-les-marsouins.com resolves but is not the published official site.",
+        "Email corrected from contact@camping-les-marsouins.com to lesmarsouins@cielavillage.com."
+      ],
+      "sources": [
+        "https://lesmarsouins.cielavillage.fr/en/contact/",
+        "https://lesmarsouins.cielavillage.fr/en/pitches-argeles-sur-mer/",
+        "https://cielavillage.fr/campings/les-marsouins-argeles-sur-mer/"
+      ],
+      "confidence": "medium",
+      "notes": "Recorded phone matches the official site. 5-star campsite 800 m from the beach. Note: 'Classic' pitches are tents-only — the camper needs a comfort/luxury pitch. Coordinates from record kept. Verified via search-indexed official-domain pages; direct fetch blocked by sandbox network policy.",
+      "replacement": null
+    },
+    {
+      "originalName": "Camping Peña Montañesa",
+      "verdict": "corrected",
+      "officialName": "Camping Peña Montañesa",
+      "area": "Labuerda / Aínsa, Huesca",
+      "officialUrl": "https://www.penamontanesa.com/",
+      "email": "info@penamontanesa.com",
+      "phone": "+34 974 500 032",
+      "address": "Ctra. Aínsa–Francia km 2, 22360 Labuerda (Huesca), Spain",
+      "latitude": 42.4505,
+      "longitude": 0.1356,
+      "acceptsTouringCampers": true,
+      "touringPitchEvidence": {
+        "summary": "Official 'Parcelas' page: shaded hedge-delimited pitches for up to 6 people including car/motorcycle plus caravan, tent or motorhome, with electricity; dedicated 'parcela de paso' transit pitches for passing motorhomes.",
+        "quote": "Parcelas - Camping Peña Montañesa",
+        "sourceUrl": "https://www.penamontanesa.com/parcelas/"
+      },
+      "policies": {
+        "oneNightStay": "confirmed",
+        "minimumStay": "No minimum published; dedicated one-night transit pitches ('parcela de paso') exist for motorhomes: check-in from 20:00, departure before 10:00.",
+        "sameDayCall": "unclear",
+        "walkInArrival": "unclear",
+        "receptionHours": "08:00–22:30.",
+        "additionalCarParking": "unclear"
+      },
+      "corrections": [
+        "Website corrected: official site is penamontanesa.com (recorded campingpenamontanesa.com resolves but is not the published official site).",
+        "Email corrected from info@campingpenamontanesa.com to info@penamontanesa.com (published on official site)."
+      ],
+      "sources": [
+        "https://www.penamontanesa.com/localizacion/",
+        "https://www.penamontanesa.com/parcelas/",
+        "https://www.penamontanesa.com/preguntas-frecuentes/",
+        "https://www.penamontanesa.com/tarifas/tarifas-camping/"
+      ],
+      "confidence": "high",
+      "notes": "Recorded phone matches official site (Tel. 974 500 032, Fax 974 500 991). Standard pitch includes ONE car — clarify extra-car fee when booking. 2 km from Aínsa, gateway to Ordesa; well positioned for the Sizigia route. Coordinates from record kept (consistent with published address). Verified via search-indexed official-domain pages; direct fetch blocked by sandbox network policy.",
+      "replacement": null
+    },
+    {
+      "originalName": "Camping Río Ara",
+      "verdict": "replace",
+      "officialName": "",
+      "area": "Fiscal, Huesca",
+      "officialUrl": "",
+      "email": null,
+      "phone": null,
+      "address": "",
+      "latitude": null,
+      "longitude": null,
+      "acceptsTouringCampers": null,
+      "touringPitchEvidence": {
+        "summary": "No campsite named 'Camping Río Ara' could be verified in Fiscal. The recorded domain campingrioara.com does not exist (no DNS), so the recorded email and website are unusable. A campsite of that name exists in Torla-Ordesa (~15 km away), but the recorded coordinates and phone prefix point to Fiscal, where the actual campsite is 'Camping Ribera del Ara'.",
+        "quote": "",
+        "sourceUrl": ""
+      },
+      "policies": {
+        "oneNightStay": "unclear",
+        "minimumStay": "",
+        "sameDayCall": "unclear",
+        "walkInArrival": "unclear",
+        "receptionHours": "",
+        "additionalCarParking": "unclear"
+      },
+      "corrections": [
+        "Recorded website campingrioara.com: domain does not exist (no DNS resolution).",
+        "Recorded email info@campingrioara.com: unusable (dead domain).",
+        "Recorded phone +34 974 503 020 could not be confirmed for any campsite; the Fiscal campsite's published number is +34 974 503 035."
+      ],
+      "sources": [
+        "https://www.riberadelara.com/"
+      ],
+      "confidence": "low",
+      "notes": "Record appears to be a garbled reference to Camping Ribera del Ara in Fiscal (same location, near-identical phone number). Replaced with that campsite, verified below. Direct fetch blocked by sandbox network policy; verification via search-indexed official-domain pages.",
+      "replacement": {
+        "originalName": "Camping Ribera del Ara",
+        "verdict": "verified",
+        "officialName": "Camping Ribera del Ara",
+        "area": "Fiscal, Huesca",
+        "officialUrl": "https://www.riberadelara.com/",
+        "email": null,
+        "phone": "+34 974 503 035",
+        "address": "Ctra. Nacional N-260 km 464,2, 22373 Fiscal (Huesca), Spain",
+        "latitude": null,
+        "longitude": null,
+        "acceptsTouringCampers": true,
+        "touringPitchEvidence": {
+          "summary": "Official site: the campsite offers parcelas (touring pitches) with electric hookups for caravans, alongside bungalows, bengalis and mobile homes; sanitary blocks with hot water.",
+          "quote": "dispone de Parcelas, Bungalows, Bengalis y Mobil Homes",
+          "sourceUrl": "https://www.riberadelara.com/"
+        },
+        "policies": {
+          "oneNightStay": "unclear",
+          "minimumStay": "Not published on accessible pages.",
+          "sameDayCall": "unclear",
+          "walkInArrival": "unclear",
+          "receptionHours": "",
+          "additionalCarParking": "unclear"
+        },
+        "corrections": [],
+        "sources": [
+          "https://www.riberadelara.com/",
+          "https://www.riberadelara.com/contacto",
+          "https://www.riberadelara.com/localizacion",
+          "https://riberadelara.com/enlaces"
+        ],
+        "confidence": "medium",
+        "notes": "On the N-260 between Boltaña and Broto, on the river Ara — fits the Fiscal corridor toward Ordesa. No e-mail published on accessible pages (contact via phone or website; online booking link on the 'enlaces' page) — keep e-mail action locked. Coordinates not officially published; set from map before use (campsite is at N-260 km 464.2 by Fiscal, close to the recorded 42.4914,-0.1203).",
+        "replacement": null
+      }
+    }
+  ],
+  "summary": {
+    "safeToUnlock": [
+      "Camping Mare Monti",
+      "Camping Club Farret"
+    ],
+    "requiresCorrections": [
+      "Camping La Pierre Verte",
+      "Camping Les Restanques",
+      "Camping Rives du Lac de Sainte-Croix",
+      "Camping Cayola",
+      "Camping Les Mimosas",
+      "Camping Beau Rivage",
+      "Les Criques de Porteils",
+      "Camping La Chapelle",
+      "Camping Les Marsouins",
+      "Camping Peña Montañesa"
+    ],
+    "shouldBeReplaced": [
+      "Camping Río Ara"
+    ],
+    "stillUnknown": []
+  }
+}
