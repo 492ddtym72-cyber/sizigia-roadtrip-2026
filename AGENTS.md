@@ -38,7 +38,7 @@ AGENTS.md                   # Diese Datei (CLAUDE.md verweist hierauf)
 
 ## Datenmodell & Persistenz
 
-- Ein einziges State-Objekt (`state`) mit `schemaVersion` (aktuell `8`),
+- Ein einziges State-Objekt (`state`) mit `schemaVersion` (aktuell `9`),
   definiert in `defaultState()` in `app.js`.
 - **`StorageAdapter`** (`load()` / `save(state)`) kapselt die lokale Persistenz:
   `localStorage` unter dem Key `sizigia-roadtrip-2026`.

@@ -20,16 +20,7 @@ function assistant(state){const a=state.mailAssistant||(state.mailAssistant={});
 function candidates(state){const places=new Map((state.sleepPlaces||[]).map(p=>[p.id,p]));return (state.sleepSearches||[]).flatMap(search=>(search.candidates||[]).map(candidate=>{const p=places.get(candidate.placeId)||{};return {searchId:search.id,candidateId:candidate.id,name:p.name||candidate.name,email:p.email||candidate.email,threadSubject:candidate.mailThreadSubject||'',dateLabel:search.dateLabel};}));}
 function locate(state,event){const search=(state.sleepSearches||[]).find(x=>x.id===event.searchId),candidate=search?.candidates?.find(x=>x.id===event.candidateId),place=(state.sleepPlaces||[]).find(x=>x.id===candidate?.placeId);return {search,candidate,place};}
 function syncDerived(state,search,candidate,place){
-  state.reminders=Array.isArray(state.reminders)?state.reminders:[];
-  let reminder=state.reminders.find(x=>x.id===candidate.reminderId);const name=place?.name||candidate.name;
-  if(['awaiting','available','reserving','deposit_required','followup','booked','unavailable'].includes(candidate.status)){
-    const title=candidate.status==='available'?`${name} reservieren · ${search.dateLabel}`:candidate.status==='reserving'?`${name}: Reservierungsbestätigung abwarten · ${search.dateLabel}`:candidate.status==='deposit_required'?`${name}: Anzahlung prüfen · ${search.dateLabel}`:candidate.status==='followup'?`${name} erneut mailen`:`${name} ${search.dateLabel}${candidate.status==='booked'?' ✅ bestätigt':candidate.status==='unavailable'?' ❌':''}`;
-    if(!reminder){reminder={id:`mail-${crypto.randomUUID()}`,title,done:false,priority:false,createdAt:nowIso(),createdBy:'Mail-Assistent'};state.reminders.unshift(reminder);candidate.reminderId=reminder.id;}
-    reminder.title=title;reminder.done=['booked','unavailable'].includes(candidate.status);reminder.priority=candidate.status==='available';
-  }
-  if(candidate.status==='call'){
-    if(reminder)reminder.done=true;
-  }
+  candidate.reminderId=null;
 }
 function logMailChange(state,name,desc='ausgewertet'){state.log=Array.isArray(state.log)?state.log:[];state.log.push({id:`mail-${crypto.randomUUID()}`,ts:nowIso(),who:'Mail-Assistent',desc:`hat die Antwort von „${name}“ ${desc}`,undo:null});state.log=state.log.slice(-60);}
 async function acquireLease(){let acquired=false;await updateState(state=>{const a=assistant(state),until=Date.parse(a.lease?.expiresAt||'');if(until>Date.now()&&a.lease.owner!==OWNER)return false;a.lease={owner:OWNER,expiresAt:new Date(Date.now()+LEASE_MS).toISOString()};acquired=true;return true;});if(!acquired)throw new Error('Ein anderer Mail-Check läuft bereits');}
@@ -47,7 +38,7 @@ async function applyEvents(events){return updateState(state=>{
   const a=assistant(state);
   for(const e of events){
     if(e.type==='draft'){const req=a.draftRequests.find(x=>x.id===e.requestId);if(req&&req.status==='requested'){req.status='ready';req.readyAt=e.readyAt;}continue;}
-    if(e.type==='sent'){const req=a.draftRequests.find(x=>x.id===e.requestId),{search,candidate,place}=locate(state,e);if(req&&candidate&&req.status==='ready'){req.status='sent_detected';req.sentAt=e.sentAt;candidate.status='reserving';candidate.draftState='sent';candidate.contactedAt=e.sentAt;candidate.nextAction='Auf definitive Bestätigung warten';syncDerived(state,search,candidate,place);logMailChange(state,place?.name||candidate.name,'als gesendet erkannt');}continue;}
+    if(e.type==='sent'){const req=a.draftRequests.find(x=>x.id===e.requestId),{search,candidate,place}=locate(state,e);if(req&&candidate&&req.status==='ready'){const policy=['network_policy','inquiry','followup'].includes(req.template);req.status='sent_detected';req.sentAt=e.sentAt;candidate.status=policy?'awaiting':'reserving';candidate.draftState='sent';candidate.contactedAt=e.sentAt;candidate.nextAction=policy?'Auf Antwort warten':'Auf definitive Bestätigung warten';syncDerived(state,search,candidate,place);logMailChange(state,place?.name||candidate.name,'als gesendet erkannt');}continue;}
     if(!e.result)continue;
     if(mode==='shadow'){const key=messageFingerprint(e.messageId);if(!a.shadowResults.some(x=>x.messageFingerprint===key))a.shadowResults.push({messageFingerprint:key,candidateId:e.candidateId,predictedStatus:e.result.status,at:nowIso()});continue;}
     const {search,candidate,place}=locate(state,e);if(!candidate)continue;

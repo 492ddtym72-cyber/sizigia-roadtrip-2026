@@ -9,6 +9,7 @@ const cases=[
   ['Potete arrivare senza prenotazione, ma non possiamo garantire la disponibilità.','call'],
   ['Per confermare la prenotazione è richiesta una caparra.','deposit_required'],
   ['Your reservation is confirmed.','booked'],
+  ['We accept reservations for one-night touring pitches. Please contact us when your exact date is known.','reservable'],
   ['Thank you for your message. We will see what happens.','review']
 ];
 for(const [body,status] of cases)assert.equal(classifyReply(body).status,status,body);

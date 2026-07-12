@@ -6,6 +6,7 @@ const RX={
   call:/\b(?:welcome|feel free) to call\b|\bcall us\b|\bphone us\b|\banrufen\b|\btelefonisch\b|\bchiam(?:are|ate|arci)\b|\barrive without (?:a )?reservation\b|\bwithout reservation\b|\bohne reservierung\b|\bsenza prenotazione\b|\bwalk[ -]?in\b/i,
   followup:/\b(?:ask|check|contact|email|write) again\b|\ba few days before\b|\bcloser to (?:the )?date\b|\bkurz vor(?:her| der reise)?\b|\bnoch einmal (?:anfragen|nachfragen|melden)\b|\bricontatt(?:are|ate|arci)\b|\bqualche giorno prima\b/i,
   available:/\b(?:we |still )?have (?:a few |some )?(?:pitches|places|availability)\b|\b(?:pitch|place) (?:is )?available\b|\bcan offer\b|\bverfügbar\b|\bfrei(?:e|en|er)? (?:stellplätze?|plätze?)\b|\bposto disponibile\b|\bdisponibilità\b|\babbiamo (?:alcune?|un) piazzol/i,
+  reservable:/\b(?:accept|take|offer) (?:advance )?reservations?\b|\bone[- ]night (?:stays?|bookings?|reservations?)\b|\bshort stays? (?:are )?(?:accepted|possible|bookable)\b|\breservations? (?:are )?possible\b|\bkurzaufenthalt\b|\bein[- ]nacht[- ](?:aufenthalt|buchung)\b|\bprenotazioni? (?:sono )?(?:possibili|accettate)\b/i,
   unavailable:/\bfully booked\b|\bno (?:pitches?|places?|availability)\b|\bnot available\b|\bkeine (?:stellplätze?|plätze?|verfügbarkeit)\b|\bausgebucht\b|\bcompletamente prenotat[oi]\b|\bnessuna disponibilità\b|\bnon (?:abbiamo|c['’]è) disponibilità\b|\besaurit[oi]\b/i,
   parking:/\b(?:small )?car\b|\bparking\b|\bpark(?:ed|ing)?\b|\bkleinwagen\b|\bparkplatz\b|\bauto\b|\bparcheggio\b/i
 };
@@ -47,11 +48,12 @@ export function classifyReply(value=''){
   if(hits.confirmed){status='booked';summary='Der Campingplatz bestätigt die Reservierung ausdrücklich.';nextAction='Buchungsdaten und Zahlungsbedingungen prüfen';}
   else if(hits.deposit){status='deposit_required';summary='Der Platz ist grundsätzlich möglich; für die Buchung wird eine Anzahlung verlangt.';nextAction='Anzahlung, Frist und Zahlungsreferenz prüfen';}
   else if(hits.call){status='call';summary=hits.unavailable?'Aktuell ist kein fester Platz frei, aber ein spontaner Anruf oder eine Anreise ohne Reservierung wurde ausdrücklich angeboten.':'Der Campingplatz erlaubt eine spontane telefonische Anfrage oder Anreise ohne Reservierung.';nextAction='Am Reisetag im angegebenen Zeitfenster anrufen';}
-  else if(hits.followup){status='followup';summary=hits.unavailable?'Aktuell ist kein Platz frei; der Campingplatz bittet um eine erneute Anfrage kurz vor der Reise.':'Der Campingplatz empfiehlt, kurz vor der Reise erneut nachzufragen.';nextAction='Kurz vor der Reise erneut anfragen';}
   else if(hits.available&&!hits.unavailable){status='available';summary='Der Campingplatz meldet einen verfügbaren Stellplatz oder eine reservierbare Möglichkeit.';nextAction='Angebot und Reservierungsbedingungen prüfen';}
+  else if(hits.reservable&&!hits.unavailable){status='reservable';summary='Der Campingplatz akzeptiert grundsätzlich Reservierungen für einen kurzen Aufenthalt; die konkrete Nacht ist noch nicht bestätigt.';nextAction='Sobald die Route feststeht, konkrete Nacht anfragen';}
+  else if(hits.followup){status='followup';summary=hits.unavailable?'Aktuell ist kein Platz frei; der Campingplatz bittet um eine erneute Anfrage kurz vor der Reise.':'Der Campingplatz empfiehlt, kurz vor der Reise erneut nachzufragen.';nextAction='Kurz vor der Reise erneut anfragen';}
   else if(hits.unavailable&&!hits.available){status='unavailable';summary='Der Campingplatz hat für den angefragten Zeitraum keinen nutzbaren Stellplatz.';nextAction='Keine weitere Aktion';}
   if(!status||hits.available&&hits.unavailable&&!hits.call&&!hits.followup)return {status:'review',confidence:'low',summary:'Die Antwort ist nicht eindeutig und muss manuell geprüft werden.',nextAction:'Mit Codex oder direkt in der App prüfen',excerpt:safeExcerpt(text),replyQuote:''};
-  const evidenceRx=status==='booked'?RX.confirmed:status==='deposit_required'?RX.deposit:status==='call'?RX.call:status==='followup'?RX.followup:status==='available'?RX.available:RX.unavailable;
+  const evidenceRx=status==='booked'?RX.confirmed:status==='deposit_required'?RX.deposit:status==='call'?RX.call:status==='followup'?RX.followup:status==='available'?RX.available:status==='reservable'?RX.reservable:RX.unavailable;
   return {status,confidence:'high',summary,nextAction,excerpt:safeExcerpt(text),replyQuote:firstEvidenceSentence(text,evidenceRx),mentionsParking:hits.parking};
 }
 
