@@ -1693,7 +1693,9 @@ function placeSuggestions(){
    transform (billig). Am Gesten-Ende wird die Karte neu aufgebaut, damit
    Marker/Labels gegenskaliert scharf und konstant groß bleiben. --- */
 const MAP_VIEWS = {};           // id → {z, cx, cy, rebuild, onTap, autoPos?}
-const MAPV_MIN=1, MAPV_MAX=7;
+// Hoher Maximalzoom ist für dicht beieinanderliegende Campingplätze nötig:
+// 1° entspricht nur 20 Karten-Einheiten, einzelne Plätze können <300 m trennen.
+const MAPV_MIN=1, MAPV_MAX=1600;
 const ROUTE_VIEW_KEY = STORAGE_KEY + '-map-view';
 function defaultCorridorView(){ const c=project(45.4,5.6); return {z:2.3, cx:c.x, cy:c.y}; }
 function mapView(id, rebuild, init){
@@ -1740,8 +1742,8 @@ function baseMapSvg(inner, id){
       </g>
     </svg>
     <div class="map-tools">
-      <button type="button" class="mtool" onclick="mapZoomBy('${id}',1.45)" aria-label="Hineinzoomen">+</button>
-      <button type="button" class="mtool" onclick="mapZoomBy('${id}',${1/1.45})" aria-label="Herauszoomen">−</button>
+      <button type="button" class="mtool" onclick="mapZoomBy('${id}',2)" aria-label="Hineinzoomen">+</button>
+      <button type="button" class="mtool" onclick="mapZoomBy('${id}',.5)" aria-label="Herauszoomen">−</button>
       ${id.startsWith('pick') ? '' : `<button type="button" class="mtool" onclick="locateMe('${id}')" aria-label="Mein Standort" title="Mein Standort">◎</button>`}
     </div>
   </div>`;
@@ -1876,7 +1878,9 @@ function lineSvg(pts, color, {dashed, glow, faint}={}){
 // Marker: Formen in Bildschirm-px, Gruppe skaliert mit MU/MZ ⇒ konstante Größe
 function markerSvg(p, {num, color, kind, label}){
   const q=project(p.lat,p.lng), idx=mapInfoItems.push(label)-1;
-  const on=`class="map-pt" onclick="mapInfo(${idx})" transform="translate(${q.x.toFixed(1)} ${q.y.toFixed(1)}) scale(${(MU/MZ).toFixed(4)})"`;
+  // Vier Nachkommastellen erhalten auch bei starkem Zoom Abstände von wenigen
+  // Metern; die frühere Rundung auf 0,1 ließ nahe Campingplätze kollabieren.
+  const on=`class="map-pt" onclick="mapInfo(${idx})" transform="translate(${q.x.toFixed(4)} ${q.y.toFixed(4)}) scale(${(MU/MZ).toFixed(4)})"`;
   if(kind==='start') return `<g ${on}><circle r="7" fill="#fff" stroke="${color}" stroke-width="3.5"/></g>`;
   if(kind==='dot')   return `<g ${on}><circle r="5" fill="${color}" stroke="#fffef8" stroke-width="1.6"/></g>`;
   if(kind==='me')    return `<g ${on}><circle r="11" fill="${color}" fill-opacity=".22"/><circle r="5.5" fill="${color}" stroke="#fff" stroke-width="2.2"/></g>`;
