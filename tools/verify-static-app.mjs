@@ -13,4 +13,6 @@ if(/m \|\| caches\.match\('\.\/index\.html'\)/.test(sw))throw new Error('Service
 if(!app.includes("'X-Firebase-ETag':'true'")||!app.includes("'if-match':etag"))throw new Error('App-Cloud-Sync muss ETag-konfliktgeschützt bleiben');
 if(!app.includes("['action','Echte Optionen'],['waiting','Offene Anfragen'],['closed','Absagen']"))throw new Error('Korrigierbare Absagen-Ansicht fehlt');
 if(!app.includes("const operational=['booked','available'"))throw new Error('Bestätigter Schlafplatz fehlt auf der Karte');
+if(app.includes("s.mode==='network'&&c.status==='new'?'network_policy'"))throw new Error('Neue Routenkandidaten müssen die konkrete Nacht anfragen');
+if(!app.includes("c.status==='new'?'Verfügbarkeit anfragen'"))throw new Error('Konkrete Verfügbarkeitsaktion fehlt');
 console.log(JSON.stringify({ok:true,classicScripts:true,assetOrder:true,offlineAssets:true,mapEmbedded:true,etagSync:true,recoverableRejections:true}));
