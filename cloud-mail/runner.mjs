@@ -20,7 +20,7 @@ function assistant(state){const a=state.mailAssistant||(state.mailAssistant={});
 function candidates(state){const places=new Map((state.sleepPlaces||[]).map(p=>[p.id,p]));return (state.sleepSearches||[]).flatMap(search=>(search.candidates||[]).map(candidate=>{const p=places.get(candidate.placeId)||{};return {searchId:search.id,candidateId:candidate.id,name:p.name||candidate.name,email:p.email||candidate.email,threadSubject:candidate.mailThreadSubject||'',dateLabel:search.dateLabel};}));}
 function locate(state,event){const search=(state.sleepSearches||[]).find(x=>x.id===event.searchId),candidate=search?.candidates?.find(x=>x.id===event.candidateId),place=(state.sleepPlaces||[]).find(x=>x.id===candidate?.placeId);return {search,candidate,place};}
 function syncDerived(state,search,candidate,place){
-  state.reminders=Array.isArray(state.reminders)?state.reminders:[];state.campContacts=Array.isArray(state.campContacts)?state.campContacts:[];
+  state.reminders=Array.isArray(state.reminders)?state.reminders:[];
   let reminder=state.reminders.find(x=>x.id===candidate.reminderId);const name=place?.name||candidate.name;
   if(['awaiting','available','reserving','deposit_required','followup','booked','unavailable'].includes(candidate.status)){
     const title=candidate.status==='available'?`${name} reservieren · ${search.dateLabel}`:candidate.status==='reserving'?`${name}: Reservierungsbestätigung abwarten · ${search.dateLabel}`:candidate.status==='deposit_required'?`${name}: Anzahlung prüfen · ${search.dateLabel}`:candidate.status==='followup'?`${name} erneut mailen`:`${name} ${search.dateLabel}${candidate.status==='booked'?' ✅ bestätigt':candidate.status==='unavailable'?' ❌':''}`;
@@ -28,8 +28,7 @@ function syncDerived(state,search,candidate,place){
     reminder.title=title;reminder.done=['booked','unavailable'].includes(candidate.status);reminder.priority=candidate.status==='available';
   }
   if(candidate.status==='call'){
-    if(reminder)reminder.done=true;let contact=state.campContacts.find(x=>x.id===candidate.contactId)||state.campContacts.find(x=>x.name?.toLowerCase()===name.toLowerCase());const note=[candidate.callWindow&&`Anrufen: ${candidate.callWindow}`,candidate.reply].filter(Boolean).join('\n');
-    if(!contact){contact={id:`mail-${crypto.randomUUID()}`,name,region:place?.region||candidate.region||'',phone:place?.phone||candidate.phone||'',link:place?.link||candidate.link||'',note,createdAt:nowIso()};state.campContacts.push(contact);}else if(note)contact.note=note;candidate.contactId=contact.id;
+    if(reminder)reminder.done=true;
   }
 }
 function logMailChange(state,name,desc='ausgewertet'){state.log=Array.isArray(state.log)?state.log:[];state.log.push({id:`mail-${crypto.randomUUID()}`,ts:nowIso(),who:'Mail-Assistent',desc:`hat die Antwort von „${name}“ ${desc}`,undo:null});state.log=state.log.slice(-60);}

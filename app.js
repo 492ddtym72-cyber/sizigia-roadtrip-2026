@@ -273,6 +273,28 @@ function migrateSleepPlaces(s){
   ];
   known.forEach(k=>{const p=s.sleepPlaces.find(x=>String(x.name||'').toLowerCase().includes(k.match));if(p){['lat','lng','region','email','phone'].forEach(key=>{if(p[key]===undefined||p[key]==='')p[key]=k[key];});}});
 }
+// Camping-Kontakte war die erste Plan-B-Liste. Der Schlafplatz-Radar ist nun
+// die einzige operative Ansicht; das alte Array bleibt unverändert als Archiv.
+// Seine Angaben füllen ausschließlich noch leere Felder im Radar.
+function mergeLegacyCampContacts(s){
+  const contacts=Array.isArray(s.campContacts)?s.campContacts:[];
+  const places=Array.isArray(s.sleepPlaces)?s.sleepPlaces:[];
+  const searches=Array.isArray(s.sleepSearches)?s.sleepSearches:[];
+  const key=value=>String(value||'').trim().toLocaleLowerCase('de').replace(/\s+/g,' ');
+  contacts.forEach(contact=>{
+    const candidates=searches.flatMap(search=>Array.isArray(search.candidates)?search.candidates:[]);
+    const candidate=candidates.find(c=>c.contactId===contact.id)||candidates.find(c=>key(c.name)===key(contact.name));
+    const place=(candidate?.placeId&&places.find(p=>p.id===candidate.placeId))||places.find(p=>key(p.name)===key(contact.name));
+    if(place){
+      const values={region:contact.region,phone:contact.phone,link:contact.link,notes:contact.note};
+      Object.entries(values).forEach(([field,value])=>{if((place[field]===undefined||place[field]==='')&&value)place[field]=value;});
+    }
+    if(candidate){
+      if(!candidate.contactId)candidate.contactId=contact.id;
+      if(!candidate.notes&&contact.note)candidate.notes=contact.note;
+    }
+  });
+}
 function applyKnownCampingReplyBatch(s){
   s.meta=s.meta||{}; if((s.meta.campingReplyBatch||0)>=1)return;
   const search=(s.sleepSearches||[]).find(x=>/erste nacht/i.test(x.title||''))||s.sleepSearches?.[0]; if(!search)return;
@@ -374,6 +396,7 @@ function migrate(s){
   migrateSleepPlaces(s);
   applyKnownCampingReplyBatch(s);
   migrateSleepPlaces(s);
+  mergeLegacyCampContacts(s);
   s.mailAssistant=Object.assign({processedMessageIds:[],draftRequests:[],reviewQueue:[],runnerMode:'local',runners:{},lease:null,lastSuccessAt:null,lastRunAt:null,lastError:'',nextRunAt:null},s.mailAssistant||{});
   s.mailAssistant.processedMessageIds=Array.isArray(s.mailAssistant.processedMessageIds)?s.mailAssistant.processedMessageIds.slice(-200):[];
   s.mailAssistant.draftRequests=Array.isArray(s.mailAssistant.draftRequests)?s.mailAssistant.draftRequests:[];
@@ -1445,10 +1468,10 @@ function renderReminderHomeTile(){
   const c = reminderCounts();
   const total = c.reminders + c.polls;
   return `
-    <button class="home-tile home-reminder-tile" onclick="switchTab('reminder')" aria-label="Orga: Erinnerungen, Umfragen und Camping-Kontakte öffnen">
+    <button class="home-tile home-reminder-tile" onclick="switchTab('reminder')" aria-label="Orga: Erinnerungen und Umfragen öffnen">
       <div class="home-reminder-head">
         <span class="home-tile-icon" aria-hidden="true">${homeIconSvg('bell')}</span>
-        <b>Erinnerungen, Umfragen &amp; Kontakte</b>
+        <b>Erinnerungen &amp; Umfragen</b>
         <span class="home-count-pill ${total?'active':'clear'}">${total ? total : homeIconSvg('check')}</span>
       </div>
       <div class="home-reminder-badges">
@@ -2802,11 +2825,6 @@ function syncSleepCandidate(s,c){
   }
   if(c.status==='call'){
     if(r)r.done=true;
-    let contact=state.campContacts.find(x=>x.id===c.contactId)||state.campContacts.find(x=>x.name.toLowerCase()===c.name.toLowerCase());
-    const note=[c.callWindow&&'Anrufen: '+c.callWindow,c.reply,c.notes].filter(Boolean).join('\n');
-    if(!contact){contact={id:uid(),name:c.name,region:c.region,phone:c.phone,link:c.link,note,createdAt:new Date().toISOString()};state.campContacts.push(contact);}
-    else Object.assign(contact,{name:c.name,region:c.region||contact.region,phone:c.phone||contact.phone,link:c.link||contact.link,note:note||contact.note});
-    c.contactId=contact.id;
   }
 }
 function addSleepCandidate(searchId){ const s=state.sleepSearches.find(x=>x.id===searchId); if(!s)return; openModal('Option hinzufügen',sleepCandidateFields(),v=>{if(!v.name.trim()){toast('Bitte einen Namen eintragen');return;}const undo=sleepUndo(),c=normalizeSleepCandidate({id:uid(),contactedAt:v.status==='awaiting'?new Date().toISOString():null});applyCandidateValues(c,v);s.candidates.push(c);syncSleepCandidate(s,c);logChange('hat Schlafplatz-Option „'+c.name+'“ hinzugefügt',undo);}); }
@@ -2958,7 +2976,6 @@ function orgaSection(id, icon, title, meta, bodyHtml){
 function renderReminder(){
   const reminders = [...(state.reminders||[])];
   const polls = [...(state.polls||[])].sort((a,b)=>(a.closed===b.closed ? new Date(b.createdAt)-new Date(a.createdAt) : (a.closed?1:-1)));
-  const campContacts = [...(state.campContacts||[])].sort((a,b)=>a.name.localeCompare(b.name,'de'));
   const openReminderItems = reminders.filter(r=>!r.done);
   const doneReminderItems = reminders.filter(r=>r.done);
   const openReminders = openReminderItems.length;
@@ -2971,11 +2988,7 @@ function renderReminder(){
       ${!reminders.length ? '<p class="hint" style="margin:12px 0 0">Du kannst Erinnerungen hier anlegen oder aus Packen, Einkauf, Checkliste und Fahrzeug-Dokumenten verknüpfen.</p>' : ''}`) +
     orgaSection('reminder-umfragen', 'poll', 'Umfragen', openPolls ? openPolls+' offen' : (polls.length?'Alle geschlossen':'Keine'),
       `<button class="btn small" onclick="addPoll()">+ Umfrage</button>
-      ${polls.length ? `<p class="hint" style="margin:12px 0">Tippe eine Option an, um mit deinem eigenen Profil dafür zu stimmen (Mehrfachauswahl möglich).</p>${polls.map(pollRow).join('')}` : '<p class="hint" style="margin:12px 0 0">Noch keine Umfragen.</p>'}`) +
-    orgaSection('reminder-camping', 'tent', 'Camping-Kontakte', campContacts.length ? campContacts.length+' Kontakt'+(campContacts.length===1?'':'e') : 'Keine',
-      `<button class="btn small" onclick="addCampContact()">+ Kontakt</button>
-      <p class="hint" style="margin:12px 0">Campingplätze zum spontanen Anrufen, falls der geplante Platz mal voll ist.</p>
-      ${campContacts.length ? campContacts.map(campContactRow).join('') : '<p class="hint" style="margin:0">Noch keine Kontakte hinterlegt.</p>'}`);
+      ${polls.length ? `<p class="hint" style="margin:12px 0">Tippe eine Option an, um mit deinem eigenen Profil dafür zu stimmen (Mehrfachauswahl möglich).</p>${polls.map(pollRow).join('')}` : '<p class="hint" style="margin:12px 0 0">Noch keine Umfragen.</p>'}`);
 }
 
 /* ============================================================

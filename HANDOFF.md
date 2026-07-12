@@ -27,9 +27,12 @@
   werden einmalig per Karten-Picker oder koordinatenhaltigem Maps-Link erfasst;
   die Offline-Karte zeigt Statusfarben wahlweise pro Nacht oder für die gesamte
   Route. Dazu Plan-B-Status, E-Mail-/Anruf-Aktionen und Verknüpfung zu
-  Erinnerungen sowie Camping-Kontakten. Die Migration übernimmt bestehende
-  Camping-Erinnerungen in „Erste Nacht“ und ergänzt die zuletzt ausgewerteten
-  Antworten (Belvedere, Al Sole, Al Lago, Punta Lago, Schlosshof).
+  Erinnerungen. Die frühere, unvollständige „Camping-Kontakte“-Liste ist nur
+  noch ein unsichtbares Legacy-Archiv; ihre fehlenden Telefon-, Karten- und
+  Notizangaben werden verlustfrei in den Schlafplatz-Radar übernommen. Die
+  Migration übernimmt bestehende Camping-Erinnerungen in „Erste Nacht“ und
+  ergänzt die zuletzt ausgewerteten Antworten (Belvedere, Al Sole, Al Lago,
+  Punta Lago, Schlosshof).
 - **Camping-Mail-Assistent:** Lokale Codex-Automation prüft tagsüber um ca.
   08:00, 14:00 und 20:00 ausschließlich campingbezogene Antworten in iCloud
   Inbox/Sent. `tools/camping-mail-bridge.mjs` liefert konfliktgeschützte
