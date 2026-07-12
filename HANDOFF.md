@@ -1,7 +1,6 @@
 # HANDOFF — Status
 
-> Stand: 12.07.2026 · Migration auf Branch
-> `codex/cloud-mail-and-file-split`; `main` bleibt der stabile Live-Stand.
+> Stand: 12.07.2026 · `main` ist der stabile Live-Stand.
 > Projektüberblick & Konventionen: [AGENTS.md](AGENTS.md).
 
 ## Aktueller Zustand ✅
@@ -22,7 +21,7 @@
 - Firebase CLI: `export PATH="/Users/anonymous/.hermes/node/bin:$PATH"`,
   eingeloggt mit Freddis Google-Konto (`firebase login:list`).
   Regeln neu deployen: `firebase deploy --only database --project roadtrip-to-sizigia-eclipse`
-- **Schlafplatz-Radar (Schema V9 auf dem Sicherheitsnetz-Branch, V8 live):** Dauerhaftes Campingplatz-Register
+- **Schlafplatz-Radar (Schema V10 live):** Dauerhaftes Campingplatz-Register
   (`sleepPlaces`) plus datumsbezogene Anfragen in den Nacht-Suchen. Positionen
   werden einmalig per Karten-Picker oder koordinatenhaltigem Maps-Link erfasst;
   die Offline-Karte zeigt Statusfarben wahlweise pro Nacht oder für die gesamte
@@ -36,7 +35,12 @@
   V9 archiviert die 46 redundanten Camping-Erinnerungen, ergänzt den Status
   „Reservierung möglich“ und sieben flexible Korridor-Suchen mit je vier
   recherchierten Optionen. Nicht abschließend verifizierte Kontaktadressen
-  bleiben im UI gesperrt, bis sie über „Bearbeiten“ bestätigt wurden.
+  bleiben im UI gesperrt, bis sie über „Bearbeiten“ bestätigt wurden. V10
+  übernimmt die offizielle Kontaktprüfung vom 12.07.2026: korrigierte Websites,
+  E-Mails, Telefone und die Position von Mare Monti werden verlustfrei auf die
+  bestehenden Einträge migriert. „Camping Río Ara“ wird, solange unkontaktiert,
+  durch „Camping Ribera del Ara“ ersetzt. La Chapelle und Ribera del Ara haben
+  keine verifizierte offizielle E-Mail und bleiben für E-Mail-Entwürfe gesperrt.
 - **Camping-Mail-Assistent:** Lokale Codex-Automation prüft tagsüber um ca.
   08:00, 14:00 und 20:00 ausschließlich campingbezogene Antworten in iCloud
   Inbox/Sent. `tools/camping-mail-bridge.mjs` liefert konfliktgeschützte
@@ -46,7 +50,7 @@
   zeigt zunächst nur eine zustandslose Vorschau; erst „In Apple Mail öffnen“
   legt einen Send-Intent an. Der fachliche Status ändert sich ausschließlich
   nach Sent-Mail-Erkennung oder manueller Versandbestätigung.
-- **Migrationsbranch:** Die Web-App ist ohne Build-Schritt in `index.html`,
+- **App-Struktur:** Die Web-App ist ohne Build-Schritt in `index.html`,
   `styles.css`, `map-data.js` und `app.js` getrennt. V8 ergänzt lokale/cloud
   Runner-Gesundheit und eine begrenzte manuelle Prüfwarteschlange. Der
   GitHub-iCloud-Runner liegt unter `cloud-mail/` und ist ohne die Repository-

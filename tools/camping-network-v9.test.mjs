@@ -46,9 +46,35 @@ assert.equal(sandbox.candidates.length,28);
 for(const hub of sandbox.hubs){
   const rows=sandbox.candidates.filter(x=>x.hub===hub.id);
   assert.equal(rows.length,4,`${hub.id} braucht vier Kandidaten`);
-  assert.ok(rows.every(x=>x.name&&x.email&&x.link&&Number.isFinite(x.lat)&&Number.isFinite(x.lng)),`${hub.id}: Kontaktdaten unvollständig`);
+  assert.ok(rows.every(x=>x.name&&x.phone&&x.officialUrl&&x.link&&Number.isFinite(x.lat)&&Number.isFinite(x.lng)),`${hub.id}: Kontaktdaten unvollständig`);
 }
-assert.equal(new Set(sandbox.candidates.map(x=>x.email.toLowerCase())).size,28,'E-Mail-Adressen müssen eindeutig sein');
+const mailCandidates=sandbox.candidates.filter(x=>x.email);
+assert.equal(new Set(mailCandidates.map(x=>x.email.toLowerCase())).size,mailCandidates.length,'Vorhandene E-Mail-Adressen müssen eindeutig sein');
+assert.equal(sandbox.candidates.filter(x=>!x.email).map(x=>x.name).sort().join('|'),'Camping La Chapelle|Camping Ribera del Ara');
+assert.equal(sandbox.candidates.find(x=>x.name==='Camping Mare Monti').lat,44.2639,'Mare Monti muss am verifizierten Standort liegen');
+assert.equal(sandbox.candidates.some(x=>x.name==='Camping Río Ara'),false,'Der nicht verifizierbare Río-Ara-Eintrag darf nicht weiter ausgesät werden');
+const verifiedStart=source.indexOf('const CAMPING_NETWORK_VERIFIED =');
+const verifiedEnd=source.indexOf(';',verifiedStart)+1;
+const verifyBox={CAMPING_NETWORK_CANDIDATES:sandbox.candidates,uid:()=>`new-place`,console};
+vm.runInNewContext(source.slice(verifiedStart,verifiedEnd).replace('const CAMPING_NETWORK_VERIFIED','this.CAMPING_NETWORK_VERIFIED'),verifyBox);
+vm.runInNewContext(extract('applyCampingContactVerificationV10')+';this.apply=applyCampingContactVerificationV10;',verifyBox);
+const migrationState={meta:{},sleepPlaces:[
+  {id:'mare',name:'Camping Mare Monti',email:'info@campingmaremonti.com',lat:44.2908,lng:9.4147,contactVerified:false},
+  {id:'chapelle',name:'Camping La Chapelle',email:'contact@camping-lachapelle.com',contactVerified:false},
+  {id:'rio',name:'Camping Río Ara',email:'info@campingrioara.com',contactVerified:false}
+],sleepSearches:[{candidates:[
+  {id:'c-mare',placeId:'mare',name:'Camping Mare Monti',status:'new'},
+  {id:'c-chapelle',placeId:'chapelle',name:'Camping La Chapelle',status:'new'},
+  {id:'c-rio',placeId:'rio',name:'Camping Río Ara',status:'new'}
+]}]};
+verifyBox.apply(migrationState);
+assert.equal(migrationState.sleepPlaces[0].lat,44.2639);
+assert.equal(migrationState.sleepPlaces[0].contactVerified,true);
+assert.equal(migrationState.sleepPlaces[1].email,'');
+assert.equal(migrationState.sleepPlaces[1].contactVerified,false);
+assert.equal(migrationState.sleepPlaces[2].name,'Camping Ribera del Ara');
+assert.equal(migrationState.sleepPlaces[2].contactVerified,false);
+assert.equal(migrationState.sleepSearches[0].candidates[2].placeId,'rio','Migration muss die bestehende Verknüpfung erhalten');
 const backupUrl=new URL('../backups/firebase-pre-v9-2026-07-12.json',import.meta.url);
 let production=null;
 if(fs.existsSync(backupUrl)){

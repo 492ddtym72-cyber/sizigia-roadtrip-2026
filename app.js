@@ -5,7 +5,7 @@
      später austauschbar gegen Cloud-Sync (gleiche Schnittstelle).
    ============================================================ */
 const STORAGE_KEY = 'sizigia-roadtrip-2026';
-const SCHEMA_VERSION = 9;
+const SCHEMA_VERSION = 10;
 const LOG_MAX = 60;
 const UNDO_MAX = 20;
 
@@ -259,33 +259,33 @@ const CAMPING_NETWORK_CANDIDATES = [
   {hub:'liguria',name:'Camping dei Fiori',region:'Pietra Ligure',email:'info@campingdeifiori.it',phone:'+39 019 615255',lat:44.1475,lng:8.2742,officialUrl:'https://www.campingdeifiori.it/',link:'https://www.google.com/maps/search/?api=1&query=Camping+dei+Fiori+Pietra+Ligure'},
   {hub:'liguria',name:'Campeggio Fossa Lupara',region:'Sestri Levante',email:'campingfossalupara@hotmail.it',phone:'+39 0185 455056',lat:44.2779,lng:9.4117,officialUrl:'https://www.campingfossalupara.com/',link:'https://www.google.com/maps/search/?api=1&query=Campeggio+Fossa+Lupara'},
   {hub:'liguria',name:'Levante Camper',region:'Sestri Levante',email:'levantecamper@gmail.com',phone:'+39 0185 43340',lat:44.2755,lng:9.4073,officialUrl:'https://www.levantecamper.com/',link:'https://www.google.com/maps/search/?api=1&query=Levante+Camper+Sestri+Levante'},
-  {hub:'liguria',name:'Camping Mare Monti',region:'Sestri Levante',email:'info@campingmaremonti.com',phone:'+39 0185 44348',lat:44.2908,lng:9.4147,officialUrl:'https://www.campingmaremonti.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Mare+Monti+Sestri+Levante'},
+  {hub:'liguria',name:'Camping Mare Monti',region:'Sestri Levante · Riva Trigoso',email:'info@campingmaremonti.com',phone:'+39 0185 44348',lat:44.2639,lng:9.4419,officialUrl:'https://www.campingmaremonti.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Mare+Monti+Sestri+Levante'},
   {hub:'provence-east',name:'Esterel Caravaning',region:'Agay · Saint-Raphaël',email:'contact@esterel-caravaning.fr',phone:'+33 4 94 82 03 28',lat:43.4594,lng:6.8392,officialUrl:'https://www.esterel-caravaning.fr/',link:'https://www.google.com/maps/search/?api=1&query=Esterel+Caravaning'},
-  {hub:'provence-east',name:'Camping La Pierre Verte',region:'Fréjus',email:'contact@campinglapierreverte.com',phone:'+33 4 94 40 88 30',lat:43.4707,lng:6.7277,officialUrl:'https://www.campinglapierreverte.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+La+Pierre+Verte+Frejus'},
-  {hub:'provence-east',name:'Camping Les Restanques',region:'Bauduen · Lac de Sainte-Croix',email:'info@camping-les-restanques.com',phone:'+33 4 94 70 08 67',lat:43.7354,lng:6.1769,officialUrl:'https://www.camping-les-restanques.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Les+Restanques+Bauduen'},
-  {hub:'provence-east',name:'Camping Rives du Lac de Sainte-Croix',region:'Bauduen',email:'info@camping-rivesdulac.com',phone:'+33 4 94 70 08 08',lat:43.7379,lng:6.1725,officialUrl:'https://www.camping-rivesdulac.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Rives+du+Lac+de+Sainte+Croix'},
+  {hub:'provence-east',name:'Camping La Pierre Verte',region:'Fréjus',email:'com@campinglapierreverte.com',phone:'+33 4 94 40 88 30',lat:43.4707,lng:6.7277,officialUrl:'https://www.campinglapierreverte.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+La+Pierre+Verte+Frejus'},
+  {hub:'provence-east',name:'Camping Les Restanques',region:'Bauduen · Lac de Sainte-Croix',email:'contact@campinglesrestanques83.com',phone:'+33 4 94 67 06 00',lat:43.7354,lng:6.1769,officialUrl:'https://www.camping-gorge-verdon.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Les+Restanques+Bauduen'},
+  {hub:'provence-east',name:'Camping Rives du Lac de Sainte-Croix',region:'Bauduen',email:'contact@camping-lac-sainte-croix.fr',phone:'+33 4 94 70 05 44',lat:43.7379,lng:6.1725,officialUrl:'https://www.tikayan.com/fr/camping-rives-du-lac-de-sainte-croix-accueil',link:'https://www.google.com/maps/search/?api=1&query=Camping+Rives+du+Lac+de+Sainte+Croix'},
   {hub:'cassis-marseille',name:'Camping Les Cigales',region:'Cassis',email:'contact@lescigalescamping.fr',phone:'+33 4 42 01 07 34',lat:43.2227,lng:5.5456,officialUrl:'https://www.lescigalescamping.fr/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Les+Cigales+Cassis'},
   {hub:'cassis-marseille',name:'Aux Portes de Cassis',region:'Roquefort-la-Bédoule',email:'auxportesdecassis@gmail.com',phone:'+33 4 42 73 21 17',lat:43.2481,lng:5.5858,officialUrl:'https://auxportesdecassis.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Aux+Portes+de+Cassis'},
   {hub:'cassis-marseille',name:'Youcamp Village Marseille Provence',region:'Aubagne',email:'contact@youcamp-marseille.fr',phone:'+33 4 42 82 19 95',lat:43.3026,lng:5.6025,officialUrl:'https://www.youcamp-marseille.fr/',link:'https://www.google.com/maps/search/?api=1&query=Youcamp+Village+Marseille+Provence'},
   {hub:'cassis-marseille',name:'Camping de la Sauge',region:'La Ciotat',email:'campinglasauge@orange.fr',phone:'+33 4 42 83 47 65',lat:43.1894,lng:5.6318,officialUrl:'https://www.campingdelasauge.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+de+la+Sauge+La+Ciotat'},
-  {hub:'languedoc',name:'Camping Cayola',region:'Vias-Plage',email:'info@campingcayola.fr',phone:'+33 4 67 21 66 66',lat:43.2877,lng:3.3702,officialUrl:'https://www.campingcayola.fr/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Cayola+Vias'},
-  {hub:'languedoc',name:'Camping Club Farret',region:'Vias-Plage',email:'info@farret.com',phone:'+33 4 67 21 64 45',lat:43.2946,lng:3.4176,officialUrl:'https://www.farret.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Club+Farret'},
-  {hub:'languedoc',name:'Camping Les Mimosas',region:'Portiragnes',email:'contact@campinglesmimosas.com',phone:'+33 4 67 90 90 55',lat:43.2818,lng:3.3457,officialUrl:'https://www.camping-les-mimosas.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Les+Mimosas+Portiragnes'},
-  {hub:'languedoc',name:'Camping Beau Rivage',region:'Mèze · Étang de Thau',email:'contact@camping-beaurivage.fr',phone:'+33 4 67 43 81 58',lat:43.4257,lng:3.6123,officialUrl:'https://www.camping-beaurivage.fr/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Beau+Rivage+Meze'},
+  {hub:'languedoc',name:'Camping Cayola',region:'Vias-Plage',email:'campingcayola@orange.fr',phone:'+33 4 67 90 01 85',lat:43.2877,lng:3.3702,officialUrl:'https://www.campingcayola.fr/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Cayola+Vias'},
+  {hub:'languedoc',name:'Camping Club Farret',region:'Vias-Plage',email:'info@farret.com',phone:'+33 4 67 21 64 45',lat:43.2946,lng:3.4176,officialUrl:'https://www.camping-farret.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Club+Farret'},
+  {hub:'languedoc',name:'Camping Les Mimosas',region:'Portiragnes',email:'mimosas@mimosas.com',phone:'+33 4 67 90 92 92',lat:43.2818,lng:3.3457,officialUrl:'https://www.mimosas.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Les+Mimosas+Portiragnes'},
+  {hub:'languedoc',name:'Camping Beau Rivage',region:'Mèze · Étang de Thau',email:'beau-rivage@koawa.com',phone:'+33 4 66 60 07 00',lat:43.4257,lng:3.6123,officialUrl:'https://www.camping-beaurivage.fr/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Beau+Rivage+Meze'},
   {hub:'cote-vermeille',name:'Camping Le Front de Mer',region:'Argelès-sur-Mer',email:'frontdemer66@gmail.com',phone:'+33 4 68 81 08 70',lat:42.5581,lng:3.0437,officialUrl:'https://camping-front-mer.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Le+Front+de+Mer+Argeles'},
-  {hub:'cote-vermeille',name:'Les Criques de Porteils',region:'Collioure',email:'contact@lescriques.com',phone:'+33 4 68 81 05 42',lat:42.5362,lng:3.0729,officialUrl:'https://www.lescriques.com/',link:'https://www.google.com/maps/search/?api=1&query=Les+Criques+de+Porteils'},
-  {hub:'cote-vermeille',name:'Camping La Chapelle',region:'Argelès-sur-Mer',email:'contact@camping-lachapelle.com',phone:'+33 4 68 81 03 83',lat:42.5518,lng:3.0376,officialUrl:'https://www.camping-lachapelle.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+La+Chapelle+Argeles'},
-  {hub:'cote-vermeille',name:'Camping Les Marsouins',region:'Argelès-sur-Mer',email:'contact@camping-les-marsouins.com',phone:'+33 4 68 81 14 81',lat:42.5686,lng:3.0298,officialUrl:'https://www.camping-les-marsouins.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Les+Marsouins+Argeles'},
+  {hub:'cote-vermeille',name:'Les Criques de Porteils',region:'Collioure',email:'contactcdp@lescriques.com',phone:'+33 4 68 81 12 73',lat:42.5362,lng:3.0729,officialUrl:'https://www.lescriques.com/',link:'https://www.google.com/maps/search/?api=1&query=Les+Criques+de+Porteils'},
+  {hub:'cote-vermeille',name:'Camping La Chapelle',region:'Argelès-sur-Mer',email:'',phone:'+33 9 77 55 52 58',lat:42.5518,lng:3.0376,officialUrl:'https://www.camping-la-chapelle.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+La+Chapelle+Argeles'},
+  {hub:'cote-vermeille',name:'Camping Les Marsouins',region:'Argelès-sur-Mer',email:'lesmarsouins@cielavillage.com',phone:'+33 4 68 81 14 81',lat:42.5686,lng:3.0298,officialUrl:'https://lesmarsouins.cielavillage.fr/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Les+Marsouins+Argeles'},
   {hub:'costa-brava',name:'Wecamp Cadaqués',region:'Cadaqués',email:'hola@cadaques.wecamp.net',phone:'+34 900 056 003',lat:42.2876,lng:3.2753,officialUrl:'https://wecamp.net/destinos/cadaques/',link:'https://www.google.com/maps/search/?api=1&query=Wecamp+Cadaques'},
   {hub:'costa-brava',name:'Càmping Begur',region:'Begur',email:'info@campingbegur.com',phone:'+34 972 623 201',lat:41.9404,lng:3.1989,officialUrl:'https://campingbegur.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Begur'},
   {hub:'costa-brava',name:'Camping Aquarius',region:'Sant Pere Pescador',email:'booking@campingaquarius.com',phone:'+34 972 520 101',lat:42.1887,lng:3.1114,officialUrl:'https://www.campingaquarius.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Aquarius+Sant+Pere+Pescador'},
   {hub:'costa-brava',name:'Camping Amfora',region:'Sant Pere Pescador',email:'info@campingamfora.com',phone:'+34 972 520 540',lat:42.1807,lng:3.1068,officialUrl:'https://www.campingamfora.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Amfora+Sant+Pere+Pescador'},
   {hub:'huesca',name:'Camping Aínsa',region:'Aínsa',email:'info@campingainsa.com',phone:'+34 974 500 260',lat:42.4252,lng:0.1511,officialUrl:'https://campingainsa.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Ainsa'},
   {hub:'huesca',name:'Camping Alquézar',region:'Alquézar',email:'camping@alquezar.com',phone:'+34 974 318 300',lat:42.1664,lng:0.0248,officialUrl:'https://www.campingalquezar.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Alquezar'},
-  {hub:'huesca',name:'Camping Peña Montañesa',region:'Labuerda · Aínsa',email:'info@campingpenamontanesa.com',phone:'+34 974 500 032',lat:42.4505,lng:0.1356,officialUrl:'https://www.campingpenamontanesa.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Pena+Montanesa'},
-  {hub:'huesca',name:'Camping Río Ara',region:'Fiscal',email:'info@campingrioara.com',phone:'+34 974 503 020',lat:42.4914,lng:-0.1203,officialUrl:'https://www.campingrioara.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Rio+Ara+Fiscal'}
+  {hub:'huesca',name:'Camping Peña Montañesa',region:'Labuerda · Aínsa',email:'info@penamontanesa.com',phone:'+34 974 500 032',lat:42.4505,lng:0.1356,officialUrl:'https://www.penamontanesa.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Pena+Montanesa'},
+  {hub:'huesca',name:'Camping Ribera del Ara',region:'Fiscal',email:'',phone:'+34 974 503 035',lat:42.4914,lng:-0.1203,officialUrl:'https://www.riberadelara.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Ribera+del+Ara+Fiscal'}
 ];
-const CAMPING_NETWORK_VERIFIED = new Set(['Camping dei Fiori','Campeggio Fossa Lupara','Levante Camper','Esterel Caravaning','Camping Les Cigales','Aux Portes de Cassis','Youcamp Village Marseille Provence','Camping de la Sauge','Camping Le Front de Mer','Wecamp Cadaqués','Càmping Begur','Camping Aquarius','Camping Amfora','Camping Aínsa','Camping Alquézar']);
+const CAMPING_NETWORK_VERIFIED = new Set(['Camping dei Fiori','Campeggio Fossa Lupara','Levante Camper','Camping Mare Monti','Esterel Caravaning','Camping La Pierre Verte','Camping Les Restanques','Camping Rives du Lac de Sainte-Croix','Camping Les Cigales','Aux Portes de Cassis','Youcamp Village Marseille Provence','Camping de la Sauge','Camping Cayola','Camping Club Farret','Camping Les Mimosas','Camping Beau Rivage','Camping Le Front de Mer','Les Criques de Porteils','Camping Les Marsouins','Wecamp Cadaqués','Càmping Begur','Camping Aquarius','Camping Amfora','Camping Aínsa','Camping Alquézar','Camping Peña Montañesa']);
 function cleanCampName(title){
   return String(title||'').replace(/2\.8\s*-\s*3\.8/gi,'').replace(/spontan\s+anrufen/gi,'').replace(/[✅❌🇨🇭]/gu,'').replace(/[·:–—-]+$/,'').replace(/\s+/g,' ').trim();
 }
@@ -357,12 +357,49 @@ function seedCampingSafetyNetwork(s){
   CAMPING_NETWORK_CANDIDATES.forEach(seed=>{
     const search=s.sleepSearches.find(x=>x.networkKey===seed.hub);if(!search)return;
     const norm=value=>String(value||'').trim().toLowerCase();
-    let place=(s.sleepPlaces||[]).find(p=>norm(p.name)===norm(seed.name)||norm(p.email)===norm(seed.email));
+    let place=(s.sleepPlaces||[]).find(p=>norm(p.name)===norm(seed.name)||(norm(seed.email)&&norm(p.email)===norm(seed.email)));
     if(!place){place={id:uid(),createdAt:new Date().toISOString()};s.sleepPlaces.push(place);}
     ['name','region','email','phone','link','officialUrl','lat','lng'].forEach(k=>{if(place[k]===undefined||place[k]==='')place[k]=seed[k];});
     if(place.contactVerified===undefined)place.contactVerified=CAMPING_NETWORK_VERIFIED.has(seed.name);
     if(!search.candidates.some(c=>c.placeId===place.id||norm(c.name)===norm(seed.name)))search.candidates.push(normalizeSleepCandidate({id:uid(),name:seed.name,region:seed.region,email:seed.email,phone:seed.phone,link:seed.link,officialUrl:seed.officialUrl,contactVerified:place.contactVerified,lat:seed.lat,lng:seed.lng,placeId:place.id,status:'new',nextAction:place.contactVerified?'Ein-Nacht- und Spontanregeln anfragen':'Offizielle Kontaktdaten vor Versand prüfen'}));
   });
+}
+function applyCampingContactVerificationV10(s){
+  const oldNameByNew={'Camping Ribera del Ara':'Camping Río Ara'};
+  const notes={
+    'Camping Mare Monti':'Offizieller Kontakt geprüft (12.07.2026). Lage bei Riva Trigoso korrigiert; Ein-Nacht- und Spontanregeln noch erfragen.',
+    'Camping La Chapelle':'Offizielle Website und Telefon geprüft (12.07.2026). Keine offizielle E-Mail veröffentlicht; nur telefonisch oder über das Kontaktformular anfragen.',
+    'Camping Peña Montañesa':'Offizieller Kontakt geprüft (12.07.2026). Ein-Nacht-Transitplätze für Wohnmobile: Anreise ab 20 Uhr, Abreise bis 10 Uhr; Rezeption 08:00–22:30. Zweites Auto vorher klären.',
+    'Camping Ribera del Ara':'Ersetzt den nicht verifizierbaren Eintrag „Camping Río Ara“. Offizielle Website und Telefonnummer geprüft (12.07.2026); keine offizielle E-Mail veröffentlicht.'
+  };
+  const norm=value=>String(value||'').trim().toLocaleLowerCase('de');
+  CAMPING_NETWORK_CANDIDATES.forEach(seed=>{
+    const oldName=oldNameByNew[seed.name]||seed.name;
+    const candidates=(s.sleepSearches||[]).flatMap(search=>search.candidates||[]);
+    const candidate=candidates.find(c=>norm(c.name)===norm(oldName)||norm(c.name)===norm(seed.name));
+    let place=(candidate?.placeId&&(s.sleepPlaces||[]).find(p=>p.id===candidate.placeId))||(s.sleepPlaces||[]).find(p=>norm(p.name)===norm(oldName)||norm(p.name)===norm(seed.name));
+    if(!candidate&&!place)return;
+    const contacted=!!(candidate&&(candidate.contactedAt||candidate.repliedAt||!['new',''].includes(candidate.status||'new')));
+    // Der falsche Río-Ara-Datensatz wird nur umbenannt, solange er noch reine
+    // Recherche ist. Etwaige spätere Korrespondenz bliebe andernfalls erhalten.
+    if(oldName!==seed.name&&contacted){
+      if(place)place.contactVerified=false;
+      if(candidate){candidate.contactVerified=false;candidate.nextAction='Identität des Platzes manuell prüfen';}
+      return;
+    }
+    if(!place){place={id:uid(),createdAt:new Date().toISOString()};s.sleepPlaces.push(place);if(candidate)candidate.placeId=place.id;}
+    ['name','region','email','phone','link','officialUrl','lat','lng'].forEach(key=>{place[key]=seed[key];if(candidate)candidate[key]=seed[key];});
+    const verified=!!seed.email&&CAMPING_NETWORK_VERIFIED.has(seed.name);
+    place.contactVerified=verified;
+    if(candidate){
+      candidate.contactVerified=verified;
+      if(candidate.status==='new')candidate.nextAction=verified?'Ein-Nacht- und Spontanregeln anfragen':(seed.email?'Offizielle Kontaktdaten vor Versand prüfen':'Telefonisch oder über Kontaktformular anfragen');
+    }
+    const note=notes[seed.name]||'Offizielle Website, E-Mail und Telefonnummer geprüft (12.07.2026). Ein-Nacht-, Spontan- und Zusatzauto-Regeln noch erfragen.';
+    place.notes=note;
+  });
+  s.meta=s.meta||{};
+  s.meta.campingContactVerification='2026-07-12';
 }
 function applyKnownCampingReplyBatch(s){
   s.meta=s.meta||{}; if((s.meta.campingReplyBatch||0)>=1)return;
@@ -470,6 +507,7 @@ function migrate(s){
   mergeLegacyCampContacts(s);
   if(fromVersion<9)archiveCampingReminders(s);
   if(fromVersion<9||!s.meta.campingNetworkSeeded){seedCampingSafetyNetwork(s);s.meta.campingNetworkSeeded=true;}
+  if(fromVersion<10)applyCampingContactVerificationV10(s);
   s.mailAssistant=Object.assign({processedMessageIds:[],draftRequests:[],reviewQueue:[],runnerMode:'local',runners:{},lease:null,lastSuccessAt:null,lastRunAt:null,lastError:'',nextRunAt:null},s.mailAssistant||{});
   s.mailAssistant.processedMessageIds=Array.isArray(s.mailAssistant.processedMessageIds)?s.mailAssistant.processedMessageIds.slice(-200):[];
   s.mailAssistant.draftRequests=Array.isArray(s.mailAssistant.draftRequests)?s.mailAssistant.draftRequests:[];
