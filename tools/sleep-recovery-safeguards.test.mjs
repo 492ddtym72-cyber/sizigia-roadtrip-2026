@@ -135,4 +135,16 @@ assert.equal(app.run('new Set(state.sleepSearches.map(s=>s.networkKey)).size'), 
   assert.equal(restored, 'call', 'vorhandene Historie muss den echten Status wiederherstellen');
 }
 
-console.log(JSON.stringify({ok:true, seededOnFirstOfflineLaunch:true, bookedOnMap:true, absagenFilter:true, unverifiedDefault:true, cancelKeepsStatus:true, draftRequestedFallback:'awaiting'}));
+// 7) Stark gekürzte Backups mit leerer Routenliste dürfen die Übersicht
+//    weder beim Import noch nach einem Reload dauerhaft unbrauchbar machen.
+{
+  const repaired=app.run(`(()=>{
+    const broken={schemaVersion:10,meta:{lastSaved:'2026-07-01T00:00:00.000Z'},crew:[{id:'c-x',name:'X',color:'#fff'}],routes:[],selectedRoute:''};
+    const out=migrate(broken);state=out;renderOverview();
+    return {count:out.routes.length,selected:out.selectedRoute,selectedExists:out.routes.some(r=>r.id===out.selectedRoute)};
+  })()`);
+  assert.ok(repaired.count>=1,'leere Routenliste muss repariert werden');
+  assert.equal(repaired.selectedExists,true,'reparierte Auswahl muss auf eine vorhandene Route zeigen');
+}
+
+console.log(JSON.stringify({ok:true, seededOnFirstOfflineLaunch:true, bookedOnMap:true, absagenFilter:true, unverifiedDefault:true, cancelKeepsStatus:true, draftRequestedFallback:'awaiting',emptyRoutesRepaired:true}));

@@ -459,6 +459,10 @@ function migrate(s){
   for(const k of Object.keys(def)){
     if(s[k] === undefined) s[k] = def[k];
   }
+  // Eine leere Routenliste ist kein nutzbarer Zustand: mehrere Ansichten
+  // erwarten stets eine ausgewählte Route. Kaputte/zu stark gekürzte Backups
+  // werden deshalb auf die editierbaren Standardrouten zurückgeführt.
+  if(!Array.isArray(s.routes)||!s.routes.length){s.routes=JSON.parse(JSON.stringify(def.routes));s.selectedRoute=def.selectedRoute;}
   s.archive=s.archive&&typeof s.archive==='object'?s.archive:{campingReminders:[]};
   s.archive.campingReminders=Array.isArray(s.archive.campingReminders)?s.archive.campingReminders:[];
   // Verschachtelte Pflicht-Arrays normalisieren (ebenfalls Firebase-Schutz)

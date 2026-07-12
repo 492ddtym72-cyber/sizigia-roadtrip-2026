@@ -41,14 +41,7 @@ for(const [body, expected] of cases){
 assert.equal(classifyReply('Tenemos disponibilidad, pero también estamos completos según la web.').status, 'review',
   'widersprüchliche Antwort muss review sein');
 
-// Dokumentierte bekannte Lücke (Produktionsdefekt, siehe
-// docs/reviews/camping-regression-test-report.md): "Aucune disponibilité" /
-// "pas de disponibilité" matchen wegen \b nach "é" nie und fallen daher
-// GESCHLOSSEN auf review statt unavailable. Sicher, aber unpräzise.
-// Dieser Test dokumentiert das aktuelle Verhalten; nach einem Fix im
-// Produktionscode darf er auf 'unavailable' verschärft werden.
-const accentGap = classifyReply('Aucune disponibilité pour ces dates.');
-assert.notEqual(accentGap.status, 'available', 'Absage darf nie als available gelesen werden');
-assert.equal(accentGap.status, 'review', 'bekannte Lücke: fällt derzeit geschlossen auf review');
+assert.equal(classifyReply('Aucune disponibilité pour ces dates.').status,'unavailable');
+assert.equal(classifyReply('Pas de disponibilité pour cette nuit.').status,'unavailable');
 
-console.log(JSON.stringify({ok:true, cases:cases.length + 2, ambiguousFailsClosed:true, knownAccentGapDocumented:true}));
+console.log(JSON.stringify({ok:true, cases:cases.length + 3, ambiguousFailsClosed:true, accentedFrenchRejections:true}));
