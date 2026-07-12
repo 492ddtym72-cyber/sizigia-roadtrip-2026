@@ -50,6 +50,13 @@
   zeigt zunächst nur eine zustandslose Vorschau; erst „In Apple Mail öffnen“
   legt einen Send-Intent an. Der fachliche Status ändert sich ausschließlich
   nach Sent-Mail-Erkennung oder manueller Versandbestätigung.
+  Der Runner bleibt standardmäßig deaktiviert. Die Auswertung entfernt jetzt
+  auch französische, spanische und italienische Zitatverläufe, versteht
+  zentrale französische/spanische Statusformulierungen und verlangt immer
+  einen passenden Absender. Doppelte Message-IDs werden beim Retry ignoriert;
+  verifizierte Kontaktdaten können nicht mehr aus Mail-Events überschrieben
+  werden. App, Bridge und Cloud-Runner schreiben Firebase konfliktgeschützt
+  mit ETags.
 - **App-Struktur:** Die Web-App ist ohne Build-Schritt in `index.html`,
   `styles.css`, `map-data.js` und `app.js` getrennt. V8 ergänzt lokale/cloud
   Runner-Gesundheit und eine begrenzte manuelle Prüfwarteschlange. Der

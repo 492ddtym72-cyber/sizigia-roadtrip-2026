@@ -36,13 +36,15 @@ async function applyEvents(encoded){
   return conditionalUpdate(state=>{
     const a=state.mailAssistant||(state.mailAssistant={}),now=new Date().toISOString();
     a.processedMessageIds=Array.isArray(a.processedMessageIds)?a.processedMessageIds:[];a.draftRequests=Array.isArray(a.draftRequests)?a.draftRequests:[];a.reviewQueue=Array.isArray(a.reviewQueue)?a.reviewQueue:[];a.runners=a.runners||{};const local=a.runners.local||(a.runners.local={});let changed=events.length===0,hadError=false;
+    if(Date.parse(a.lease?.expiresAt||'')>Date.now())throw new Error('Cloud-Mail-Check läuft; lokales Anwenden wurde sicher abgebrochen');
     for(const e of events){
       if(e.assistantError!==undefined){a.lastError=local.lastError=String(e.assistantError||'');hadError=!!local.lastError;changed=true;continue;}
       if(e.draftRequest){if(!a.draftRequests.some(x=>x.id===e.draftRequest.id))a.draftRequests.push(e.draftRequest);changed=true;continue;}
       if(e.reviewItem){if(!a.reviewQueue.some(x=>x.id===e.reviewItem.id))a.reviewQueue.push({...e.reviewItem,excerpt:String(e.reviewItem.excerpt||'').slice(0,600)});changed=true;continue;}
+      if(e.messageId&&a.processedMessageIds.includes(e.messageId))continue;
       const {candidate,place}=locate(state,e.searchId,e.candidateId);if(!candidate)continue;
       ['status','reply','replyQuote','nextAction','nextActionDate','price','tax','finalPrice','deposit','bookingRef','cancellationDeadline','arrivalWindow','parking','pitchNote','callWindow','mailMessageId','mailThreadSubject','repliedAt','draftState','confirmedAt'].forEach(k=>{if(e[k]!==undefined)candidate[k]=e[k];});
-      ['region','email','phone','link','lat','lng'].forEach(k=>{if(e[k]!==undefined)(place||candidate)[k]=e[k];});
+      ['region','email','phone','link','lat','lng'].forEach(k=>{if(e[k]===undefined)return;const target=place||candidate;if(place?.contactVerified===true)return;target[k]=e[k];if(['email','phone','link'].includes(k))target.contactVerified=false;});
       if(e.requestId){const req=a.draftRequests.find(x=>x.id===e.requestId);if(req){if(e.requestStatus)req.status=e.requestStatus;if(e.readyAt)req.readyAt=e.readyAt;if(e.sentAt)req.sentAt=e.sentAt;if(e.error)req.error=e.error;}}
       if(e.messageId&&!a.processedMessageIds.includes(e.messageId))a.processedMessageIds.push(e.messageId);changed=true;
       if(e.status||e.reply){state.log=Array.isArray(state.log)?state.log:[];state.log.push({id:`mail-${Date.now()}-${Math.random().toString(36).slice(2,8)}`,ts:now,who:'Mail-Assistent',desc:`hat die Antwort von „${place?.name||candidate.name}“ ausgewertet`,undo:null});state.log=state.log.slice(-60);}
