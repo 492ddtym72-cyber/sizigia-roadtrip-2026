@@ -21,7 +21,7 @@ gespeichert. Damit nichts verloren geht und alle den gleichen Stand haben:
 
 ### Cloud-Sync (alle sehen denselben Stand)
 
-Ist `CLOUD_URL` in `index.html` gesetzt (Firebase Realtime Database), synchron­isieren
+Ist `CLOUD_URL` in `app.js` gesetzt (Firebase Realtime Database), synchron­isieren
 sich alle Geräte automatisch: Änderungen werden ~1 s nach dem Tippen hochgeladen,
 alle 25 s sowie beim Öffnen/Fokussieren abgeglichen. Offline funktioniert alles
 weiter (lokal), synchronisiert wird sobald wieder Netz da ist — Status steht
@@ -36,4 +36,7 @@ gibt es die automatischen Sicherungen in der Übersicht.
 
 ## Für Entwickler & KI-Agenten
 
-Alles Wichtige steht in [`AGENTS.md`](AGENTS.md).
+Die App bleibt ohne Build-Schritt: `index.html` lädt `styles.css`,
+`map-data.js` und `app.js` als lokale klassische Assets. Alles Wichtige steht
+in [`AGENTS.md`](AGENTS.md); der standardmäßig deaktivierte iCloud-Runner ist in
+[`docs/CLOUD_MAIL_SETUP.md`](docs/CLOUD_MAIL_SETUP.md) beschrieben.
