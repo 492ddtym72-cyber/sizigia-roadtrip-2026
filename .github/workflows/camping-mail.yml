@@ -2,7 +2,8 @@ name: Camping mail safety net
 
 on:
   schedule:
-    - cron: '13,43 * * * *'
+    # 08:00, 14:00 und 20:00 in der europäischen Sommerzeit (UTC+2).
+    - cron: '0 6,12,18 * * *'
   workflow_dispatch:
 
 permissions:

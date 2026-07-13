@@ -60,8 +60,12 @@
   zentrale französische/spanische Statusformulierungen und verlangt immer
   einen passenden Absender. Doppelte Message-IDs werden beim Retry ignoriert;
   verifizierte Kontaktdaten können nicht mehr aus Mail-Events überschrieben
-  werden. App, Bridge und Cloud-Runner schreiben Firebase konfliktgeschützt
-  mit ETags.
+  werden. IMAP-Entwürfe verwenden eine deterministische Message-ID pro
+  Entwurfsanfrage, damit auch ein Abbruch zwischen iCloud-Append und
+  Firebase-Update keinen zweiten Entwurf erzeugt. Der GitHub-Workflow läuft
+  bei Aktivierung um 06:00, 12:00 und 18:00 UTC (im Sommer ungefähr 08:00,
+  14:00 und 20:00 MESZ). App, Bridge und Cloud-Runner schreiben Firebase
+  konfliktgeschützt mit ETags.
 - **App-Struktur:** Die Web-App ist ohne Build-Schritt in `index.html`,
   `styles.css`, `map-data.js` und `app.js` getrennt. V8 ergänzt lokale/cloud
   Runner-Gesundheit und eine begrenzte manuelle Prüfwarteschlange. Der
