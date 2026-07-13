@@ -21,7 +21,7 @@
 - Firebase CLI: `export PATH="/Users/anonymous/.hermes/node/bin:$PATH"`,
   eingeloggt mit Freddis Google-Konto (`firebase login:list`).
   Regeln neu deployen: `firebase deploy --only database --project roadtrip-to-sizigia-eclipse`
-- **Schlafplatz-Radar (Schema V10 live):** Dauerhaftes Campingplatz-Register
+- **Schlafplatz-Radar (Schema V11 live):** Dauerhaftes Campingplatz-Register
   (`sleepPlaces`) plus datumsbezogene Anfragen in den Nacht-Suchen. Positionen
   werden einmalig per Karten-Picker oder koordinatenhaltigem Maps-Link erfasst;
   die Offline-Karte zeigt Statusfarben wahlweise pro Nacht oder für die gesamte
@@ -41,6 +41,11 @@
   bestehenden Einträge migriert. „Camping Río Ara“ wird, solange unkontaktiert,
   durch „Camping Ribera del Ara“ ersetzt. La Chapelle und Ribera del Ara haben
   keine verifizierte offizielle E-Mail und bleiben für E-Mail-Entwürfe gesperrt.
+  V11 trennt die geplante Nacht von einem flexiblen Anreisefenster. Die
+  mittleren Routenkorridore fragen nun nach genau einer Nacht an einem
+  beliebigen verfügbaren Anreisetag innerhalb eines realistischen
+  Zwei-Tage-Fensters. Ein platzspezifisches `offeredArrivalDate` verhindert,
+  dass eine spätere Reservierungsantwort ohne konkretes Datum formuliert wird.
 - **Camping-Mail-Assistent:** Lokale Codex-Automation prüft tagsüber um ca.
   08:00, 14:00 und 20:00 ausschließlich campingbezogene Antworten in iCloud
   Inbox/Sent. `tools/camping-mail-bridge.mjs` liefert konfliktgeschützte

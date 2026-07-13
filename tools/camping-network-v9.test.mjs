@@ -38,6 +38,8 @@ vm.runInNewContext(source.slice(seedStart,seedEnd).replace('const CAMPING_NETWOR
 assert.equal(sandbox.hubs.length,7);
 assert.equal(new Set(sandbox.hubs.map(x=>x.id)).size,7);
 assert.ok(sandbox.hubs.every(x=>x.target===4&&x.startDate&&x.endDate));
+assert.ok(sandbox.hubs.every(x=>x.arrivalWindowStart&&x.arrivalWindowEnd),'Jeder Korridor braucht ein flexibles Anreisefenster');
+assert.equal(sandbox.hubs.find(x=>x.id==='provence-east').arrivalWindowEnd,'2026-08-05');
 const candidateStart=source.indexOf('const CAMPING_NETWORK_CANDIDATES =');
 assert.notEqual(candidateStart,-1,'CAMPING_NETWORK_CANDIDATES fehlt');
 const candidateEnd=source.indexOf('\n];',candidateStart)+3;

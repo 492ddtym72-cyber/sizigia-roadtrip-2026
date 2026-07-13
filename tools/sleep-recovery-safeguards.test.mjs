@@ -15,6 +15,7 @@ assert.equal(app.run('state.sleepSearches.reduce((n,s)=>n+s.candidates.length,0)
 assert.equal(app.run('state.sleepSearches.every(s=>s.mode==="network")'), true);
 assert.equal(app.run('state.meta.campingNetworkSeeded'), true);
 assert.equal(app.run('new Set(state.sleepSearches.map(s=>s.networkKey)).size'), 7, 'Korridore eindeutig');
+assert.equal(app.run('state.sleepSearches.find(s=>s.networkKey==="provence-east").arrivalWindowEnd'),'2026-08-05','Provence braucht zwei mögliche Anreisetage');
 
 // 2) „Bestätigt“ (booked) erscheint auf der Karte — in beiden Karten-Modi.
 {
@@ -33,6 +34,27 @@ assert.equal(app.run('new Set(state.sleepSearches.map(s=>s.networkKey)).size'), 
   })()`);
   assert.ok(marked.night >= 1, 'booked muss auf „Diese Nacht“ erscheinen');
   assert.ok(marked.route >= 1, 'booked muss auf „Gesamte Route“ erscheinen');
+}
+
+// 8) Flexible Korridore fragen nach genau einer Nacht innerhalb des Fensters;
+//    eine Reservierungsantwort bleibt blockiert, bis der Platz ein Datum nennt.
+{
+  const mail=app.run(`(()=>{
+    const s=state.sleepSearches.find(x=>x.networkKey==='provence-east'),c=s.candidates[0];
+    const inquiry=sleepEmailText(s,sleepCandidateView(c),'inquiry');
+    const guarded=sleepEmailText(s,sleepCandidateView(c),'reserve');
+    c.offeredArrivalDate='2026-08-05';
+    const exact=sleepEmailText(s,sleepCandidateView(c),'reserve');
+    c.offeredArrivalDate='';
+    return {label:sleepSearchWindowLabel(s),inquiry,guarded,exact};
+  })()`);
+  assert.ok(mail.label.includes('flexibel'));
+  assert.ok(mail.inquiry.includes('arriving on any day from 4 August 2026 to 5 August 2026'));
+  assert.ok(mail.inquiry.includes('We only need one night'));
+  assert.ok(mail.guarded.includes('confirm the exact arrival date'));
+  assert.ok(!mail.guarded.includes('We would like to accept your offer'));
+  assert.ok(mail.exact.includes('from 5 August 2026 to 6 August 2026'));
+  assert.ok(mail.exact.includes('We would like to accept your offer'));
 }
 
 // 3) „Nicht verfügbar“ (unavailable) bleibt aus operativen Ansichten und der
@@ -147,4 +169,4 @@ assert.equal(app.run('new Set(state.sleepSearches.map(s=>s.networkKey)).size'), 
   assert.equal(repaired.selectedExists,true,'reparierte Auswahl muss auf eine vorhandene Route zeigen');
 }
 
-console.log(JSON.stringify({ok:true, seededOnFirstOfflineLaunch:true, bookedOnMap:true, absagenFilter:true, unverifiedDefault:true, cancelKeepsStatus:true, draftRequestedFallback:'awaiting',emptyRoutesRepaired:true}));
+console.log(JSON.stringify({ok:true, seededOnFirstOfflineLaunch:true, bookedOnMap:true, absagenFilter:true, unverifiedDefault:true, cancelKeepsStatus:true, draftRequestedFallback:'awaiting',emptyRoutesRepaired:true,flexibleArrivalWindows:true}));
