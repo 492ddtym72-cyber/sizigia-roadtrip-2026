@@ -17,6 +17,21 @@ assert.equal(app.run('state.meta.campingNetworkSeeded'), true);
 assert.equal(app.run('new Set(state.sleepSearches.map(s=>s.networkKey)).size'), 7, 'Korridore eindeutig');
 assert.equal(app.run('state.sleepSearches.find(s=>s.networkKey==="provence-east").arrivalWindowEnd'),'2026-08-05','Provence braucht zwei mögliche Anreisetage');
 
+// Gesendete, noch unbeantwortete Anfragen erscheinen blau auf der Karte.
+// Ein nur geöffneter Entwurf darf dagegen keinen Kontakt vortäuschen.
+{
+  const result=app.run(`(()=>{
+    const s=state.sleepSearches.find(x=>x.candidates.length>1),a=s.candidates[0],d=s.candidates[1];
+    const pa=sleepPlace(a)||a,pd=sleepPlace(d)||d,prev={as:a.status,ds:d.status,alat:pa.lat,alng:pa.lng,dlat:pd.lat,dlng:pd.lng};
+    a.status='awaiting';pa.lat=43;pa.lng=5;d.status='draft_requested';pd.lat=43.2;pd.lng=5.2;
+    const html=buildSleepMap(s,[]),points=(html.match(/map-pt/g)||[]).length,blue=html.includes('#54c8ff');
+    Object.assign(a,{status:prev.as});Object.assign(d,{status:prev.ds});Object.assign(pa,{lat:prev.alat,lng:prev.alng});Object.assign(pd,{lat:prev.dlat,lng:prev.dlng});
+    return {points,blue};
+  })()`);
+  assert.equal(result.points,1,'nur die wirklich gesendete Anfrage gehört auf die Karte');
+  assert.equal(result.blue,true,'offene Anfrage muss blau markiert sein');
+}
+
 // 2) „Bestätigt“ (booked) erscheint auf der Karte — in beiden Karten-Modi.
 {
   const marked = app.run(`(()=>{
