@@ -13,4 +13,10 @@ for(const mode of modes){
 }
 
 assert.equal(formatLetter('Dear team,\r\n\r\nFirst.\r\n\r\n\r\nKind regards,   '),'Dear team,\n\nFirst.\n\nKind regards,\n\n');
-console.log(JSON.stringify({ok:true,modes:modes.length,letterSpacing:true,blankSignature:true}));
+const twoPitchBody=draftBody(state,search,{...candidate,pitchNote:'Für sechs Erwachsene sind zwei Stellplätze nötig.'},place,'dimensions');
+assert.ok(twoPitchBody.includes('would therefore need two pitches'));
+assert.ok(twoPitchBody.includes('preferably next to each other'));
+assert.ok(twoPitchBody.includes('total price for all six adults'));
+assert.equal(twoPitchBody.endsWith('Kind regards,\n\n'),true);
+assert.throws(()=>draftBody({...state,vehicles:[{id:'v-camper'}]},search,{...candidate,pitchNote:'Two pitches are required.'},place,'dimensions'),/Camperlänge fehlt/);
+console.log(JSON.stringify({ok:true,modes:modes.length,letterSpacing:true,blankSignature:true,twoPitchReply:true}));

@@ -19,7 +19,7 @@ assert.equal(app.run('state.sleepSearches.find(s=>s.networkKey==="provence-east"
 assert.equal(app.run('state.schemaVersion'),12,'Frankreich-Netz braucht Schema V12');
 assert.equal(app.run('state.sleepSearches.find(s=>s.networkKey==="camargue").candidates.length'),3,'Camargue ist ein eigener Korridor');
 assert.equal(app.run('state.sleepSearches.flatMap(s=>s.candidates).filter(c=>c.preferred).length'),6,'sechs recherchierte Favoriten');
-assert.equal(app.run('state.sleepSearches.flatMap(s=>s.candidates).filter(c=>c.preferred).every(c=>c.status==="new"&&c.contactVerified===false)'),true,'Favoriten bleiben unkontaktiert und gesperrt');
+assert.equal(app.run('state.sleepSearches.flatMap(s=>s.candidates).filter(c=>c.preferred).every(c=>c.status==="new"&&c.contactVerified===true)'),true,'Favoriten bleiben unkontaktiert, sind nach offizieller Prüfung aber freigeschaltet');
 assert.ok(app.run(`(()=>{const s=state.sleepSearches.find(x=>x.networkKey==='camargue'),c=s.candidates.find(x=>x.preferred);return sleepCandidateCard(s,c);})()`).includes('★ Favorit'),'Favorit muss auf der Karte lesbar sein');
 
 // Gesendete, noch unbeantwortete Anfragen erscheinen blau auf der Karte.

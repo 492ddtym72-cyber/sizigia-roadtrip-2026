@@ -60,6 +60,9 @@ const verifiedStart=source.indexOf('const CAMPING_NETWORK_VERIFIED =');
 const verifiedEnd=source.indexOf(';',verifiedStart)+1;
 const verifyBox={CAMPING_NETWORK_CANDIDATES:sandbox.candidates,uid:()=>`new-place`,console};
 vm.runInNewContext(source.slice(verifiedStart,verifiedEnd).replace('const CAMPING_NETWORK_VERIFIED','this.CAMPING_NETWORK_VERIFIED'),verifyBox);
+const preferred=sandbox.candidates.filter(x=>x.preferred);
+assert.equal(preferred.length,6);
+assert.ok(preferred.every(x=>x.email&&verifyBox.CAMPING_NETWORK_VERIFIED.has(x.name)),'Alle Favoriten brauchen eine offiziell geprüfte E-Mail-Adresse');
 vm.runInNewContext(extract('applyCampingContactVerificationV10')+';this.apply=applyCampingContactVerificationV10;',verifyBox);
 const migrationState={meta:{},sleepPlaces:[
   {id:'mare',name:'Camping Mare Monti',email:'info@campingmaremonti.com',lat:44.2908,lng:9.4147,contactVerified:false},

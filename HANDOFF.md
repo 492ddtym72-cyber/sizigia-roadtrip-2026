@@ -46,6 +46,15 @@
   beliebigen verfügbaren Anreisetag innerhalb eines realistischen
   Zwei-Tage-Fensters. Ein platzspezifisches `offeredArrivalDate` verhindert,
   dass eine spätere Reservierungsantwort ohne konkretes Datum formuliert wird.
+  V12 ergänzt den Crit’Air-freien Frankreich-Korridor um Camargue und zwölf
+  neue Optionen. Sechs bevorzugte Kontakte wurden am 14.07.2026 auf ihren
+  offiziellen Websites geprüft und sind für Entwürfe freigeschaltet. Les
+  Restanques ist für 4./5.08. reservierbar; Youcamp hat am 5./6.08. Platz,
+  verlangt für sechs Erwachsene aber zwei Stellplätze. Dafür gibt es eine
+  eigene, bis zur eingetragenen Camperlänge gesperrte Antwortvorlage. Esterel
+  ist abgesagt, Lago Levico bleibt als spontane Vor-Ort-Option erhalten. Die
+  vier Cassis-Anfragen (Les Cigales, Aux Portes de Cassis, Youcamp, La Sauge)
+  sind als tatsächlich gesendet markiert.
 - **Camping-Mail-Assistent:** Lokale Codex-Automation prüft tagsüber um ca.
   08:00, 14:00 und 20:00 ausschließlich campingbezogene Antworten in iCloud
   Inbox/Sent. `tools/camping-mail-bridge.mjs` liefert konfliktgeschützte
