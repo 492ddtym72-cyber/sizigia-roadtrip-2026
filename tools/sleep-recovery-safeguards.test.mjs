@@ -72,6 +72,20 @@ assert.equal(app.run('state.sleepSearches.find(s=>s.networkKey==="provence-east"
   assert.ok(mail.exact.includes('We would like to accept your offer'));
 }
 
+// Apple Mail auf iPhone benötigt im mailto:-Body CRLF-Zeilenumbrüche. Sonst
+// können alle Absätze als ein einziger Textblock erscheinen.
+{
+  const mail=app.run(`(()=>{
+    const s=state.sleepSearches.find(x=>x.networkKey==='cassis-marseille'),c=s.candidates[0],text=sleepEmailText(s,sleepCandidateView(c),'inquiry'),url=sleepMailto(s,sleepCandidateView(c),'inquiry');
+    return {text,url,decoded:decodeURIComponent(url.split('&body=')[1])};
+  })()`);
+  assert.ok(mail.text.startsWith('Dear '));
+  assert.ok(mail.text.includes('\n\nIf advance reservations'));
+  assert.ok(mail.text.endsWith('Kind regards,\n\n'));
+  assert.ok(mail.url.includes('%0D%0A%0D%0A'),'mailto muss echte Briefabsätze kodieren');
+  assert.ok(mail.decoded.includes('\r\n\r\nIf advance reservations'));
+}
+
 // 3) „Nicht verfügbar“ (unavailable) bleibt aus operativen Ansichten und der
 //    Karte heraus und erscheint NUR unter „Absagen“.
 {
