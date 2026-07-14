@@ -79,7 +79,10 @@
   versendet nie und verändert keine Mailbox-Nachrichten. „Antwort vorbereiten“
   zeigt zunächst nur eine zustandslose Vorschau; erst „In Apple Mail öffnen“
   legt einen Send-Intent an. Der fachliche Status ändert sich ausschließlich
-  nach Sent-Mail-Erkennung oder manueller Versandbestätigung.
+  nach Sent-Mail-Erkennung oder manueller Versandbestätigung. Lokal erzeugte
+  Apple-Mail-Entwürfe werden temporär im Plain-Text-Modus angelegt und stellen
+  die persönliche Mail-Einstellung danach wieder her; dadurch erscheint der
+  Nachrichtentext nicht als violette Zitat-Ebene.
   Der Runner bleibt standardmäßig deaktiviert. Die Auswertung entfernt jetzt
   auch französische, spanische und italienische Zitatverläufe, versteht
   zentrale französische/spanische Statusformulierungen und verlangt immer

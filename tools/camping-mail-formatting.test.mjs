@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
 import {draftBody,draftSubject,formatLetter} from './camping-mail-templates.mjs';
 
 const state={crew:[1,2,3,4,5,6],vehicles:[{id:'v-camper',lengthM:'5.2'}]},search={startDate:'2026-08-05',endDate:'2026-08-06',arrivalWindowStart:'2026-08-05',arrivalWindowEnd:'2026-08-06',region:'Cassis'},candidate={name:'Camping Test',offeredArrivalDate:'2026-08-05',reply:'',nextAction:''},place={name:'Camping Test'};
@@ -24,4 +25,7 @@ assert.ok(twoPitchBody.includes('preferably next to each other'));
 assert.ok(twoPitchBody.includes('total price for all six adults'));
 assert.equal(twoPitchBody.endsWith('Kind regards,\n\n'),true);
 assert.throws(()=>draftBody({...state,vehicles:[{id:'v-camper'}]},search,{...candidate,pitchNote:'Two pitches are required.'},place,'dimensions'),/Camperlänge fehlt/);
-console.log(JSON.stringify({ok:true,modes:modes.length,letterSpacing:true,blankSignature:true,twoPitchReply:true}));
+const appleMailCreator=fs.readFileSync(new URL('./create-apple-mail-draft.mjs',import.meta.url),'utf8');
+assert.ok(appleMailCreator.includes('set default message format to plain format'),'Apple Mail muss normalen Text statt Zitatebene erzeugen');
+assert.ok(appleMailCreator.match(/set default message format to previousMessageFormat/g)?.length>=2,'Mail-Format muss nach Erfolg und Fehler wiederhergestellt werden');
+console.log(JSON.stringify({ok:true,modes:modes.length,letterSpacing:true,blankSignature:true,twoPitchReply:true,plainTextDrafts:true}));

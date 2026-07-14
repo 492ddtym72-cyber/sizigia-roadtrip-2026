@@ -25,11 +25,22 @@ on run argv
   set messageSubject to item 2 of argv
   set messageBody to item 3 of argv
   tell application "Mail"
-    set draftMessage to make new outgoing message with properties {visible:false, subject:messageSubject, content:messageBody}
-    tell draftMessage
-      make new to recipient at end of to recipients with properties {address:recipientAddress}
-      save
-    end tell
+    set previousMessageFormat to default message format
+    try
+      -- Rich-Text-Entwürfe können per AppleScript versehentlich eine
+      -- Zitat-Ebene erben (violette Schrift + Seitenlinie). Ein neuer
+      -- Plain-Text-Entwurf enthält nur normalen Nachrichtentext.
+      set default message format to plain format
+      set draftMessage to make new outgoing message with properties {visible:false, subject:messageSubject, content:messageBody}
+      tell draftMessage
+        make new to recipient at end of to recipients with properties {address:recipientAddress}
+        save
+      end tell
+      set default message format to previousMessageFormat
+    on error errorMessage number errorNumber
+      set default message format to previousMessageFormat
+      error errorMessage number errorNumber
+    end try
   end tell
   return "saved"
 end run`;
