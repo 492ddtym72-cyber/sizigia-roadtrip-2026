@@ -1,6 +1,6 @@
 # HANDOFF — Status
 
-> Stand: 14.07.2026 · `main` ist der stabile Live-Stand.
+> Stand: 15.07.2026 · `main` ist der stabile Live-Stand.
 > Projektüberblick & Konventionen: [AGENTS.md](AGENTS.md).
 
 ## Aktueller Zustand ✅
@@ -21,7 +21,18 @@
 - Firebase CLI: `export PATH="/Users/anonymous/.hermes/node/bin:$PATH"`,
   eingeloggt mit Freddis Google-Konto (`firebase login:list`).
   Regeln neu deployen: `firebase deploy --only database --project roadtrip-to-sizigia-eclipse`
-- **Schlafplatz-Radar (Schema V13 live):** Dauerhaftes Campingplatz-Register
+- **Heute & Aufgaben (Schema V14):** Die Startseite ist ein ruhiges,
+  abgeleitetes Tages-Cockpit: Reisephase, passende aktuelle/nächste Etappe,
+  Schlafplatzlage, maximal fünf relevante Aufgaben und drei Schnellaktionen.
+  Reines Öffnen verändert keinerlei Reise- oder Buchungsstatus. Passt keine
+  Schlafplatzsuche zum Datum der gezeigten Etappe, wird die Lücke ausdrücklich
+  angezeigt statt ein späterer Korridor fälschlich zugeordnet. Aufgaben kennen
+  nun Status (`offen`, `wartet`, `Entscheidung`, `erledigt`), verantwortliche
+  Person, Fälligkeitsdatum und Notiz. Alte Erinnerungen werden verlustfrei
+  migriert; Erledigen und Wiederöffnen erhält den vorherigen Status.
+  Produktleitplanken und die nächsten wiederverwendbaren Ausbaustufen stehen
+  in `docs/specs/product-direction.md`.
+- **Schlafplatz-Radar (Camping-Grundlage bis V13):** Dauerhaftes Campingplatz-Register
   (`sleepPlaces`) plus datumsbezogene Anfragen in den Nacht-Suchen. Positionen
   werden einmalig per Karten-Picker oder koordinatenhaltigem Maps-Link erfasst;
   die Offline-Karte zeigt Statusfarben wahlweise pro Nacht oder für die gesamte

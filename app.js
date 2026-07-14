@@ -5,7 +5,7 @@
      später austauschbar gegen Cloud-Sync (gleiche Schnittstelle).
    ============================================================ */
 const STORAGE_KEY = 'sizigia-roadtrip-2026';
-const SCHEMA_VERSION = 13;
+const SCHEMA_VERSION = 14;
 const LOG_MAX = 60;
 const UNDO_MAX = 20;
 
@@ -49,6 +49,10 @@ function defaultState(){
   return {
     schemaVersion: SCHEMA_VERSION,
     meta: { lastSaved: null, created: new Date().toISOString(), campingNetworkSeeded:false },
+    trip:{
+      id:'trip-sizigia-2026', title:'Sizigia 2026', subtitle:'Roadtrip · München → Huesca',
+      startDate:'2026-08-02', endDate:'2026-08-17', homeBase:'München / Innsbruck'
+    },
     crew,
     selectedRoute: 'r-kueste',
     routes: [
@@ -518,6 +522,8 @@ function migrate(s){
   // erwarten stets eine ausgewählte Route. Kaputte/zu stark gekürzte Backups
   // werden deshalb auf die editierbaren Standardrouten zurückgeführt.
   if(!Array.isArray(s.routes)||!s.routes.length){s.routes=JSON.parse(JSON.stringify(def.routes));s.selectedRoute=def.selectedRoute;}
+  s.trip=Object.assign({},def.trip,s.trip&&typeof s.trip==='object'?s.trip:{});
+  ['id','title','subtitle','startDate','endDate','homeBase'].forEach(k=>s.trip[k]=String(s.trip[k]||def.trip[k]||''));
   s.archive=s.archive&&typeof s.archive==='object'?s.archive:{campingReminders:[]};
   s.archive.campingReminders=Array.isArray(s.archive.campingReminders)?s.archive.campingReminders:[];
   // Verschachtelte Pflicht-Arrays normalisieren (ebenfalls Firebase-Schutz)
@@ -531,15 +537,17 @@ function migrate(s){
   allListItems(s).forEach(normalizeListItem);
   s.budget.expenses = s.budget.expenses || [];
   s.budget.expenses.forEach(e=>{ e.sharers = e.sharers || []; });
-  s.reminders = (s.reminders || []).map(r=>({
-    id:r.id || uid(),
-    title:String(r.title || ''),
-    done:!!r.done,
-    priority:!!r.priority,
-    createdAt:r.createdAt || new Date().toISOString(),
-    createdBy:r.createdBy || null,
-    link:r.link && r.link.type==='listItem' ? {type:'listItem', ref:r.link.ref, itemId:r.link.itemId} : undefined
-  })).filter(r=>r.title);
+  s.reminders = (s.reminders || []).map(r=>{
+    const done=!!r.done||r.status==='done',allowed=['open','waiting','decision','done'],status=done?'done':(allowed.includes(r.status)?r.status:'open');
+    return {
+      id:r.id || uid(), title:String(r.title || ''), done, status,
+      previousStatus:['open','waiting','decision'].includes(r.previousStatus)?r.previousStatus:undefined,
+      priority:!!r.priority, ownerId:s.crew.some(c=>c.id===r.ownerId)?r.ownerId:null,
+      dueDate:/^\d{4}-\d{2}-\d{2}$/.test(r.dueDate||'')?r.dueDate:'', note:String(r.note||''),
+      createdAt:r.createdAt || new Date().toISOString(), createdBy:r.createdBy || null,
+      link:r.link && r.link.type==='listItem' ? {type:'listItem', ref:r.link.ref, itemId:r.link.itemId} : undefined
+    };
+  }).filter(r=>r.title);
   // V3 übernimmt die bisherige sichtbare Reihenfolge einmalig als persistierte
   // Ausgangsreihenfolge; danach bestimmen ausschließlich die Pfeil-Buttons.
   if(fromVersion < 3) s.reminders.sort((a,b)=>(a.done===b.done ? new Date(b.createdAt)-new Date(a.createdAt) : (a.done?1:-1)));
@@ -940,7 +948,7 @@ function applyRevert(u){
     case 'remAdd':   { const i=state.reminders.findIndex(r=>r.id===u.id); if(i<0) throw 0; state.reminders.splice(i,1); break; }
     case 'remDel':   state.reminders.splice(Math.min(u.idx,state.reminders.length),0,u.reminder); break;
     case 'remEdit':  Object.assign(need(state.reminders.find(r=>r.id===u.id)), u.prev); break;
-    case 'remToggle': need(state.reminders.find(r=>r.id===u.id)).done = u.prev; break;
+    case 'remToggle': { const r=need(state.reminders.find(r=>r.id===u.id)),done=u.prevDone!==undefined?u.prevDone:!!u.prev;r.done=done;r.status=u.prevStatus||(done?'done':'open');if(u.prevPreviousStatus)r.previousStatus=u.prevPreviousStatus;else delete r.previousStatus;break; }
     case 'remMove': { const a=state.reminders.findIndex(r=>r.id===u.id), b=state.reminders.findIndex(r=>r.id===u.otherId); if(a<0||b<0) throw 0; [state.reminders[a],state.reminders[b]]=[state.reminders[b],state.reminders[a]]; break; }
     case 'pollAdd':  { const i=state.polls.findIndex(p=>p.id===u.id); if(i<0) throw 0; state.polls.splice(i,1); break; }
     case 'pollDel':  state.polls.splice(Math.min(u.idx,state.polls.length),0,u.poll); break;
@@ -1493,8 +1501,13 @@ function applyPos(target, posStr, keys=['lat','lng']){
    fields: [{key,label,type:'text'|'number'|'tripDate'|'unit'|'textarea'|'select',options,value,placeholder}]
    ============================================================ */
 let modalCtx = null;
+function modalDateBounds(){
+  const years=[state?.trip?.startDate,state?.trip?.endDate].map(x=>Number(String(x||'').slice(0,4))).filter(Number.isFinite),lo=years.length?Math.min(...years)-1:new Date().getFullYear()-1,hi=years.length?Math.max(...years)+1:new Date().getFullYear()+2;
+  return {min:`${lo}-01-01`,max:`${hi}-12-31`};
+}
 function openModal(title, fields, onSave, onDelete, opts={}){
   modalCtx = {fields, onSave, onDelete, ...opts};
+  const dateBounds=modalDateBounds();
   const box = document.getElementById('modalBox');
   box.innerHTML = '<h3>' + esc(title) + '</h3>' + fields.map((f,i)=>{
     let input;
@@ -1503,7 +1516,7 @@ function openModal(title, fields, onSave, onDelete, opts={}){
     else if(f.type==='map') input = pickMapField(i, f.value, f.auto);
     else if(f.type==='checkbox') input = '<label class="modal-check"><input id="mf'+i+'" type="checkbox" '+(f.value?'checked':'')+'> '+esc(f.text||'aktiv')+'</label>';
     else if(f.type==='crewMulti') input = crewMultiField(i, f.value || []);
-    else if(f.type==='tripDate'||f.type==='isoDate') input = '<input id="mf'+i+'" type="date" min="2026-01-01" max="2026-12-31" value="'+esc(f.value||'')+'">';
+    else if(f.type==='tripDate'||f.type==='isoDate') input = '<input id="mf'+i+'" type="date" min="'+dateBounds.min+'" max="'+dateBounds.max+'" value="'+esc(f.value||'')+'">';
     else if(f.type==='unit') input = '<div class="unit-field"><input id="mf'+i+'" type="number" min="0" step="'+esc(f.step||'0.25')+'" inputmode="decimal" value="'+esc(f.value??'')+'" placeholder="'+esc(f.placeholder||'')+'"><span>'+esc(f.unit)+'</span></div>';
     else input = '<input id="mf'+i+'" type="'+(f.type==='number'?'number':'text')+'" '+(f.type==='number'?'step="0.01" inputmode="decimal"':'')+(f.datalist?' list="dl'+i+'" autocomplete="off"':'')+' value="'+esc(f.value||'')+'" placeholder="'+esc(f.placeholder||'')+'">'+(f.datalist?'<datalist id="dl'+i+'">'+f.datalist.map(o=>'<option value="'+esc(o)+'">').join('')+'</datalist>':'');
     return '<div class="field"><label>'+esc(f.label)+'</label>'+input+'</div>';
@@ -1570,7 +1583,7 @@ function toggleCrewMulti(i, id){
    NAVIGATION
    ============================================================ */
 const TABS = [
-  {id:'uebersicht', label:'Übersicht'},
+  {id:'uebersicht', label:'Heute'},
   {id:'route',      label:'Route'},
   {id:'spots',      label:'Stopps'},
   {id:'logistik',   label:'Fahrzeuge'},
@@ -1637,14 +1650,14 @@ function reminderCounts(){
     polls:(state.polls||[]).filter(p=>!p.closed).length
   };
 }
-// Kurzfassung, was gerade ansteht: offene Umfrage (Frage) schlägt fällige Erinnerung (Titel)
+// Kurzfassung, was gerade ansteht: offene Umfrage (Frage) schlägt fällige Aufgabe (Titel)
 function reminderHomeHighlight(){
   const openPolls = (state.polls||[]).filter(p=>!p.closed).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
   const openRems = (state.reminders||[]).filter(r=>!r.done);
   if(openPolls.length) return 'Umfrage offen: „'+esc(openPolls[0].question)+'"';
   if(openRems.length){
     const next = esc(openRems[0].title);
-    return openRems.length>1 ? openRems.length+' Erinnerungen offen · nächste: „'+next+'"' : 'Erinnerung fällig: „'+next+'"';
+    return openRems.length>1 ? openRems.length+' Aufgaben offen · nächste: „'+next+'"' : 'Aufgabe offen: „'+next+'"';
   }
   return 'Alles erledigt – keine offenen Punkte 🎉';
 }
@@ -1652,14 +1665,14 @@ function renderReminderHomeTile(){
   const c = reminderCounts();
   const total = c.reminders + c.polls;
   return `
-    <button class="home-tile home-reminder-tile" onclick="switchTab('reminder')" aria-label="Orga: Erinnerungen und Umfragen öffnen">
+    <button class="home-tile home-reminder-tile" onclick="switchTab('reminder')" aria-label="Orga: Aufgaben und Entscheidungen öffnen">
       <div class="home-reminder-head">
         <span class="home-tile-icon" aria-hidden="true">${homeIconSvg('bell')}</span>
-        <b>Erinnerungen &amp; Umfragen</b>
+        <b>Aufgaben &amp; Entscheidungen</b>
         <span class="home-count-pill ${total?'active':'clear'}">${total ? total : homeIconSvg('check')}</span>
       </div>
       <div class="home-reminder-badges">
-        <span class="hr-badge rem">${homeIconSvg('bell')}${c.reminders} offen</span>
+        <span class="hr-badge rem">${homeIconSvg('bell')}${c.reminders} Aufgabe${c.reminders===1?'':'n'}</span>
         <span class="hr-badge poll">${homeIconSvg('poll')}${c.polls} Umfrage${c.polls===1?'':'n'}</span>
       </div>
       <span class="home-reminder-highlight">${reminderHomeHighlight()}</span>
@@ -1684,6 +1697,76 @@ function routeTotals(stages){
   });
   return {km, hTxt: String(Math.round(h*10)/10).replace('.',',')};
 }
+function localIsoDate(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
+function tripStageIso(stage){
+  const m=String(stage?.date||'').match(/(\d{1,2})\.(\d{1,2})\./),year=Number(String(state.trip?.startDate||'').slice(0,4))||new Date().getFullYear();
+  return m?`${year}-${String(m[2]).padStart(2,'0')}-${String(m[1]).padStart(2,'0')}`:'';
+}
+function tripDayContext(now=new Date()){
+  const route=state.routes.find(r=>r.id===state.selectedRoute)||state.routes[0],today=localIsoDate(now),stages=[...(route?.stages||[]),...(state.returnStages||[])].map(stage=>({stage,iso:tripStageIso(stage)})).filter(x=>x.iso).sort((a,b)=>a.iso.localeCompare(b.iso));
+  const configuredStart=state.trip?.startDate||'',configuredEnd=state.trip?.endDate||'',routeStart=stages[0]?.iso||'',routeEnd=stages.at(-1)?.iso||'',start=routeStart&&(!configuredStart||routeStart<configuredStart)?routeStart:configuredStart,end=routeEnd&&(!configuredEnd||routeEnd>configuredEnd)?routeEnd:configuredEnd;
+  const startDate=start?new Date(start+'T12:00:00'):null,endDate=end?new Date(end+'T12:00:00'):null,todayDate=new Date(today+'T12:00:00'),daysToStart=startDate?Math.round((startDate-todayDate)/86400000):null,tripDay=startDate?Math.floor((todayDate-startDate)/86400000)+1:null;
+  const exact=stages.find(x=>x.iso===today),next=stages.find(x=>x.iso>=today),last=stages.at(-1),phase=start&&today<start?'before':end&&today>end?'after':'during',pick=exact||next||(phase==='after'?last:null);
+  let timing='Reise in Planung';
+  if(phase==='before'&&daysToStart!=null)timing=daysToStart===0?'Abfahrt heute':daysToStart===1?'Morgen geht’s los':`${daysToStart} Tage bis zur Abfahrt`;
+  else if(phase==='during'&&tripDay!=null)timing=`Reisetag ${Math.max(1,tripDay)}`;
+  else if(phase==='after')timing='Reise abgeschlossen';
+  return {route,today,start,end,phase,timing,stage:pick?.stage||null,stageIso:pick?.iso||'',stageExact:!!exact};
+}
+function todaySleepSearch(ctx){
+  const rows=(state.sleepSearches||[]).map(search=>({search,start:search.arrivalWindowStart||search.startDate||'',end:search.arrivalWindowEnd||search.startDate||''})).filter(x=>x.start).sort((a,b)=>a.start.localeCompare(b.start));
+  // Der Schlafplatz muss zur gezeigten Etappe passen. Ohne Treffer zeigen wir
+  // bewusst eine Lücke statt stillschweigend einen späteren Routenkorridor.
+  const target=ctx.stageIso||ctx.today;
+  const exact=rows.find(x=>x.start<=target&&x.end>=target);
+  if(exact)return exact.search;
+  if(!ctx.stageIso)return (rows.find(x=>x.start>=ctx.today)||rows.at(-1))?.search||null;
+  return null;
+}
+function todayStaySummary(search){
+  if(!search)return {tone:'empty',title:'Noch keine Suche',meta:'Übernachtungsoptionen entlang der Route sammeln',filter:'waiting'};
+  const candidates=search.candidates||[],booked=candidates.filter(c=>c.status==='booked').length,usable=candidates.filter(c=>['available','reservable','call','deposit_required','reserving'].includes(c.status)).length,waiting=candidates.filter(c=>c.status==='awaiting').length;
+  if(booked)return {tone:'secured',title:'Unterkunft gesichert',meta:search.title,filter:'action'};
+  if(usable)return {tone:'usable',title:`${usable} nutzbare Option${usable===1?'':'en'}`,meta:`${search.title}${waiting?` · ${waiting} Antworten offen`:''}`,filter:'action'};
+  if(waiting)return {tone:'waiting',title:`${waiting} Anfrage${waiting===1?'':'n'} offen`,meta:search.title,filter:'waiting'};
+  return {tone:'empty',title:'Optionen ergänzen',meta:search.title,filter:'waiting'};
+}
+function todayActionSignals(){
+  const now=new Date(),rows=[];
+  (state.reminders||[]).filter(r=>!r.done).forEach((r,index)=>{
+    const due=r.dueDate?new Date(r.dueDate+'T12:00:00'):null,overdue=due&&due<new Date(now.getFullYear(),now.getMonth(),now.getDate(),12),score=(r.status==='decision'?0:r.priority?10:20)+(overdue?-5:0)+(r.dueDate?Math.min(5,index):8);
+    rows.push({kind:'reminder',id:r.id,title:r.title,meta:[r.ownerId?crewById(r.ownerId)?.name:'Noch niemand verantwortlich',reminderDueLabel(r)].filter(Boolean).join(' · '),status:r.status||'open',score});
+  });
+  const reviews=(state.mailAssistant?.reviewQueue||[]).filter(q=>q.status==='pending');
+  if(reviews.length)rows.push({kind:'mail',id:reviews[0].searchId||'',title:`${reviews.length} Camping-Antwort${reviews.length===1?'':'en'} einordnen`,meta:'Status prüfen, bevor Optionen automatisch verschoben werden',status:'decision',score:-20});
+  const drafts=(state.mailAssistant?.draftRequests||[]).filter(x=>['requested','ready','fallback'].includes(x.status));
+  if(drafts.length)rows.push({kind:'mail',id:drafts[0].searchId||'',title:`${drafts.length} Mail-Entwurf${drafts.length===1?'':'e'} prüfen`,meta:'Entwürfe verändern den fachlichen Status nicht',status:'waiting',score:4});
+  const needsDimensions=!camperProfile().lengthM&&(state.sleepSearches||[]).some(s=>(s.candidates||[]).some(c=>/camperlänge|camper length|vehicle size/i.test((c.nextAction||'')+' '+(c.reply||''))));
+  if(needsDimensions)rows.push({kind:'camper',id:'v-camper',title:'Camperlänge ergänzen',meta:'Wird für passende Reservierungsantworten benötigt',status:'open',score:5});
+  const polls=(state.polls||[]).filter(p=>!p.closed);
+  if(polls.length)rows.push({kind:'poll',id:polls[0].id,title:polls[0].question,meta:`Gruppenentscheidung · ${polls.length} offene Umfrage${polls.length===1?'':'n'}`,status:'decision',score:6});
+  return rows.sort((a,b)=>a.score-b.score).slice(0,5);
+}
+function openTodaySleep(searchId,filter){if(searchId)rememberSleepSearch(searchId);sleepFilter=filter||'action';sleepView='list';renderSleep();switchTab('sleep');}
+function openTodayAction(kind,id){
+  if(kind==='mail'){if(id)rememberSleepSearch(id);sleepFilter='action';sleepView='list';renderSleep();switchTab('sleep');return;}
+  if(kind==='camper'){switchTab('logistik');return;}
+  switchTab('reminder');
+  if(kind==='reminder'&&id)setTimeout(()=>document.querySelector(`[data-reminder-id="${id}"]`)?.scrollIntoView({block:'center',behavior:'smooth'}),100);
+}
+function renderTodayCockpit(){
+  const ctx=tripDayContext(),search=todaySleepSearch(ctx),stay=todayStaySummary(search),actions=todayActionSignals(),stage=ctx.stage,stageTitle=stage?(ctx.stageExact?'Heutige Etappe':ctx.phase==='before'?'Erste Etappe':'Nächste Etappe'):'Route weiter planen';
+  return `<div class="today-cockpit">
+    <div class="today-hero"><div class="today-eyebrow">${esc(ctx.phase==='before'?'Vorbereitung':ctx.phase==='after'?'Rückblick':'Unterwegs')}</div><div class="today-hero-row"><div><h2>${esc(state.trip?.title||'Unsere Reise')}</h2><p>${esc(ctx.timing)}</p></div><button class="today-route-link" onclick="switchTab('route')">Route →</button></div></div>
+    <div class="today-status-grid">
+      <button class="today-status-card" onclick="switchTab('route')"><span>${esc(stageTitle)}</span><b>${stage?esc(stage.from)+' → '+esc(stage.to):'Etappen festlegen'}</b><small>${stage?esc([stage.date,stage.time,stage.km].filter(Boolean).join(' · ')):'Öffne den Routenplan'}</small></button>
+      <button class="today-status-card ${stay.tone}" onclick="openTodaySleep('${search?.id||''}','${stay.filter}')"><span>Übernachtung</span><b>${esc(stay.title)}</b><small>${esc(stay.meta)}</small></button>
+    </div>
+    <div class="today-actions-head"><div><span>Was jetzt zählt</span><b>${actions.length?`${actions.length} offene${actions.length===1?'r Punkt':' Punkte'}`:'Alles im Blick'}</b></div><button onclick="addReminder()">+ Aufgabe</button></div>
+    <div class="today-actions">${actions.length?actions.map(a=>`<div class="today-action ${a.status}" role="button" tabindex="0" onclick="openTodayAction('${a.kind}','${a.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openTodayAction('${a.kind}','${a.id}')}">${a.kind==='reminder'?`<button class="today-check" onclick="event.stopPropagation();toggleReminder('${a.id}')" aria-label="Aufgabe erledigen"></button>`:`<span class="today-signal" aria-hidden="true"></span>`}<div><b>${esc(a.title)}</b><span>${esc(a.meta||reminderStatusLabel(a.status))}</span></div><span class="today-arrow" aria-hidden="true">›</span></div>`).join(''):'<div class="today-clear"><b>Keine dringenden Aufgaben</b><span>Neue Entscheidungen und fällige Punkte erscheinen automatisch hier.</span></div>'}</div>
+    <div class="today-quick"><button onclick="addReminder()">+ Aufgabe</button><button onclick="switchTab('budget');setTimeout(()=>document.getElementById('exDesc')?.focus(),80)">+ Ausgabe</button><button onclick="openTodaySleep('${search?.id||''}','waiting')">Schlafplatz</button></div>
+  </div><div class="home-section-title"><span>Werkzeuge</span><b>Planen und organisieren</b></div>`;
+}
 function renderHomeDashboard(route, tot, recent){
   return `
     <div class="home-dashboard">
@@ -1707,13 +1790,13 @@ function renderHomeDashboard(route, tot, recent){
     </div>`;
 }
 function sectionBackButton(){
-  return `<div class="section-return"><button onclick="switchTab('uebersicht')" aria-label="Zur Übersicht">←</button><span>Zur Übersicht</span></div>`;
+  return `<div class="section-return"><button onclick="switchTab('uebersicht')" aria-label="Zu Heute">←</button><span>Zu Heute</span></div>`;
 }
 function renderOverview(){
   const route = state.routes.find(r=>r.id===state.selectedRoute);
   const tot = routeTotals(route.stages);
   const recent = [...(state.log||[])].reverse()[0];
-  document.getElementById('page-uebersicht').innerHTML = renderHomeDashboard(route, tot, recent);
+  document.getElementById('page-uebersicht').innerHTML = renderTodayCockpit() + renderHomeDashboard(route, tot, recent);
 }
 function toggleSnapshots(){
   const el = document.getElementById('snapshotList');
@@ -2681,7 +2764,7 @@ function editItem(ref, id){
   openModal('Eintrag bearbeiten', [
     {key:'text',label:'Text',value:it.text},
     {key:'assignees',label:'Zuständig',type:'crewMulti',value:itemAssignees(it)},
-    {key:'reminder',label:'Erinnerung',type:'checkbox',text:'In Erinnerungen anzeigen',value:!!linkedReminder(ref,id)},
+    {key:'reminder',label:'Aufgabe',type:'checkbox',text:'In Aufgaben anzeigen',value:!!linkedReminder(ref,id)},
   ], v=>{
     const prev = copyData(it);
     it.text = v.text.trim()||it.text;
@@ -2772,56 +2855,80 @@ function reminderMeta(r){
   const c = r.createdBy ? crewById(r.createdBy) : null;
   return (c ? c.name + ' · ' : '') + fmtLogTs(r.createdAt);
 }
+function reminderStatusLabel(status){return ({open:'Offen',waiting:'Wartet',decision:'Entscheidung',done:'Erledigt'})[status]||'Offen';}
+function reminderStatusOptions(includeDone=false){const rows=[{value:'open',label:'Offen'},{value:'waiting',label:'Wartet auf Antwort / andere Person'},{value:'decision',label:'Entscheidung nötig'}];if(includeDone)rows.push({value:'done',label:'Erledigt'});return rows;}
+function reminderOwnerOptions(){return [{value:'',label:'Noch niemand verantwortlich'},...state.crew.map(c=>({value:c.id,label:c.name}))];}
+function reminderDueLabel(r,now=new Date()){
+  if(!r.dueDate)return '';
+  const due=new Date(r.dueDate+'T12:00:00'),today=new Date(now.getFullYear(),now.getMonth(),now.getDate(),12),days=Math.round((due-today)/86400000),date=due.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'});
+  if(days<0)return `Überfällig · ${date}`;
+  if(days===0)return 'Heute fällig';
+  if(days===1)return 'Morgen fällig';
+  return `Bis ${date}`;
+}
 function ensureLinkedReminder(ref, item){
   if(linkedReminder(ref, item.id)) return;
-  const reminder = {id:uid(), title:item.text, done:false, priority:false, createdAt:new Date().toISOString(), createdBy:whoami(), link:{type:'listItem', ref, itemId:item.id}};
+  const reminder = {id:uid(), title:item.text, done:false, status:'open', priority:false, ownerId:null, dueDate:'', note:'', createdAt:new Date().toISOString(), createdBy:whoami(), link:{type:'listItem', ref, itemId:item.id}};
   state.reminders.push(reminder);
-  logChange('hat „'+item.text+'" in Erinnerungen angezeigt', {t:'remAdd', id:reminder.id});
+  logChange('hat „'+item.text+'" in Aufgaben angezeigt', {t:'remAdd', id:reminder.id});
 }
 function removeLinkedReminderForItem(ref, itemId, withLog){
   const idx = (state.reminders||[]).findIndex(r=>r.link && r.link.type==='listItem' && r.link.ref===ref && r.link.itemId===itemId);
   if(idx<0) return;
   const reminder = copyData(state.reminders[idx]);
   state.reminders.splice(idx,1);
-  if(withLog) logChange('hat Erinnerung „'+reminder.title+'" entfernt', {t:'remDel', reminder, idx});
+  if(withLog) logChange('hat Aufgabe „'+reminder.title+'" entfernt', {t:'remDel', reminder, idx});
 }
 function addReminder(){
-  openModal('Neue Erinnerung', [
-    {key:'title',label:'Titel',value:'',placeholder:'z. B. Tickets prüfen'},
+  openModal('Neue Aufgabe', [
+    {key:'title',label:'Was ist zu tun?',value:'',placeholder:'z. B. Tickets prüfen'},
+    {key:'status',label:'Status',type:'select',value:'open',options:reminderStatusOptions(false)},
+    {key:'ownerId',label:'Verantwortlich',type:'select',value:'',options:reminderOwnerOptions()},
+    {key:'dueDate',label:'Fällig am',type:'isoDate',value:''},
     {key:'priority',label:'Priorität',type:'checkbox',text:'Hohe Priorität',value:false},
+    {key:'note',label:'Notiz',type:'textarea',value:'',placeholder:'Optionaler Kontext oder nächster Schritt'},
   ], v=>{
     const title = v.title.trim();
     if(!title) return;
-    const reminder = {id:uid(), title, done:false, priority:!!v.priority, createdAt:new Date().toISOString(), createdBy:whoami()};
+    const reminder = {id:uid(), title, done:false, status:v.status||'open', priority:!!v.priority, ownerId:v.ownerId||null, dueDate:v.dueDate||'', note:v.note.trim(), createdAt:new Date().toISOString(), createdBy:whoami()};
     state.reminders.push(reminder);
-    logChange('hat Erinnerung „'+title+'" angelegt', {t:'remAdd', id:reminder.id});
+    logChange('hat Aufgabe „'+title+'“ angelegt', {t:'remAdd', id:reminder.id});
   });
 }
 function editReminder(id){
   const r = state.reminders.find(x=>x.id===id);
   if(!r) return;
-  openModal('Erinnerung bearbeiten', [
-    {key:'title',label:'Titel',value:r.title},
+  openModal('Aufgabe bearbeiten', [
+    {key:'title',label:'Was ist zu tun?',value:r.title},
+    {key:'status',label:'Status',type:'select',value:r.done?'done':r.status||'open',options:reminderStatusOptions(true)},
+    {key:'ownerId',label:'Verantwortlich',type:'select',value:r.ownerId||'',options:reminderOwnerOptions()},
+    {key:'dueDate',label:'Fällig am',type:'isoDate',value:r.dueDate||''},
     {key:'priority',label:'Priorität',type:'checkbox',text:'Hohe Priorität',value:!!r.priority},
+    {key:'note',label:'Notiz',type:'textarea',value:r.note||'',placeholder:'Optionaler Kontext oder nächster Schritt'},
   ], v=>{
     const prev = copyData(r);
     r.title = v.title.trim() || r.title;
+    r.status=v.status||'open';r.done=r.status==='done';
+    if(r.done)r.previousStatus=prev.done?(prev.previousStatus||'open'):(prev.status||'open');else delete r.previousStatus;
+    r.ownerId=v.ownerId||null;r.dueDate=v.dueDate||'';r.note=v.note.trim();
     r.priority = !!v.priority;
-    logChange('hat Erinnerung „'+r.title+'" bearbeitet', {t:'remEdit', id, prev});
+    logChange('hat Aufgabe „'+r.title+'“ bearbeitet', {t:'remEdit', id, prev});
   }, ()=>{
     const idx = state.reminders.findIndex(x=>x.id===id);
     if(idx<0) return;
     const reminder = copyData(state.reminders[idx]);
-    logChange('hat Erinnerung „'+reminder.title+'" gelöscht', {t:'remDel', reminder, idx});
+    logChange('hat Aufgabe „'+reminder.title+'" gelöscht', {t:'remDel', reminder, idx});
     state.reminders.splice(idx,1);
   });
 }
 function toggleReminder(id){
   const r = state.reminders.find(x=>x.id===id);
   if(!r) return;
-  const prev = !!r.done;
+  const prevDone=!!r.done,prevStatus=r.status||'open',prevPreviousStatus=r.previousStatus;
   r.done = !r.done;
-  logChange((r.done?'hat Erinnerung erledigt: ':'hat Erinnerung wieder geöffnet: ') + '„'+r.title+'"', {t:'remToggle', id, prev});
+  if(r.done){r.previousStatus=prevStatus==='done'?'open':prevStatus;r.status='done';}
+  else{r.status=r.previousStatus||'open';delete r.previousStatus;}
+  logChange((r.done?'hat Aufgabe erledigt: ':'hat Aufgabe wieder geöffnet: ') + '„'+r.title+'"', {t:'remToggle', id, prevDone, prevStatus, prevPreviousStatus});
   save(); renderAll();
 }
 function moveReminder(id, dir){
@@ -2834,7 +2941,7 @@ function moveReminder(id, dir){
   const from = state.reminders.findIndex(x=>x.id===r.id);
   const to = state.reminders.findIndex(x=>x.id===target.id);
   [state.reminders[from],state.reminders[to]] = [state.reminders[to],state.reminders[from]];
-  logChange('hat Erinnerung „'+r.title+'“ '+(dir<0?'nach oben':'nach unten')+' verschoben', {t:'remMove', id:r.id, otherId:target.id});
+  logChange('hat Aufgabe „'+r.title+'“ '+(dir<0?'nach oben':'nach unten')+' verschoben', {t:'remMove', id:r.id, otherId:target.id});
   save(); renderAll();
 }
 let pendingHighlightKey = '';
@@ -2852,16 +2959,19 @@ function openReminderLink(id){
   }, 120);
 }
 function reminderRow(r, idx, total){
-  return `<div class="reminder-card${r.done?' done':''}${r.priority?' priority':''}">
+  const owner=r.ownerId?crewById(r.ownerId):null,due=reminderDueLabel(r),status=r.done?'done':r.status||'open';
+  return `<div class="reminder-card${r.done?' done':''}${r.priority?' priority':''}" data-reminder-id="${r.id}">
     <div class="reminder-head">
-      <button class="checkbox${r.done?' done':''}" onclick="toggleReminder('${r.id}')" aria-label="Erinnerung erledigen">${r.done?'✓':''}</button>
-      <div class="reminder-title"><b>${esc(r.title)}</b>${r.priority?'<span class="reminder-priority">Hohe Priorität</span>':''}</div>
+      <button class="checkbox${r.done?' done':''}" onclick="toggleReminder('${r.id}')" aria-label="Aufgabe erledigen">${r.done?'✓':''}</button>
+      <div class="reminder-title"><b>${esc(r.title)}</b>${r.priority?'<span class="reminder-priority">Hohe Priorität</span>':''}<span class="reminder-status ${status}">${reminderStatusLabel(status)}</span></div>
       <span class="reminder-tools">
-        <button onclick="moveReminder('${r.id}',-1)" aria-label="Erinnerung nach oben verschieben" title="nach oben"${idx===0?' disabled':''}>↑</button>
-        <button onclick="moveReminder('${r.id}',1)" aria-label="Erinnerung nach unten verschieben" title="nach unten"${idx===total-1?' disabled':''}>↓</button>
-        <button onclick="editReminder('${r.id}')" aria-label="Erinnerung bearbeiten" title="bearbeiten">✎</button>
+        <button onclick="moveReminder('${r.id}',-1)" aria-label="Aufgabe nach oben verschieben" title="nach oben"${idx===0?' disabled':''}>↑</button>
+        <button onclick="moveReminder('${r.id}',1)" aria-label="Aufgabe nach unten verschieben" title="nach unten"${idx===total-1?' disabled':''}>↓</button>
+        <button onclick="editReminder('${r.id}')" aria-label="Aufgabe bearbeiten" title="bearbeiten">✎</button>
       </span>
     </div>
+    <div class="reminder-details">${owner?`<span class="reminder-owner" style="--c:${owner.color}"><i></i>${esc(owner.name)}</span>`:'<span>Noch niemand verantwortlich</span>'}${due?`<span class="reminder-due${due.startsWith('Überfällig')?' overdue':''}">${esc(due)}</span>`:''}</div>
+    ${r.note?`<div class="reminder-note">${esc(r.note)}</div>`:''}
     <div class="reminder-meta"><span>${esc(reminderMeta(r))}${r.link?' · '+esc(refLabel(r.link.ref)):''}</span>${r.link?`<button class="btn ghost small" onclick="openReminderLink('${r.id}')">Öffnen</button>`:''}</div>
   </div>`;
 }
@@ -3317,11 +3427,11 @@ function renderReminder(){
   const openReminders = openReminderItems.length;
   const openPolls = polls.filter(p=>!p.closed).length;
   document.getElementById('page-reminder').innerHTML = sectionBackButton() +
-    orgaSection('reminder-erinnerungen', 'bell', 'Erinnerungen', openReminders ? openReminders+' offen' : 'Alles erledigt',
-      `<button class="btn small" onclick="addReminder()">+ Erinnerung</button>
-      ${openReminderItems.length ? openReminderItems.map((r,i)=>reminderRow(r,i,openReminderItems.length)).join('') : '<p class="hint" style="margin:12px 0 0">Keine offenen Erinnerungen.</p>'}
+    orgaSection('reminder-erinnerungen', 'bell', 'Aufgaben', openReminders ? openReminders+' offen' : 'Alles erledigt',
+      `<button class="btn small" onclick="addReminder()">+ Aufgabe</button>
+      ${openReminderItems.length ? openReminderItems.map((r,i)=>reminderRow(r,i,openReminderItems.length)).join('') : '<p class="hint" style="margin:12px 0 0">Keine offenen Aufgaben.</p>'}
       ${doneReminderItems.length ? `<details class="done-reminders"${doneRemindersOpen?' open':''} ontoggle="doneRemindersOpen=this.open"><summary>Erledigt (${doneReminderItems.length})</summary>${doneReminderItems.map((r,i)=>reminderRow(r,i,doneReminderItems.length)).join('')}</details>` : ''}
-      ${!reminders.length ? '<p class="hint" style="margin:12px 0 0">Du kannst Erinnerungen hier anlegen oder aus Packen, Einkauf, Checkliste und Fahrzeug-Dokumenten verknüpfen.</p>' : ''}`) +
+      ${!reminders.length ? '<p class="hint" style="margin:12px 0 0">Lege Aufgaben hier an oder übernimm Punkte aus Packen, Einkauf, Checkliste und Fahrzeug-Dokumenten.</p>' : ''}`) +
     orgaSection('reminder-umfragen', 'poll', 'Umfragen', openPolls ? openPolls+' offen' : (polls.length?'Alle geschlossen':'Keine'),
       `<button class="btn small" onclick="addPoll()">+ Umfrage</button>
       ${polls.length ? `<p class="hint" style="margin:12px 0">Tippe eine Option an, um mit deinem eigenen Profil dafür zu stimmen (Mehrfachauswahl möglich).</p>${polls.map(pollRow).join('')}` : '<p class="hint" style="margin:12px 0 0">Noch keine Umfragen.</p>'}`);

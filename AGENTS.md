@@ -10,6 +10,9 @@ und Menschen, die am Projekt arbeiten.
 > **Status & Betriebs-Infos:** [HANDOFF.md](HANDOFF.md) — Live-URL, Firebase-
 > Projekt, Deploy-Befehle, Sync-Stolperfallen und Backlog. Bei laufenden
 > Aufgaben wird dort der Zwischenstand gepflegt.
+>
+> **Produkt-Richtung:** [docs/specs/product-direction.md](docs/specs/product-direction.md)
+> beschreibt die Leitplanken für eine wiederverwendbare, ruhige Gruppenreise-App.
 
 ## Projektstruktur
 
@@ -41,7 +44,7 @@ AGENTS.md                   # Diese Datei (CLAUDE.md verweist hierauf)
 
 ## Datenmodell & Persistenz
 
-- Ein einziges State-Objekt (`state`) mit `schemaVersion` (aktuell `13`),
+- Ein einziges State-Objekt (`state`) mit `schemaVersion` (aktuell `14`),
   definiert in `defaultState()` in `app.js`.
 - **`StorageAdapter`** (`load()` / `save(state)`) kapselt die lokale Persistenz:
   `localStorage` unter dem Key `sizigia-roadtrip-2026`.
