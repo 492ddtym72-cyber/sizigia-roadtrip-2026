@@ -62,6 +62,11 @@
   Kartenpositionen und verifizierte E-Mail-Adressen. Für jeden Platz liegt ein
   normal formatierter, ungesendeter iCloud-Entwurf mit leerer Signatur bereit;
   die fachlichen Status bleiben bis zum tatsächlichen Versand unverändert.
+  Die mobile Ansicht ist bewusst entscheidungsorientiert: „Nutzbar“, „Kontakt“
+  und „Absagen“ zeigen Zähler; Karten besitzen nur eine primäre Aktion und
+  ruhige Links für Website, Karte und Details. Echte Antwortkästen erscheinen
+  nur bei tatsächlichem Antwortinhalt. Bereits gesendete Anfragen bieten keine
+  zweite Erstanfrage an, und gesunde Mail-Diagnostik bleibt ausgeblendet.
 - **Camping-Mail-Assistent:** Lokale Codex-Automation prüft tagsüber um ca.
   08:00, 14:00 und 20:00 ausschließlich campingbezogene Antworten in iCloud
   Inbox/Sent. `tools/camping-mail-bridge.mjs` liefert konfliktgeschützte

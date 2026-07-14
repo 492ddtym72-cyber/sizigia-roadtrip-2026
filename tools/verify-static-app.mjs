@@ -11,7 +11,7 @@ if(!/^var MAP_IMG = 'data:image\/webp;base64,/m.test(map))throw new Error('Offli
 for(const asset of ['./index.html','./styles.css','./map-data.js','./app.js'])if(!sw.includes(`'${asset}'`))throw new Error('Service Worker cached nicht '+asset);
 if(/m \|\| caches\.match\('\.\/index\.html'\)/.test(sw))throw new Error('Service Worker darf HTML nicht als Asset-Fallback liefern');
 if(!app.includes("'X-Firebase-ETag':'true'")||!app.includes("'if-match':etag"))throw new Error('App-Cloud-Sync muss ETag-konfliktgeschützt bleiben');
-if(!app.includes("['action','Optionen'],['waiting','Anfragen'],['closed','Absagen']"))throw new Error('Korrigierbare Absagen-Ansicht fehlt');
+if(!app.includes("['action','Nutzbar'],['waiting','Kontakt'],['closed','Absagen']"))throw new Error('Klare Schlafplatz-Filter fehlen');
 if(!app.includes("const operational=['booked','available'"))throw new Error('Bestätigter Schlafplatz fehlt auf der Karte');
 if(!app.includes("'call','awaiting','reserving'"))throw new Error('Offene, gesendete Anfragen fehlen auf der Karte');
 if(app.includes("s.mode==='network'&&c.status==='new'?'network_policy'"))throw new Error('Neue Routenkandidaten müssen die konkrete Nacht anfragen');

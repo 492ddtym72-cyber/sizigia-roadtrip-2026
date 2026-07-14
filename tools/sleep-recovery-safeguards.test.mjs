@@ -166,7 +166,31 @@ assert.ok(app.run(`(()=>{const s=state.sleepSearches.find(x=>x.networkKey==='cam
   assert.equal(out.reqStatus, 'cancelled', 'Anfrage muss als verworfen markiert sein');
 }
 
-// 6) Legacy-Status draft_requested ohne Anfrage-Historie fällt auf
+// 6) Die mobile Karte zeigt nur eine primäre Aktion. Gesendete Anfragen
+//    erzeugen keine zweite Erstanfrage und echte Antwortboxen brauchen Inhalt.
+{
+  const ui=app.run(`(()=>{
+    const s=state.sleepSearches.find(x=>x.candidates.length),c=s.candidates[0],before={status:c.status,reply:c.reply,replyQuote:c.replyQuote,pitchNote:c.pitchNote,parking:c.parking,notes:c.notes},draftCount=state.mailAssistant.draftRequests.length;
+    Object.assign(c,{status:'awaiting',reply:'',replyQuote:'',pitchNote:'',parking:'',notes:''});
+    const awaiting=sleepCandidateCard(s,c);
+    c.status='new';
+    const fresh=sleepCandidateCard(s,c);
+    state.mailAssistant.draftRequests.push({id:'ui-ready',searchId:s.id,candidateId:c.id,template:'inquiry',status:'ready',previousStatus:'new'});
+    const draft=sleepCandidateCard(s,c),counts=sleepFilterCounts({candidates:[{status:'available'},{status:'call'},{status:'new'},{status:'awaiting'},{status:'unavailable'}]});
+    state.mailAssistant.draftRequests.splice(draftCount);Object.assign(c,before);
+    return {awaitingHasMail:awaiting.includes('prepareSleepReply'),awaitingHasAnswerBox:awaiting.includes('sleep-answer'),awaitingState:awaiting.includes('Anfrage gesendet, noch keine Antwort erhalten.'),freshAction:fresh.includes('Verfügbarkeit anfragen'),freshHasAnswerBox:fresh.includes('sleep-answer'),draftMark:draft.includes('Als gesendet markieren'),draftReask:draft.includes('Verfügbarkeit anfragen'),counts};
+  })()`);
+  assert.equal(ui.awaitingHasMail,false,'Gesendete Anfrage darf keine zweite Erstanfrage anbieten');
+  assert.equal(ui.awaitingHasAnswerBox,false,'Ohne echte Antwort erscheint kein Antwortkasten');
+  assert.equal(ui.awaitingState,true,'Status bleibt auf einen Blick lesbar');
+  assert.equal(ui.freshAction,true,'Neuer Platz hat genau die Kontaktaktion');
+  assert.equal(ui.freshHasAnswerBox,false,'Recherchehinweis ist keine Campingplatz-Antwort');
+  assert.equal(ui.draftMark,true,'Bereiter Entwurf bietet die manuelle Versandbestätigung');
+  assert.equal(ui.draftReask,false,'Bereiter Entwurf erzeugt keine zweite Anfrage');
+  assert.equal(JSON.stringify(ui.counts),JSON.stringify({action:2,waiting:2,closed:1}));
+}
+
+// 7) Legacy-Status draft_requested ohne Anfrage-Historie fällt auf
 //    „awaiting“ zurück — nie auf „available“ (keine erfundene Zusage).
 {
   const status = app.run(`(()=>{
@@ -200,7 +224,7 @@ assert.ok(app.run(`(()=>{const s=state.sleepSearches.find(x=>x.networkKey==='cam
   assert.equal(restored, 'call', 'vorhandene Historie muss den echten Status wiederherstellen');
 }
 
-// 7) Stark gekürzte Backups mit leerer Routenliste dürfen die Übersicht
+// 8) Stark gekürzte Backups mit leerer Routenliste dürfen die Übersicht
 //    weder beim Import noch nach einem Reload dauerhaft unbrauchbar machen.
 {
   const repaired=app.run(`(()=>{
