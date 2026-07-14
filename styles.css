@@ -636,11 +636,12 @@ a.maplink:hover{text-decoration:underline}
 .sleep-search-tab{flex:0 0 auto;max-width:220px;text-align:left;border:1px solid rgba(255,255,255,.09);border-radius:10px;background:rgba(255,255,255,.025);color:var(--text);padding:9px 11px;font:inherit;cursor:pointer}.sleep-search-tab.active{border-color:rgba(95,212,168,.55);background:rgba(95,212,168,.07)}
 .sleep-search-tab b,.sleep-search-tab span{display:block}.sleep-search-tab b{font-size:12.5px}.sleep-search-tab span{font-size:10.5px;color:var(--muted);margin-top:2px}
 .sleep-card{border:1px solid rgba(255,255,255,.09);border-radius:17px;padding:14px;margin-bottom:11px;background:rgba(255,255,255,.038)}
+.sleep-card.preferred{box-shadow:inset 3px 0 0 rgba(255,178,87,.72)}
 .sleep-card.available,.sleep-card.reservable{border-color:rgba(95,212,168,.42)}.sleep-card.call{border-color:rgba(255,178,87,.4)}.sleep-card.awaiting,.sleep-card.reserving{border-color:rgba(84,200,255,.3)}.sleep-card.booked{border-color:rgba(142,168,255,.42)}.sleep-card.unavailable{opacity:.6}
 .sleep-head{display:flex;align-items:flex-start;gap:9px}.sleep-head-main{flex:1;min-width:0}.sleep-head h3{font-family:var(--font-display);font-size:16px;margin:0 0 2px}.sleep-sub{font-size:11.5px;color:var(--muted)}
 .sleep-status{display:inline-flex;padding:3px 7px;border-radius:4px;font-size:9.5px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;background:rgba(255,255,255,.08);color:var(--muted)}
 .sleep-status.available,.sleep-status.reservable,.sleep-status.booked{background:rgba(95,212,168,.13);color:var(--mint)}.sleep-status.call,.sleep-status.followup{background:rgba(255,178,87,.14);color:var(--sun)}.sleep-status.awaiting,.sleep-status.reserving,.sleep-status.draft_requested{background:rgba(84,200,255,.12);color:var(--sky)}.sleep-status.unavailable{color:var(--faint)}
-.sleep-facts{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}.sleep-fact{font-size:11px;padding:4px 7px;border-radius:8px;background:rgba(255,255,255,.05);color:var(--muted)}
+.sleep-facts{display:flex;gap:6px;flex-wrap:wrap;margin-top:9px}.sleep-fact{font-size:11px;padding:4px 7px;border-radius:8px;background:rgba(255,255,255,.05);color:var(--muted)}.sleep-fact.preferred{background:rgba(255,178,87,.12);color:var(--sun);font-weight:800}
 .sleep-reply{font-size:13px;line-height:1.45;color:var(--muted);margin-top:9px;white-space:pre-line}.sleep-next{font-size:12px;color:var(--sun);font-weight:750;margin-top:8px}
 .sleep-actions{display:flex;gap:7px;flex-wrap:wrap;margin-top:11px}.sleep-actions .btn{text-decoration:none}
 .sleep-empty{text-align:center;padding:24px 12px;color:var(--muted)}

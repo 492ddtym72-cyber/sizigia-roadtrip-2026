@@ -10,12 +10,17 @@ await new Promise(r => setImmediate(r));
 
 // 1) Erster Offline-Start: alle sieben Camping-Korridore sind SOFORT gesät
 //    (kein Reload nötig), inklusive aller 28 Kandidaten.
-assert.equal(app.run('state.sleepSearches.length'), 7, 'sieben Korridore beim ersten Start');
-assert.equal(app.run('state.sleepSearches.reduce((n,s)=>n+s.candidates.length,0)'), 28, '28 Kandidaten beim ersten Start');
+assert.equal(app.run('state.sleepSearches.length'), 8, 'acht Korridore beim ersten Start');
+assert.equal(app.run('state.sleepSearches.reduce((n,s)=>n+s.candidates.length,0)'), 40, '40 Kandidaten beim ersten Start');
 assert.equal(app.run('state.sleepSearches.every(s=>s.mode==="network")'), true);
 assert.equal(app.run('state.meta.campingNetworkSeeded'), true);
-assert.equal(app.run('new Set(state.sleepSearches.map(s=>s.networkKey)).size'), 7, 'Korridore eindeutig');
+assert.equal(app.run('new Set(state.sleepSearches.map(s=>s.networkKey)).size'), 8, 'Korridore eindeutig');
 assert.equal(app.run('state.sleepSearches.find(s=>s.networkKey==="provence-east").arrivalWindowEnd'),'2026-08-05','Provence braucht zwei mögliche Anreisetage');
+assert.equal(app.run('state.schemaVersion'),12,'Frankreich-Netz braucht Schema V12');
+assert.equal(app.run('state.sleepSearches.find(s=>s.networkKey==="camargue").candidates.length'),3,'Camargue ist ein eigener Korridor');
+assert.equal(app.run('state.sleepSearches.flatMap(s=>s.candidates).filter(c=>c.preferred).length'),6,'sechs recherchierte Favoriten');
+assert.equal(app.run('state.sleepSearches.flatMap(s=>s.candidates).filter(c=>c.preferred).every(c=>c.status==="new"&&c.contactVerified===false)'),true,'Favoriten bleiben unkontaktiert und gesperrt');
+assert.ok(app.run(`(()=>{const s=state.sleepSearches.find(x=>x.networkKey==='camargue'),c=s.candidates.find(x=>x.preferred);return sleepCandidateCard(s,c);})()`).includes('★ Favorit'),'Favorit muss auf der Karte lesbar sein');
 
 // Gesendete, noch unbeantwortete Anfragen erscheinen blau auf der Karte.
 // Ein nur geöffneter Entwurf darf dagegen keinen Kontakt vortäuschen.
