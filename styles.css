@@ -657,7 +657,20 @@ a.maplink:hover{text-decoration:underline}
 .sleep-nav{display:flex;gap:18px;min-width:0;overflow-x:auto}.sleep-nav button{display:flex;align-items:center;gap:5px;border:0;border-bottom:2px solid transparent;background:none;color:var(--muted);padding:8px 0 9px;font:inherit;font-size:12px;font-weight:750;white-space:nowrap;cursor:pointer}.sleep-nav button span{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:rgba(255,255,255,.06);font-size:9.5px;color:var(--faint)}.sleep-nav button.active{color:var(--text);border-bottom-color:var(--mint)}.sleep-nav button.active span{background:rgba(95,212,168,.12);color:var(--mint)}
 .sleep-segment{display:grid;grid-template-columns:1fr 1fr;gap:2px;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:2px;margin-bottom:6px;flex:0 0 auto}.sleep-segment button{border:0;border-radius:5px;background:none;color:var(--muted);padding:5px 9px;font:inherit;font-size:11px;font-weight:750;cursor:pointer}.sleep-segment button.active{background:rgba(255,255,255,.09);color:var(--text)}
 .sleep-scope{display:flex;gap:18px;margin:0 0 11px}.sleep-scope button{border:0;background:none;color:var(--muted);font:inherit;font-size:11.5px;font-weight:750;padding:2px 0;cursor:pointer}.sleep-scope button.active{color:var(--sun);text-decoration:underline;text-underline-offset:4px;text-decoration-thickness:1px}
+.sleep-map-layer{display:flex;align-items:center;gap:18px;margin:-2px 0 9px;border-bottom:1px solid rgba(255,255,255,.07)}
+.sleep-map-layer button{border:0;border-bottom:2px solid transparent;background:none;color:var(--muted);font:inherit;font-size:11.5px;font-weight:750;padding:7px 0 8px;cursor:pointer}
+.sleep-map-layer button.active{color:var(--text);border-bottom-color:var(--sky)}
+.sleep-map-layer button span{font-size:9px;color:var(--faint);font-weight:700;margin-left:3px;text-transform:uppercase;letter-spacing:.06em}
 .sleep-map .mapwrap{height:auto;min-height:0;margin:0}.sleep-map .mapwrap svg{height:min(66vw,390px)}.sleep-legend{display:flex;gap:10px;flex-wrap:wrap;margin:8px 2px 12px;font-size:10.5px;color:var(--muted)}.sleep-legend i{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px}
+.sleep-detail-wrap{position:relative;overflow:hidden;border:1px solid rgba(255,255,255,.12);border-radius:16px;background:#101522}
+.sleep-detail-map{height:min(74vw,430px);min-height:310px;width:100%}
+.sleep-detail-status{position:absolute;inset:0;display:grid;place-items:center;background:linear-gradient(145deg,#121725,#0d1220);color:var(--muted);font-size:12px;font-weight:750;letter-spacing:.02em}
+.sleep-detail-map .maplibregl-ctrl-top-right{top:8px;right:8px}
+.sleep-detail-map .maplibregl-ctrl-group{border-radius:10px;overflow:hidden;background:rgba(17,21,34,.92);box-shadow:0 2px 12px rgba(0,0,0,.28)}
+.sleep-detail-map .maplibregl-ctrl-group button{width:34px;height:34px}
+.sleep-detail-map .maplibregl-ctrl-icon{filter:invert(1);opacity:.82}
+.sleep-detail-map .maplibregl-ctrl-attrib{font:9px/1.3 var(--font-body);background:rgba(255,255,255,.86);color:#303440}
+.sleep-detail-map .maplibregl-ctrl-attrib a{color:#253c71}
 
 /* Toast */
 #toast{
@@ -691,7 +704,7 @@ a.maplink:hover{text-decoration:underline}
   body{background:#fff}
   body::before,body::after{display:none}
   .eclipse,nav,.header-actions,.header-tools,.addrow,.del,.iconbtn,#toast,.modal-bg,
-  .mapwrap,.layerchips,.actions,.hint,.ig-link,button:not(.checkbox),#page-verlauf{display:none!important}
+  .mapwrap,.sleep-detail-wrap,.sleep-map-layer,.layerchips,.actions,.hint,.ig-link,button:not(.checkbox),#page-verlauf{display:none!important}
   section.page{display:block!important}
   section.page::before{
     content:attr(data-title);display:block;font-size:19px;font-weight:800;margin:24px 0 10px;

@@ -1,14 +1,14 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 
-const required=['index.html','styles.css','map-data.js','app.js','sw.js'],missing=required.filter(x=>!fs.existsSync(new URL('../'+x,import.meta.url)));
+const required=['index.html','styles.css','map-data.js','app.js','sw.js','vendor/maplibre-gl.css','vendor/maplibre-gl.js','vendor/maplibre-LICENSE.txt'],missing=required.filter(x=>!fs.existsSync(new URL('../'+x,import.meta.url)));
 if(missing.length)throw new Error('Fehlende App-Dateien: '+missing.join(', '));
 const root=new URL('../',import.meta.url),html=fs.readFileSync(new URL('index.html',root),'utf8'),sw=fs.readFileSync(new URL('sw.js',root),'utf8'),map=fs.readFileSync(new URL('map-data.js',root),'utf8'),app=fs.readFileSync(new URL('app.js',root),'utf8');
-const order=['./styles.css','./map-data.js','./app.js'].map(x=>html.indexOf(x));
-if(order.some(x=>x<0)||!(order[0]<order[1]&&order[1]<order[2]))throw new Error('Asset-Reihenfolge in index.html ist falsch');
+const order=['./vendor/maplibre-gl.css','./styles.css','./vendor/maplibre-gl.js','./map-data.js','./app.js'].map(x=>html.indexOf(x));
+if(order.some(x=>x<0)||!order.every((x,i)=>i===0||order[i-1]<x))throw new Error('Asset-Reihenfolge in index.html ist falsch');
 if(/<script[^>]+type=["']module/i.test(html))throw new Error('Module brechen file://');
 if(!/^var MAP_IMG = 'data:image\/webp;base64,/m.test(map))throw new Error('Offline-Karte fehlt');
-for(const asset of ['./index.html','./styles.css','./map-data.js','./app.js'])if(!sw.includes(`'${asset}'`))throw new Error('Service Worker cached nicht '+asset);
+for(const asset of ['./index.html','./styles.css','./vendor/maplibre-gl.css','./vendor/maplibre-gl.js','./vendor/maplibre-LICENSE.txt','./map-data.js','./app.js'])if(!sw.includes(`'${asset}'`))throw new Error('Service Worker cached nicht '+asset);
 if(/m \|\| caches\.match\('\.\/index\.html'\)/.test(sw))throw new Error('Service Worker darf HTML nicht als Asset-Fallback liefern');
 if(!app.includes("'X-Firebase-ETag':'true'")||!app.includes("'if-match':etag"))throw new Error('App-Cloud-Sync muss ETag-konfliktgeschützt bleiben');
 if(!app.includes("['action','Nutzbar'],['waiting','Kontakt'],['closed','Absagen']"))throw new Error('Klare Schlafplatz-Filter fehlen');
@@ -19,4 +19,7 @@ if(!app.includes("c.status==='new'?'Verfügbarkeit anfragen'"))throw new Error('
 if(!app.includes('id="sleepSearchStrip"')||!app.includes('keepActiveSleepSearchVisible()'))throw new Error('Aktive Nacht wird nicht sichtbar gehalten');
 if(!app.includes("localStorage.setItem(SLEEP_SEARCH_KEY,id)"))throw new Error('Gewählte Nacht wird nicht auf dem Gerät gemerkt');
 if(!app.includes('Campingplatz auf der Route suchen')||!app.includes('function sleepSearchRows()'))throw new Error('Routenweite Campingplatz-Suche fehlt');
-console.log(JSON.stringify({ok:true,classicScripts:true,assetOrder:true,offlineAssets:true,mapEmbedded:true,etagSync:true,recoverableRejections:true,campsiteSearch:true,rememberedNight:true}));
+if(!app.includes("const SLEEP_DETAIL_STYLE='https://tiles.openfreemap.org/styles/liberty'")||!app.includes('new maplibregl.Map'))throw new Error('Optionale Detailkarte fehlt');
+if(!app.includes('function sleepDetailFallback(')||!app.includes("sleepMapLayer='offline'"))throw new Error('Detailkarte braucht automatischen Offline-Fallback');
+if(!app.includes("setSleepMapLayer('offline')")||!app.includes('Detailkarte <span>online</span>'))throw new Error('Nutzer muss zwischen Detail- und Offlinekarte wechseln können');
+console.log(JSON.stringify({ok:true,classicScripts:true,assetOrder:true,offlineAssets:true,mapEmbedded:true,detailMapOptional:true,detailMapFallback:true,etagSync:true,recoverableRejections:true,campsiteSearch:true,rememberedNight:true}));

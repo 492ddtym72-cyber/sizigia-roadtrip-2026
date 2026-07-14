@@ -19,6 +19,7 @@ styles.css                  # Gesamtes App-CSS
 map-data.js                 # Eingebettete Offline-Karte (große Data-URI)
 app.js                      # Gesamte Browser-Logik, ohne Build-Schritt
 sw.js                       # Offline-Cache für die gehostete App
+vendor/maplibre-*           # Lokal vendorte Detailkarten-Bibliothek + Lizenz
 tools/camping-mail-*.mjs    # Lokale/Cloud-Maillogik, Tests und Firebase-Brücke
 cloud-mail/                 # Deaktivierter GitHub/iCloud-Runner mit eigenem Lockfile
 docs/specs/                 # Design-Spezifikationen
@@ -27,10 +28,12 @@ AGENTS.md                   # Diese Datei (CLAUDE.md verweist hierauf)
 
 ## Harte Regeln
 
-1. **Statisch, kein Build.** `index.html` lädt ausschließlich die klassischen
-   lokalen Assets `styles.css`, `map-data.js` und `app.js` und muss weiterhin
-   per Doppelklick (`file://`) funktionieren. Keine CDNs, Module, Fonts oder
-   Bilder-URLs — die App muss offline laufen.
+1. **Statisch, kein Build.** `index.html` lädt ausschließlich klassische,
+   lokale JS-/CSS-Assets und muss weiterhin per Doppelklick (`file://`)
+   funktionieren. Keine CDNs, Module, Fonts oder verpflichtenden Bilder-URLs.
+   Einzige optionale Online-Abhängigkeit ist die Schlafplatz-Detailkarte über
+   OpenFreeMap; bei fehlendem Netz oder Anbieterfehler muss automatisch die
+   eingebettete Offlinekarte erscheinen und die App vollständig nutzbar bleiben.
 2. **UI-Sprache Deutsch.** Code/Kommentare deutsch oder englisch, UI-Texte deutsch.
 3. **Kein Datenverlust.** Jede Zustandsänderung ruft `save()` auf. Das Schema
    nie umbenennen/entfernen ohne Migration in `migrate()` (siehe unten).
@@ -38,7 +41,7 @@ AGENTS.md                   # Diese Datei (CLAUDE.md verweist hierauf)
 
 ## Datenmodell & Persistenz
 
-- Ein einziges State-Objekt (`state`) mit `schemaVersion` (aktuell `9`),
+- Ein einziges State-Objekt (`state`) mit `schemaVersion` (aktuell `13`),
   definiert in `defaultState()` in `app.js`.
 - **`StorageAdapter`** (`load()` / `save(state)`) kapselt die lokale Persistenz:
   `localStorage` unter dem Key `sizigia-roadtrip-2026`.
@@ -111,6 +114,13 @@ AGENTS.md                   # Diese Datei (CLAUDE.md verweist hierauf)
   `nvkelso/natural-earth-raster`, `NE1_HR_LC_SR_W.tif`) auf die `MAP`-Grenzen
   zuschneiden, Grenzen aus `ne_50m_admin_0_boundary_lines_land` einzeichnen,
   als WebP (Qualität ≈78) kodieren.
+  Im Schlafplatz-Tab ist zusätzlich eine scharfe Online-Detailkarte mit lokal
+  vendortem MapLibre GL JS und dem OpenFreeMap-Stil verfügbar. Sie liest nur
+  vorhandene `lat`/`lng`-Werte und verändert weder `state` noch Firebase. Der
+  Umschalter „Offlinekarte“ sowie der automatische 12-Sekunden-/Offline-
+  Fallback müssen erhalten bleiben. Der gewählte Layer liegt nur lokal unter
+  `<STORAGE_KEY>-sleep-map-layer`; die eingebettete Karte bleibt maßgeblich für
+  Offlinebetrieb, Positions-Picker, Routen-, Spot- und Großkarten.
 - Design-Tokens als CSS-Variablen in `:root` (Theme „Eclipse Night": dunkler
   Nachthimmel, Sonnenkorona-Akzente `--sun`/`--coral`).
 

@@ -71,6 +71,17 @@
   Antworttext. Der zuletzt gewählte Reiseabschnitt bleibt nur auf dem Gerät
   gespeichert und wird im horizontalen Nachtwähler automatisch sichtbar
   gehalten.
+  Die Schlafplatz-Kartenansicht hat nun zwei Ebenen: „Detailkarte online“ nutzt
+  lokal vendortes MapLibre GL JS mit OpenFreeMap-Vektorkarten und erlaubt
+  scharfes Zoomen bis auf Straßenebene; „Offlinekarte“ bleibt die bisherige,
+  vollständig eingebettete Europakarte. Nur operative Campingplätze mit
+  gespeicherten Koordinaten werden als Statuspunkte gezeichnet. Der
+  Kartenwechsel ist rein lokal und verändert keine Reise- oder Firebase-Daten.
+  Ohne Netz, ohne Kartenbibliothek oder wenn der Stil nicht binnen 12 Sekunden
+  lädt, schaltet die App automatisch auf die Offlinekarte. MapLibre-Dateien und
+  Lizenz liegen unter `vendor/` und werden vom Service Worker mitgecached;
+  OpenFreeMap selbst ist ein kostenfreier Dienst ohne SLA, deshalb darf der
+  Fallback nicht entfernt werden.
 - **Camping-Mail-Assistent:** Lokale Codex-Automation prüft tagsüber um ca.
   08:00, 14:00 und 20:00 ausschließlich campingbezogene Antworten in iCloud
   Inbox/Sent. `tools/camping-mail-bridge.mjs` liefert konfliktgeschützte
@@ -100,7 +111,8 @@
   irreführendes flexibles Fenster; flexible Korridore bleiben als Auswahl
   mehrerer möglicher Anreisetage formuliert.
 - **App-Struktur:** Die Web-App ist ohne Build-Schritt in `index.html`,
-  `styles.css`, `map-data.js` und `app.js` getrennt. V8 ergänzt lokale/cloud
+  `styles.css`, `map-data.js` und `app.js` getrennt; die optionale
+  Detailkarten-Bibliothek liegt statisch unter `vendor/`. V8 ergänzt lokale/cloud
   Runner-Gesundheit und eine begrenzte manuelle Prüfwarteschlange. Der
   GitHub-iCloud-Runner liegt unter `cloud-mail/` und ist ohne die Repository-
   Variable `MAIL_RUNNER_MODE=shadow|cloud` vollständig deaktiviert. Keine
