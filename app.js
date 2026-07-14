@@ -5,7 +5,7 @@
      später austauschbar gegen Cloud-Sync (gleiche Schnittstelle).
    ============================================================ */
 const STORAGE_KEY = 'sizigia-roadtrip-2026';
-const SCHEMA_VERSION = 12;
+const SCHEMA_VERSION = 13;
 const LOG_MAX = 60;
 const UNDO_MAX = 20;
 
@@ -279,6 +279,7 @@ const CAMPING_NETWORK_CANDIDATES = [
   {hub:'languedoc',name:'Camping Club Farret',region:'Vias-Plage',email:'info@farret.com',phone:'+33 4 67 21 64 45',lat:43.2946,lng:3.4176,officialUrl:'https://www.camping-farret.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Club+Farret'},
   {hub:'languedoc',name:'Camping Les Mimosas',region:'Portiragnes',email:'mimosas@mimosas.com',phone:'+33 4 67 90 92 92',lat:43.2818,lng:3.3457,officialUrl:'https://www.mimosas.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Les+Mimosas+Portiragnes'},
   {hub:'languedoc',name:'Camping Beau Rivage',region:'Mèze · Étang de Thau',email:'beau-rivage@koawa.com',phone:'+33 4 66 60 07 00',lat:43.4257,lng:3.6123,officialUrl:'https://www.camping-beaurivage.fr/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Beau+Rivage+Meze'},
+  {hub:'languedoc',name:'Camping La Tamarissière',region:'Agde · La Tamarissière',email:'contact@camping-latama.com',phone:'+33 4 67 94 79 46',lat:43.2868153,lng:3.441141,officialUrl:'https://camping-latama.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+La+Tamarissiere+Agde',preferred:true,notes:'Favorit: offizieller 2026-Tarif pro Nacht, max. 6 Personen und zweites Auto gegen Aufpreis. Für 06./07.08. anfragen; Buchung wird erst nach Bestätigung und Zahlung verbindlich.'},
   {hub:'languedoc',name:'Camping Le Val de Cesse',region:'Mirepeïsset · Canal du Midi',email:'contact@campingvaldecesse.com',phone:'+33 4 68 46 14 94',lat:43.286871,lng:2.888095,officialUrl:'https://www.campingvaldecesse.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Le+Val+de+Cesse+Mirepeisset',preferred:true,notes:'Favorit: Fluss und Canal du Midi, ab einer Nacht, max. 6 und Zusatzauto-Tarif. Adresse „La Garenne, 11120 Mirepeïsset“ nutzen; Website-Koordinaten wirken fehlerhaft.'},
   {hub:'languedoc',name:'Camping La Grange Neuve',region:'Sigean',email:'info@campingsigean.com',phone:'+33 4 68 48 58 70',lat:43.066726,lng:2.941438,officialUrl:'https://campingsigean.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+La+Grange+Neuve+Sigean',preferred:true,notes:'Favorit: nur etwa 8–12 km von A9, Natur nahe Réserve Africaine, max. 6. Parkplatz für den Kleinwagen noch klären.'},
   {hub:'languedoc',name:'Camping Le Fun',region:'Fitou · Étang de Leucate',email:'contact@lefun-camping.com',phone:'+33 4 68 45 71 97',lat:42.914282,lng:2.998908,officialUrl:'https://www.lefun-camping.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Le+Fun+Fitou',preferred:true,notes:'Favorit: 5–10 km von A9, 1–2 Nächte ausdrücklich möglich, max. 6. Übernachtungsplatz für das zweite Auto noch klären.'},
@@ -293,12 +294,18 @@ const CAMPING_NETWORK_CANDIDATES = [
   {hub:'costa-brava',name:'Càmping Begur',region:'Begur',email:'info@campingbegur.com',phone:'+34 972 623 201',lat:41.9404,lng:3.1989,officialUrl:'https://campingbegur.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Begur'},
   {hub:'costa-brava',name:'Camping Aquarius',region:'Sant Pere Pescador',email:'booking@campingaquarius.com',phone:'+34 972 520 101',lat:42.1887,lng:3.1114,officialUrl:'https://www.campingaquarius.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Aquarius+Sant+Pere+Pescador'},
   {hub:'costa-brava',name:'Camping Amfora',region:'Sant Pere Pescador',email:'info@campingamfora.com',phone:'+34 972 520 540',lat:42.1807,lng:3.1068,officialUrl:'https://www.campingamfora.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Amfora+Sant+Pere+Pescador'},
+  {hub:'costa-brava',name:'Camping Maçanet de Cabrenys',region:'Maçanet de Cabrenys · Alt Empordà',email:'info@campingmassanet.com',phone:'+34 667 776 648',lat:42.38543,lng:2.75208,officialUrl:'https://www.campingmassanet.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Macanet+de+Cabrenys',notes:'Ruhige bewaldete Alternative zwischen Costa Brava und Pyrenäen. Wohnmobile werden akzeptiert; eine Nacht, 6 Erwachsene und Parkplatz für den Kleinwagen vorab bestätigen.'},
   {hub:'huesca',name:'Camping Aínsa',region:'Aínsa',email:'info@campingainsa.com',phone:'+34 974 500 260',lat:42.4252,lng:0.1511,officialUrl:'https://campingainsa.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Ainsa'},
   {hub:'huesca',name:'Camping Alquézar',region:'Alquézar',email:'camping@alquezar.com',phone:'+34 974 318 300',lat:42.1664,lng:0.0248,officialUrl:'https://www.campingalquezar.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Alquezar'},
   {hub:'huesca',name:'Camping Peña Montañesa',region:'Labuerda · Aínsa',email:'info@penamontanesa.com',phone:'+34 974 500 032',lat:42.4505,lng:0.1356,officialUrl:'https://www.penamontanesa.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Pena+Montanesa'},
-  {hub:'huesca',name:'Camping Ribera del Ara',region:'Fiscal',email:'',phone:'+34 974 503 035',lat:42.4914,lng:-0.1203,officialUrl:'https://www.riberadelara.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Ribera+del+Ara+Fiscal'}
+  {hub:'huesca',name:'Camping Ribera del Ara',region:'Fiscal',email:'',phone:'+34 974 503 035',lat:42.4914,lng:-0.1203,officialUrl:'https://www.riberadelara.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Ribera+del+Ara+Fiscal'},
+  {hub:'huesca',name:'wecamp Pirineos',region:'Boltaña · Río Ara',email:'hola@pirineos.wecamp.net',phone:'+34 93 626 89 00',lat:42.430168,lng:0.078867,officialUrl:'https://wecamp.net/en/locations/pirineos',link:'https://www.google.com/maps/search/?api=1&query=wecamp+Pirineos+Boltana',preferred:true,notes:'Favorit nahe Aínsa: offizielle Stellplätze für Camper mit Wasser, Strom und Abwasser. Für 09.08. eine Nacht, 6 Erwachsene und das zweite Auto bestätigen.'},
+  {hub:'huesca',name:'Camping Laspaúles',region:'Laspaúles · N-260',email:'camping@laspaules.com',phone:'+34 974 55 33 20',lat:42.47126,lng:0.59919,officialUrl:'https://www.laspaules.com/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Laspaules',notes:'Östliche Pyrenäen-Alternative direkt an der N-260 mit 70–80 m² großen Stellplätzen. Eine Nacht, 6 Erwachsene und das zweite Auto für 09.08. bestätigen.'}
 ];
-const CAMPING_NETWORK_VERIFIED = new Set(['Camping dei Fiori','Campeggio Fossa Lupara','Levante Camper','Camping Mare Monti','Esterel Caravaning','Camping La Pierre Verte','Camping Les Restanques','Camping Rives du Lac de Sainte-Croix','Camping Les Cigales','Aux Portes de Cassis','Youcamp Village Marseille Provence','Camping de la Sauge','Flower Camping Le Mas de Mourgues','Camping Cayola','Camping Club Farret','Camping Les Mimosas','Camping Beau Rivage','Camping Le Val de Cesse','Camping La Grange Neuve','Camping Le Fun','Camping Le Front de Mer','Les Criques de Porteils','Camping Les Marsouins','Camping Le Haras','Camping Les Casteillets','Wecamp Cadaqués','Càmping Begur','Camping Aquarius','Camping Amfora','Camping Aínsa','Camping Alquézar','Camping Peña Montañesa']);
+const CAMPING_FIRST_NIGHT_ADDITIONS_V13 = [
+  {name:'Camping Verona Village',region:'Verona · nahe A22',email:'info@campingverona.com',phone:'+39 045 2050660',lat:45.39306,lng:10.99298,officialUrl:'https://www.campingverona.com/en/',link:'https://www.google.com/maps/search/?api=1&query=Camping+Verona+Village',notes:'Zusätzliche erste Etappe ab Innsbruck: nur etwa 1,5 km von der Autobahnausfahrt, 150 ausgestattete Stellplätze mit ca. 50 m². Für 02.–03.08. Platz für 6 Erwachsene und den Kleinwagen bestätigen.'}
+];
+const CAMPING_NETWORK_VERIFIED = new Set(['Camping dei Fiori','Campeggio Fossa Lupara','Levante Camper','Camping Mare Monti','Esterel Caravaning','Camping La Pierre Verte','Camping Les Restanques','Camping Rives du Lac de Sainte-Croix','Camping Les Cigales','Aux Portes de Cassis','Youcamp Village Marseille Provence','Camping de la Sauge','Flower Camping Le Mas de Mourgues','Camping Cayola','Camping Club Farret','Camping Les Mimosas','Camping Beau Rivage','Camping La Tamarissière','Camping Le Val de Cesse','Camping La Grange Neuve','Camping Le Fun','Camping Le Front de Mer','Les Criques de Porteils','Camping Les Marsouins','Camping Le Haras','Camping Les Casteillets','Wecamp Cadaqués','Càmping Begur','Camping Aquarius','Camping Amfora','Camping Maçanet de Cabrenys','Camping Aínsa','Camping Alquézar','Camping Peña Montañesa','wecamp Pirineos','Camping Laspaúles','Camping Verona Village']);
 function cleanCampName(title){
   return String(title||'').replace(/2\.8\s*-\s*3\.8/gi,'').replace(/spontan\s+anrufen/gi,'').replace(/[✅❌🇨🇭]/gu,'').replace(/[·:–—-]+$/,'').replace(/\s+/g,' ').trim();
 }
@@ -429,6 +436,26 @@ function applyFrenchCritAirNetworkV12(s){
   });
   s.meta=s.meta||{};s.meta.frenchCritAirResearch='2026-07-14';
 }
+function applyRouteLeadAdditionsV13(s){
+  // Vier neue Plätze liegen in bestehenden Routenkorridoren und werden über
+  // den idempotenten Seed ergänzt. Verona gehört dagegen bewusst zur bereits
+  // bestehenden Suche „Erste Nacht“ und nicht zum Ligurien-Korridor.
+  seedCampingSafetyNetwork(s);
+  const search=(s.sleepSearches||[]).find(x=>/erste nacht/i.test(x.title||''));
+  if(search){
+    const norm=value=>String(value||'').trim().toLocaleLowerCase('de');
+    CAMPING_FIRST_NIGHT_ADDITIONS_V13.forEach(seed=>{
+      let place=(s.sleepPlaces||[]).find(p=>norm(p.name)===norm(seed.name)||(seed.email&&norm(p.email)===norm(seed.email)));
+      if(!place){place={id:uid(),createdAt:new Date().toISOString()};s.sleepPlaces.push(place);}
+      ['name','region','email','phone','link','officialUrl','lat','lng','notes'].forEach(key=>{if((place[key]===undefined||place[key]==='')&&seed[key]!==undefined)place[key]=seed[key];});
+      place.contactVerified=true;
+      if(!search.candidates.some(c=>c.placeId===place.id||norm(c.name)===norm(seed.name))){
+        search.candidates.push(normalizeSleepCandidate({id:uid(),placeId:place.id,...seed,contactVerified:true,status:'new',nextAction:'Ein-Nacht- und Verfügbarkeitsanfrage vorbereiten'}));
+      }
+    });
+  }
+  s.meta=s.meta||{};s.meta.routeLeadResearch='2026-07-14';
+}
 function applyKnownCampingReplyBatch(s){
   s.meta=s.meta||{}; if((s.meta.campingReplyBatch||0)>=1)return;
   const search=(s.sleepSearches||[]).find(x=>/erste nacht/i.test(x.title||''))||s.sleepSearches?.[0]; if(!search)return;
@@ -542,6 +569,7 @@ function migrate(s){
   if(fromVersion<10)applyCampingContactVerificationV10(s);
   if(fromVersion<11)applyCampingFlexibleWindowsV11(s);
   if(fromVersion<12)applyFrenchCritAirNetworkV12(s);
+  if(fromVersion<13)applyRouteLeadAdditionsV13(s);
   s.mailAssistant=Object.assign({processedMessageIds:[],draftRequests:[],reviewQueue:[],runnerMode:'local',runners:{},lease:null,lastSuccessAt:null,lastRunAt:null,lastError:'',nextRunAt:null},s.mailAssistant||{});
   s.mailAssistant.processedMessageIds=Array.isArray(s.mailAssistant.processedMessageIds)?s.mailAssistant.processedMessageIds.slice(-200):[];
   s.mailAssistant.draftRequests=Array.isArray(s.mailAssistant.draftRequests)?s.mailAssistant.draftRequests:[];
@@ -2955,7 +2983,11 @@ function sleepSearchWindowLabel(s){
   const fmt=iso=>new Date(iso+'T12:00:00').toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'});return `1 Nacht · Anreise ${fmt(s.arrivalWindowStart)}–${fmt(s.arrivalWindowEnd)} flexibel`;
 }
 function sleepMailWindowLabel(s){
-  if(!s?.arrivalWindowStart||!s?.arrivalWindowEnd||s.arrivalWindowStart===s.arrivalWindowEnd)return s?.dateLabel||'';
+  if(!s?.arrivalWindowStart||!s?.arrivalWindowEnd||s.arrivalWindowStart===s.arrivalWindowEnd){
+    if(!s?.startDate||!s?.endDate)return s?.dateLabel||'';
+    const a=new Date(s.startDate+'T12:00:00'),b=new Date(s.endDate+'T12:00:00'),same=a.getMonth()===b.getMonth()&&a.getFullYear()===b.getFullYear();
+    return same?`${a.getDate()}–${b.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}`:`${a.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}–${b.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`;
+  }
   const a=new Date(s.arrivalWindowStart+'T12:00:00'),b=new Date(s.arrivalWindowEnd+'T12:00:00'),same=a.getMonth()===b.getMonth()&&a.getFullYear()===b.getFullYear();return same?`arrival ${a.getDate()} or ${b.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}`:`arrival ${a.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})} or ${b.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}`;
 }
 function addSleepSearch(today=false){
@@ -3009,7 +3041,8 @@ function sleepEmailTextRaw(s,c,mode='inquiry'){
   if(mode==='missing') return `Dear ${c.name} team,\n\nThank you for your reply regarding our stay ${dates}. Could you please also confirm the total price and whether our small car can be parked at or near the place?\n\n${end}`;
   if(mode==='deposit') return `Dear ${c.name} team,\n\nThank you for the booking information for our stay ${dates}. Before we arrange the deposit, could you please confirm the required amount, payment deadline and reference we should include with the payment?\n\n${end}`;
   if(mode==='clarify') return `Dear ${c.name} team,\n\nThank you for your reply. Before we proceed, could you please confirm that the offer applies ${dates} to ${party}, including parking for the small car?\n\n${end}`;
-  return `Dear ${c.name} team,\n\nI would like to ask if you have a touring pitch available ${flexible} for ${party}. We only need one night and can choose any available arrival date within this window.\n\nIf advance reservations are not available or you are currently full, would it still be possible to call you spontaneously on the relevant arrival day in case a pitch becomes available?\n\nCould you please also let me know the total price for one night and whether the small car can be parked at or near the pitch?\n\n${end}`;
+  const flexibility=hasFlexibleWindow?' We only need one night and can choose any available arrival date within this window.':'';
+  return `Dear ${c.name} team,\n\nI would like to ask if you have a touring pitch available ${flexible} for ${party}.${flexibility}\n\nIf advance reservations are not available or you are currently full, would it still be possible to call you spontaneously on the relevant arrival day in case a pitch becomes available?\n\nCould you please also let me know the total price for one night and whether the small car can be parked at or near the pitch?\n\n${end}`;
 }
 function formatSleepLetter(value){const text=String(value||'').replace(/\r\n?/g,'\n').split('\n').map(line=>line.replace(/[ \t]+$/g,'')).join('\n').replace(/\n{3,}/g,'\n\n').trimEnd();return text?text+'\n\n':'';}
 function sleepEmailText(s,c,mode='inquiry'){return formatSleepLetter(sleepEmailTextRaw(s,c,mode));}

@@ -1,6 +1,6 @@
 # HANDOFF — Status
 
-> Stand: 12.07.2026 · `main` ist der stabile Live-Stand.
+> Stand: 14.07.2026 · `main` ist der stabile Live-Stand.
 > Projektüberblick & Konventionen: [AGENTS.md](AGENTS.md).
 
 ## Aktueller Zustand ✅
@@ -21,7 +21,7 @@
 - Firebase CLI: `export PATH="/Users/anonymous/.hermes/node/bin:$PATH"`,
   eingeloggt mit Freddis Google-Konto (`firebase login:list`).
   Regeln neu deployen: `firebase deploy --only database --project roadtrip-to-sizigia-eclipse`
-- **Schlafplatz-Radar (Schema V11 live):** Dauerhaftes Campingplatz-Register
+- **Schlafplatz-Radar (Schema V13 live):** Dauerhaftes Campingplatz-Register
   (`sleepPlaces`) plus datumsbezogene Anfragen in den Nacht-Suchen. Positionen
   werden einmalig per Karten-Picker oder koordinatenhaltigem Maps-Link erfasst;
   die Offline-Karte zeigt Statusfarben wahlweise pro Nacht oder für die gesamte
@@ -55,6 +55,13 @@
   ist abgesagt, Lago Levico bleibt als spontane Vor-Ort-Option erhalten. Die
   vier Cassis-Anfragen (Les Cigales, Aux Portes de Cassis, Youcamp, La Sauge)
   sind als tatsächlich gesendet markiert.
+  V13 ergänzt ohne Überschreiben bestehender Daten fünf weitere geprüfte
+  Routenoptionen: Camping Verona Village für die erste Nacht, Camping La
+  Tamarissière für 6./7.08., Camping Maçanet de Cabrenys für 8./9.08. sowie
+  wecamp Pirineos und Camping Laspaúles für 9.–10.08. Alle besitzen
+  Kartenpositionen und verifizierte E-Mail-Adressen. Für jeden Platz liegt ein
+  normal formatierter, ungesendeter iCloud-Entwurf mit leerer Signatur bereit;
+  die fachlichen Status bleiben bis zum tatsächlichen Versand unverändert.
 - **Camping-Mail-Assistent:** Lokale Codex-Automation prüft tagsüber um ca.
   08:00, 14:00 und 20:00 ausschließlich campingbezogene Antworten in iCloud
   Inbox/Sent. `tools/camping-mail-bridge.mjs` liefert konfliktgeschützte
@@ -75,6 +82,11 @@
   bei Aktivierung um 06:00, 12:00 und 18:00 UTC (im Sommer ungefähr 08:00,
   14:00 und 20:00 MESZ). App, Bridge und Cloud-Runner schreiben Firebase
   konfliktgeschützt mit ETags.
+  `tools/create-apple-mail-draft.mjs` erstellt für eine registrierte Anfrage
+  einen lokalen Apple-Mail-Entwurf und markiert ihn erst nach erfolgreichem
+  Speichern als „bereit“. Exakte Ein-Nacht-Anfragen nennen kein
+  irreführendes flexibles Fenster; flexible Korridore bleiben als Auswahl
+  mehrerer möglicher Anreisetage formuliert.
 - **App-Struktur:** Die Web-App ist ohne Build-Schritt in `index.html`,
   `styles.css`, `map-data.js` und `app.js` getrennt. V8 ergänzt lokale/cloud
   Runner-Gesundheit und eine begrenzte manuelle Prüfwarteschlange. Der

@@ -8,19 +8,28 @@ import {loadApp} from './app-testbed.mjs';
 const app = loadApp();
 await new Promise(r => setImmediate(r));
 
-// 1) Erster Offline-Start: alle sieben Camping-Korridore sind SOFORT gesät
-//    (kein Reload nötig), inklusive aller 28 Kandidaten.
+// 1) Erster Offline-Start: alle acht Camping-Korridore sind SOFORT gesät
+//    (kein Reload nötig), inklusive aller geprüften Routenkandidaten.
 assert.equal(app.run('state.sleepSearches.length'), 8, 'acht Korridore beim ersten Start');
-assert.equal(app.run('state.sleepSearches.reduce((n,s)=>n+s.candidates.length,0)'), 40, '40 Kandidaten beim ersten Start');
+assert.equal(app.run('state.sleepSearches.reduce((n,s)=>n+s.candidates.length,0)'), 44, '44 Kandidaten beim ersten Start');
 assert.equal(app.run('state.sleepSearches.every(s=>s.mode==="network")'), true);
 assert.equal(app.run('state.meta.campingNetworkSeeded'), true);
 assert.equal(app.run('new Set(state.sleepSearches.map(s=>s.networkKey)).size'), 8, 'Korridore eindeutig');
 assert.equal(app.run('state.sleepSearches.find(s=>s.networkKey==="provence-east").arrivalWindowEnd'),'2026-08-05','Provence braucht zwei mögliche Anreisetage');
-assert.equal(app.run('state.schemaVersion'),12,'Frankreich-Netz braucht Schema V12');
+assert.equal(app.run('state.schemaVersion'),13,'Neue Routenoptionen brauchen Schema V13');
 assert.equal(app.run('state.sleepSearches.find(s=>s.networkKey==="camargue").candidates.length'),3,'Camargue ist ein eigener Korridor');
-assert.equal(app.run('state.sleepSearches.flatMap(s=>s.candidates).filter(c=>c.preferred).length'),6,'sechs recherchierte Favoriten');
+assert.equal(app.run('state.sleepSearches.flatMap(s=>s.candidates).filter(c=>c.preferred).length'),8,'acht recherchierte Favoriten');
 assert.equal(app.run('state.sleepSearches.flatMap(s=>s.candidates).filter(c=>c.preferred).every(c=>c.status==="new"&&c.contactVerified===true)'),true,'Favoriten bleiben unkontaktiert, sind nach offizieller Prüfung aber freigeschaltet');
 assert.ok(app.run(`(()=>{const s=state.sleepSearches.find(x=>x.networkKey==='camargue'),c=s.candidates.find(x=>x.preferred);return sleepCandidateCard(s,c);})()`).includes('★ Favorit'),'Favorit muss auf der Karte lesbar sein');
+
+// V13 ergänzt Verona idempotent in eine vorhandene Erste-Nacht-Suche, ohne
+// bestehende Kandidaten oder Orte zu ersetzen.
+{
+  const legacy={schemaVersion:12,meta:{lastSaved:'2026-07-13T12:00:00.000Z'},sleepPlaces:[{id:'old-place',name:'Bestehender Platz'}],sleepSearches:[{id:'first',title:'Erste Nacht',startDate:'2026-08-02',endDate:'2026-08-03',arrivalWindowStart:'2026-08-02',arrivalWindowEnd:'2026-08-02',dateLabel:'02.08.2026–03.08.2026',region:'Ab Innsbruck',mode:'planned',candidates:[{id:'old-candidate',placeId:'old-place',name:'Bestehender Platz',status:'new'}]}]};
+  const migrated=loadApp({localStorageData:{'sizigia-roadtrip-2026':JSON.stringify(legacy)}});
+  const out=migrated.run(`(()=>{const s=state.sleepSearches.find(x=>x.id==='first'),rows=s.candidates.filter(x=>x.name==='Camping Verona Village'),c=rows[0],p=state.sleepPlaces.find(x=>x.id===c.placeId);return {count:rows.length,old:s.candidates.some(x=>x.id==='old-candidate'),verified:p.contactVerified,lat:p.lat,version:state.schemaVersion};})()`);
+  assert.equal(JSON.stringify(out),JSON.stringify({count:1,old:true,verified:true,lat:45.39306,version:13}));
+}
 
 // Gesendete, noch unbeantwortete Anfragen erscheinen blau auf der Karte.
 // Ein nur geöffneter Entwurf darf dagegen keinen Kontakt vortäuschen.

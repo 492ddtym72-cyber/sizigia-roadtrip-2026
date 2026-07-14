@@ -44,8 +44,8 @@ const candidateStart=source.indexOf('const CAMPING_NETWORK_CANDIDATES =');
 assert.notEqual(candidateStart,-1,'CAMPING_NETWORK_CANDIDATES fehlt');
 const candidateEnd=source.indexOf('\n];',candidateStart)+3;
 vm.runInNewContext(source.slice(candidateStart,candidateEnd).replace('const CAMPING_NETWORK_CANDIDATES','this.candidates'),sandbox);
-assert.equal(sandbox.candidates.length,40);
-const expectedCounts={liguria:4,'provence-east':7,'cassis-marseille':4,camargue:3,languedoc:7,'cote-vermeille':7,'costa-brava':4,huesca:4};
+assert.equal(sandbox.candidates.length,44);
+const expectedCounts={liguria:4,'provence-east':7,'cassis-marseille':4,camargue:3,languedoc:8,'cote-vermeille':7,'costa-brava':5,huesca:6};
 for(const hub of sandbox.hubs){
   const rows=sandbox.candidates.filter(x=>x.hub===hub.id);
   assert.equal(rows.length,expectedCounts[hub.id],`${hub.id}: unerwartete Kandidatenzahl`);
@@ -61,7 +61,7 @@ const verifiedEnd=source.indexOf(';',verifiedStart)+1;
 const verifyBox={CAMPING_NETWORK_CANDIDATES:sandbox.candidates,uid:()=>`new-place`,console};
 vm.runInNewContext(source.slice(verifiedStart,verifiedEnd).replace('const CAMPING_NETWORK_VERIFIED','this.CAMPING_NETWORK_VERIFIED'),verifyBox);
 const preferred=sandbox.candidates.filter(x=>x.preferred);
-assert.equal(preferred.length,6);
+assert.equal(preferred.length,8);
 assert.ok(preferred.every(x=>x.email&&verifyBox.CAMPING_NETWORK_VERIFIED.has(x.name)),'Alle Favoriten brauchen eine offiziell geprüfte E-Mail-Adresse');
 vm.runInNewContext(extract('applyCampingContactVerificationV10')+';this.apply=applyCampingContactVerificationV10;',verifyBox);
 const migrationState={meta:{},sleepPlaces:[
@@ -96,11 +96,11 @@ if(fs.existsSync(backupUrl)){
   vm.runInNewContext(seedFn+';this.seed=seedCampingSafetyNetwork;',seedBox);
   seedBox.seed(production);
   assert.equal(production.sleepSearches.length,9);
-  assert.equal(production.sleepSearches.filter(x=>x.mode==='network').reduce((n,x)=>n+x.candidates.length,0),40);
-  assert.equal(production.sleepPlaces.length,placeCount+40);
+  assert.equal(production.sleepSearches.filter(x=>x.mode==='network').reduce((n,x)=>n+x.candidates.length,0),44);
+  assert.equal(production.sleepPlaces.length,placeCount+44);
   assert.equal(firstSearch.candidates.length,firstCount);
   seedBox.seed(production);
   assert.equal(production.sleepSearches.length,9,'Seed darf keine Korridore duplizieren');
-  assert.equal(production.sleepPlaces.length,placeCount+40,'Seed darf keine Plätze duplizieren');
+  assert.equal(production.sleepPlaces.length,placeCount+44,'Seed darf keine Plätze duplizieren');
 }
 console.log(JSON.stringify({ok:true,archived:state.archive.campingReminders.length,hubs:sandbox.hubs.length,candidates:sandbox.candidates.length,production:!!production}));
