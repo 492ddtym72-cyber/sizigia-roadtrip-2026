@@ -66,7 +66,11 @@
   und „Absagen“ zeigen Zähler; Karten besitzen nur eine primäre Aktion und
   ruhige Links für Website, Karte und Details. Echte Antwortkästen erscheinen
   nur bei tatsächlichem Antwortinhalt. Bereits gesendete Anfragen bieten keine
-  zweite Erstanfrage an, und gesunde Mail-Diagnostik bleibt ausgeblendet.
+  zweite Erstanfrage an, und gesunde Mail-Diagnostik bleibt ausgeblendet. Eine
+  akzentunabhängige Routensuche findet Campingplätze über Name, Ort, Status und
+  Antworttext. Der zuletzt gewählte Reiseabschnitt bleibt nur auf dem Gerät
+  gespeichert und wird im horizontalen Nachtwähler automatisch sichtbar
+  gehalten.
 - **Camping-Mail-Assistent:** Lokale Codex-Automation prüft tagsüber um ca.
   08:00, 14:00 und 20:00 ausschließlich campingbezogene Antworten in iCloud
   Inbox/Sent. `tools/camping-mail-bridge.mjs` liefert konfliktgeschützte

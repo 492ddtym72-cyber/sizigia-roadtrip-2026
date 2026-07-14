@@ -22,6 +22,31 @@ assert.equal(app.run('state.sleepSearches.flatMap(s=>s.candidates).filter(c=>c.p
 assert.equal(app.run('state.sleepSearches.flatMap(s=>s.candidates).filter(c=>c.preferred).every(c=>c.status==="new"&&c.contactVerified===true)'),true,'Favoriten bleiben unkontaktiert, sind nach offizieller Prüfung aber freigeschaltet');
 assert.ok(app.run(`(()=>{const s=state.sleepSearches.find(x=>x.networkKey==='camargue'),c=s.candidates.find(x=>x.preferred);return sleepCandidateCard(s,c);})()`).includes('★ Favorit'),'Favorit muss auf der Karte lesbar sein');
 
+// Die gewählte Nacht ist eine reine Geräteeinstellung: sie bleibt nach jedem
+// Re-Render aktiv, ohne das synchronisierte Reise-State-Objekt zu verändern.
+{
+  const selected=app.run(`(()=>{const s=state.sleepSearches.at(-1);selectSleepSearch(s.id);return {id:s.id,active:activeSleepSearchId,stored:localStorage.getItem(SLEEP_SEARCH_KEY),inState:Object.prototype.hasOwnProperty.call(state,'activeSleepSearchId')};})()`);
+  assert.equal(selected.active,selected.id,'gewählte Nacht bleibt aktiv');
+  assert.equal(selected.stored,selected.id,'gewählte Nacht wird auf dem Gerät gespeichert');
+  assert.equal(selected.inState,false,'Geräteauswahl darf nicht in die Gruppe synchronisiert werden');
+  assert.ok(app.run(`document.getElementById('page-sleep').innerHTML`).includes('id="sleepSearchStrip"'),'Nachtwähler braucht eine gezielt scrollbar gehaltene Leiste');
+}
+
+// Routensuche arbeitet über alle Nächte, ignoriert Akzente und führt beim
+// Öffnen eines Treffers in den richtigen Abschnitt und Status-Tab zurück.
+{
+  const search=app.run(`(()=>{sleepQuery='laspaules';const rows=sleepSearchRows(),html=renderSleepSearchResults(),row=rows.find(x=>x.view.name==='Camping Laspaúles');return {count:rows.length,html,searchId:row?.search.id,candidateId:row?.candidate.id};})()`);
+  assert.ok(search.count>=1,'akzentunabhängige Suche muss Laspaúles finden');
+  assert.ok(search.html.includes('Camping Laspaúles'),'Treffer zeigt den Campingplatz');
+  assert.ok(search.html.includes('Huesca-Anfahrt'),'Treffer zeigt den Reiseabschnitt');
+  const opened=app.run(`(()=>{openSleepSearchResult('${search.searchId}','${search.candidateId}');return {active:activeSleepSearchId,filter:sleepFilter,query:sleepQuery};})()`);
+  assert.equal(opened.active,search.searchId,'Treffer öffnet den richtigen Reiseabschnitt');
+  assert.equal(opened.filter,'waiting','neuer Platz öffnet im Kontakt-Tab');
+  assert.equal(opened.query,'','Treffer schließt die Routensuche');
+  const short=app.run(`(()=>{sleepQuery='a';const html=renderSleepSearchResults();sleepQuery='';return html;})()`);
+  assert.ok(short.includes('Mindestens zwei Zeichen'),'Einzelzeichen dürfen keine riesige Trefferliste öffnen');
+}
+
 // V13 ergänzt Verona idempotent in eine vorhandene Erste-Nacht-Suche, ohne
 // bestehende Kandidaten oder Orte zu ersetzen.
 {

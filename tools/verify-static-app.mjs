@@ -16,4 +16,7 @@ if(!app.includes("const operational=['booked','available'"))throw new Error('Bes
 if(!app.includes("'call','awaiting','reserving'"))throw new Error('Offene, gesendete Anfragen fehlen auf der Karte');
 if(app.includes("s.mode==='network'&&c.status==='new'?'network_policy'"))throw new Error('Neue Routenkandidaten müssen die konkrete Nacht anfragen');
 if(!app.includes("c.status==='new'?'Verfügbarkeit anfragen'"))throw new Error('Konkrete Verfügbarkeitsaktion fehlt');
-console.log(JSON.stringify({ok:true,classicScripts:true,assetOrder:true,offlineAssets:true,mapEmbedded:true,etagSync:true,recoverableRejections:true}));
+if(!app.includes('id="sleepSearchStrip"')||!app.includes('keepActiveSleepSearchVisible()'))throw new Error('Aktive Nacht wird nicht sichtbar gehalten');
+if(!app.includes("localStorage.setItem(SLEEP_SEARCH_KEY,id)"))throw new Error('Gewählte Nacht wird nicht auf dem Gerät gemerkt');
+if(!app.includes('Campingplatz auf der Route suchen')||!app.includes('function sleepSearchRows()'))throw new Error('Routenweite Campingplatz-Suche fehlt');
+console.log(JSON.stringify({ok:true,classicScripts:true,assetOrder:true,offlineAssets:true,mapEmbedded:true,etagSync:true,recoverableRejections:true,campsiteSearch:true,rememberedNight:true}));
