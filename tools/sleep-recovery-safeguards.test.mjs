@@ -16,10 +16,10 @@ assert.equal(app.run('state.sleepSearches.every(s=>s.mode==="network")'), true);
 assert.equal(app.run('state.meta.campingNetworkSeeded'), true);
 assert.equal(app.run('new Set(state.sleepSearches.map(s=>s.networkKey)).size'), 8, 'Korridore eindeutig');
 assert.equal(app.run('state.sleepSearches.find(s=>s.networkKey==="provence-east").arrivalWindowEnd'),'2026-08-05','Provence braucht zwei mögliche Anreisetage');
-assert.equal(app.run('state.schemaVersion'),16,'Routenoptionen und private Unterkünfte brauchen Schema V16');
+assert.equal(app.run('state.schemaVersion'),17,'Flexible Unterkunftsangebote brauchen Schema V17');
 assert.equal(app.run('state.sleepSearches.find(s=>s.networkKey==="camargue").candidates.length'),3,'Camargue ist ein eigener Korridor');
 assert.equal(app.run('state.sleepSearches.flatMap(s=>s.candidates).filter(c=>c.preferred).length'),9,'acht recherchierte Camping-Favoriten plus private Option');
-assert.equal(app.run('state.sleepSearches.flatMap(s=>s.candidates).filter(c=>c.preferred&&c.kind!=="private").every(c=>c.status==="new"&&c.contactVerified===true)'),true,'Camping-Favoriten bleiben unkontaktiert, sind nach offizieller Prüfung aber freigeschaltet');
+assert.equal(app.run('state.sleepSearches.flatMap(s=>s.candidates).filter(c=>c.preferred&&c.kind!=="private").every(c=>c.status!=="booked"&&c.contactVerified===true)'),true,'Camping-Favoriten bleiben ungeplant, sind nach offizieller Prüfung aber freigeschaltet');
 assert.ok(app.run(`(()=>{const s=state.sleepSearches.find(x=>x.networkKey==='camargue'),c=s.candidates.find(x=>x.preferred);return sleepCandidateCard(s,c);})()`).includes('★ Favorit'),'Favorit muss auf der Karte lesbar sein');
 
 // Die gewählte Nacht ist eine reine Geräteeinstellung: sie bleibt nach jedem
@@ -41,7 +41,7 @@ assert.ok(app.run(`(()=>{const s=state.sleepSearches.find(x=>x.networkKey==='cam
   assert.ok(search.html.includes('Huesca-Anfahrt'),'Treffer zeigt den Reiseabschnitt');
   const opened=app.run(`(()=>{openSleepSearchResult('${search.searchId}','${search.candidateId}');return {active:activeSleepSearchId,filter:sleepFilter,query:sleepQuery};})()`);
   assert.equal(opened.active,search.searchId,'Treffer öffnet den richtigen Reiseabschnitt');
-  assert.equal(opened.filter,'waiting','neuer Platz öffnet im Kontakt-Tab');
+  assert.equal(opened.filter,'action','verfügbares Angebot öffnet im Nutzbar-Tab');
   assert.equal(opened.query,'','Treffer schließt die Routensuche');
   const short=app.run(`(()=>{sleepQuery='a';const html=renderSleepSearchResults();sleepQuery='';return html;})()`);
   assert.ok(short.includes('Mindestens zwei Zeichen'),'Einzelzeichen dürfen keine riesige Trefferliste öffnen');
@@ -53,7 +53,7 @@ assert.ok(app.run(`(()=>{const s=state.sleepSearches.find(x=>x.networkKey==='cam
   const legacy={schemaVersion:12,meta:{lastSaved:'2026-07-13T12:00:00.000Z'},sleepPlaces:[{id:'old-place',name:'Bestehender Platz'}],sleepSearches:[{id:'first',title:'Erste Nacht',startDate:'2026-08-02',endDate:'2026-08-03',arrivalWindowStart:'2026-08-02',arrivalWindowEnd:'2026-08-02',dateLabel:'02.08.2026–03.08.2026',region:'Ab Innsbruck',mode:'planned',candidates:[{id:'old-candidate',placeId:'old-place',name:'Bestehender Platz',status:'new'}]}]};
   const migrated=loadApp({localStorageData:{'sizigia-roadtrip-2026':JSON.stringify(legacy)}});
   const out=migrated.run(`(()=>{const s=state.sleepSearches.find(x=>x.id==='first'),rows=s.candidates.filter(x=>x.name==='Camping Verona Village'),c=rows[0],p=state.sleepPlaces.find(x=>x.id===c.placeId);return {count:rows.length,old:s.candidates.some(x=>x.id==='old-candidate'),verified:p.contactVerified,lat:p.lat,version:state.schemaVersion};})()`);
-  assert.equal(JSON.stringify(out),JSON.stringify({count:1,old:true,verified:true,lat:45.39306,version:16}));
+  assert.equal(JSON.stringify(out),JSON.stringify({count:1,old:true,verified:true,lat:45.39306,version:17}));
 }
 
 // V16 ergänzt die private Familien-Option einmalig als nutzbar, aber nicht
@@ -63,15 +63,38 @@ assert.ok(app.run(`(()=>{const s=state.sleepSearches.find(x=>x.networkKey==='cam
   assert.equal(JSON.stringify(privateStay),JSON.stringify({count:1,status:'available',kind:'private',preferred:true,email:'',lat:43.7549461,lng:3.4355718,action:false,onMap:true}));
 }
 
+// V17 übernimmt die am 15.07. eingegangenen Antworten genau einmal. Ein
+// Zwei-Nächte-Angebot bleibt dabei ein Zwei-Nächte-Angebot und wird in der
+// Reservierungsantwort nicht wieder auf eine Nacht verkürzt.
+{
+  const replies=app.run(`(()=>{const rows=state.sleepSearches.flatMap(s=>(s.candidates||[]).map(c=>({s,c}))),get=name=>rows.find(x=>x.c.name===name),mas=get('Flower Camping Le Mas de Mourgues'),tama=get('Camping La Tamarissière'),val=get('Camping Le Val de Cesse'),las=get('Camping Laspaúles'),rest=get('Camping Les Restanques'),cada=get('Wecamp Cadaqués');return {marker:state.meta.campingReplyBatch20260715,mas:{status:mas.c.status,price:mas.c.finalPrice,website:sleepCandidateCard(mas.s,mas.c).includes('Auf Website reservieren')},tama:{status:tama.c.status},val:{status:val.c.status,price:val.c.finalPrice,parking:val.c.parking},las:{status:las.c.status,start:las.c.offeredArrivalDate,end:las.c.offeredDepartureDate,mail:sleepEmailText(las.s,sleepCandidateView(las.c),'reserve'),card:sleepCandidateCard(las.s,las.c)},rest:{status:rest.c.status,price:rest.c.finalPrice,website:sleepCandidateCard(rest.s,rest.c).includes('Auf Website reservieren')},cada:{status:cada.c.status,website:sleepCandidateCard(cada.s,cada.c).includes('Auf Website reservieren')}};})()`);
+  assert.equal(replies.marker,3);
+  assert.equal(JSON.stringify(replies.mas),JSON.stringify({status:'available',price:'76 €',website:true}));
+  assert.equal(JSON.stringify(replies.tama),JSON.stringify({status:'unavailable'}));
+  assert.equal(replies.val.status,'available');
+  assert.equal(replies.val.price,'ca. 90 €');
+  assert.ok(replies.val.parking.includes('außerhalb'));
+  assert.equal(replies.las.start,'2026-08-09');
+  assert.equal(replies.las.end,'2026-08-11');
+  assert.ok(replies.las.mail.includes('from 9 August 2026 to 11 August 2026'));
+  assert.ok(!replies.las.mail.includes('from 9 August 2026 to 10 August 2026'));
+  assert.ok(replies.las.card.includes('9.–11.08.2026'));
+  assert.equal(JSON.stringify(replies.rest),JSON.stringify({status:'available',price:'66,16 €',website:true}));
+  assert.equal(JSON.stringify(replies.cada),JSON.stringify({status:'reservable',website:true}));
+  const queue=app.run(`(()=>{const names=['Camping Alquézar','Camping Mare Monti','Wecamp Cadaqués','Youcamp Village Marseille Provence','Camping Les Restanques'],rows=state.sleepSearches.flatMap(s=>s.candidates||[]);state.mailAssistant.reviewQueue=names.map((name,i)=>({id:'review-'+i,candidateId:rows.find(c=>c.name===name).id,status:'pending'}));state.meta.campingReplyBatch20260715=2;state=migrate(state);return state.mailAssistant.reviewQueue.map(x=>x.status);})()`);
+  assert.equal(JSON.stringify(queue),JSON.stringify(['resolved','resolved','resolved','resolved','resolved']));
+}
+
 // Gesendete, noch unbeantwortete Anfragen erscheinen blau auf der Karte.
 // Ein nur geöffneter Entwurf darf dagegen keinen Kontakt vortäuschen.
 {
   const result=app.run(`(()=>{
     const s=state.sleepSearches.find(x=>x.candidates.length>1),a=s.candidates[0],d=s.candidates[1];
-    const pa=sleepPlace(a)||a,pd=sleepPlace(d)||d,prev={as:a.status,ds:d.status,alat:pa.lat,alng:pa.lng,dlat:pd.lat,dlng:pd.lng};
+    const pa=sleepPlace(a)||a,pd=sleepPlace(d)||d,prev={statuses:s.candidates.map(c=>c.status),alat:pa.lat,alng:pa.lng,dlat:pd.lat,dlng:pd.lng};
+    s.candidates.forEach(c=>c.status='new');
     a.status='awaiting';pa.lat=43;pa.lng=5;d.status='draft_requested';pd.lat=43.2;pd.lng=5.2;
     const html=buildSleepMap(s,[]),points=(html.match(/map-pt/g)||[]).length,blue=html.includes('#54c8ff');
-    Object.assign(a,{status:prev.as});Object.assign(d,{status:prev.ds});Object.assign(pa,{lat:prev.alat,lng:prev.alng});Object.assign(pd,{lat:prev.dlat,lng:prev.dlng});
+    s.candidates.forEach((c,i)=>c.status=prev.statuses[i]);Object.assign(pa,{lat:prev.alat,lng:prev.alng});Object.assign(pd,{lat:prev.dlat,lng:prev.dlng});
     return {points,blue};
   })()`);
   assert.equal(result.points,1,'nur die wirklich gesendete Anfrage gehört auf die Karte');
@@ -152,10 +175,11 @@ assert.ok(app.run(`(()=>{const s=state.sleepSearches.find(x=>x.networkKey==='cam
     const s = state.sleepSearches.find(x=>x.candidates.length);
     const c = s.candidates[0];
     const place = sleepPlace(c) || c;
-    const prev = {status:c.status, lat:place.lat, lng:place.lng};
+    const prev = {statuses:s.candidates.map(x=>x.status), lat:place.lat, lng:place.lng};
+    s.candidates.forEach(x=>x.status='new');
     c.status = 'unavailable'; place.lat = 43.0; place.lng = 5.0;
     const n = (buildSleepMap(s, []).match(/map-pt/g) || []).length;
-    c.status = prev.status; place.lat = prev.lat; place.lng = prev.lng;
+    s.candidates.forEach((x,i)=>x.status=prev.statuses[i]);place.lat = prev.lat; place.lng = prev.lng;
     return n;
   })()`);
   assert.equal(mapCount, 0, 'unavailable darf nie auf der Karte erscheinen');

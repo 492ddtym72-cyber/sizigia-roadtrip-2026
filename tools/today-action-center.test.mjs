@@ -2,11 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {loadApp} from './app-testbed.mjs';
 
-test('V16 ergänzt neutrales Trip-Profil und Aufgabenfelder ohne alte Erinnerungen zu verlieren', () => {
+test('V17 bewahrt neutrales Trip-Profil und Aufgabenfelder ohne alte Erinnerungen zu verlieren', () => {
   const legacy={schemaVersion:13,meta:{lastSaved:'2026-07-14T12:00:00.000Z'},reminders:[{id:'old-task',title:'Tickets prüfen',done:false,priority:true,createdAt:'2026-07-01T10:00:00.000Z'}]};
   const app=loadApp({localStorageData:{'sizigia-roadtrip-2026':JSON.stringify(legacy)}});
   const out=app.run(`(()=>{const r=state.reminders.find(x=>x.id==='old-task');return {version:state.schemaVersion,trip:state.trip,title:r.title,status:r.status,ownerId:r.ownerId,dueDate:r.dueDate,note:r.note,priority:r.priority};})()`);
-  assert.equal(out.version,16);
+  assert.equal(out.version,17);
   assert.equal(out.trip.title,'Roadtrip');
   assert.equal(out.trip.startDate,'2026-08-02');
   assert.equal(out.trip.endDate,'2026-08-17');

@@ -56,6 +56,18 @@
   V16 ergänzt als erste allgemeine Unterkunft den privaten Stellplatz in Les
   Salces bei Jakobs Verwandten: nutzbar für ein bis zwei Nächte, auf der Karte,
   aber ausdrücklich weder gebucht noch mit einer E-Mail-Aktion versehen.
+  V17 macht aus den starren „Nächten“ ruhige Reiseabschnitte und unterstützt
+  erstmals ein explizites Abreisedatum pro Angebot. Dadurch bleibt Laspaúles'
+  Zwei-Nächte-Angebot 09.–11.08. auch in späteren Reservierungsentwürfen exakt
+  erhalten. Die Antworten vom 15.07. sind eingeordnet: Mas de Mourgues (76 €,
+  Buchung über Website) und Val de Cesse (ca. 90 €, Auto außerhalb) sind
+  nutzbar, La Tamarissière ist wegen drei Nächten Mindestaufenthalt ausgeschlossen,
+  Laspaúles bleibt als Zwei-Nächte-Alternative verfügbar. Keine Unterkunft ist
+  dadurch als gebucht markiert. Fünf bereits ausgewertete Mail-Prüffälle werden
+  dabei aus der offenen Prüfliste entfernt: Restanques ist eine konkrete
+  Website-Option für 66,16 € (Strom optional), Wecamp Cadaqués verweist ohne
+  konkrete Zusage auf die Website; Alquézar, Mare Monti und Youcamp behalten
+  ihre vorsichtigen bestehenden Einstufungen.
   V11 trennt die geplante Nacht von einem flexiblen Anreisefenster. Die
   mittleren Routenkorridore fragen nun nach genau einer Nacht an einem
   beliebigen verfügbaren Anreisetag innerhalb eines realistischen
