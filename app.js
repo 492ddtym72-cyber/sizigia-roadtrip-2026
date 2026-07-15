@@ -1715,13 +1715,13 @@ function tripDayContext(now=new Date()){
   else if(phase==='after')timing='Reise abgeschlossen';
   return {route,today,start,end,phase,timing,stage:pick?.stage||null,stageIso:pick?.iso||'',stageExact:!!exact};
 }
-function homeRouteContext(){
+function homeRouteContext(route,tot){
   const ctx=tripDayContext(),stage=ctx.stage;
-  if(!stage)return {eyebrow:'Roadtrip',title:'Route planen',meta:ctx.timing};
-  return {eyebrow:ctx.stageExact?'Heutige Etappe':ctx.phase==='before'?'Erste Etappe':'Nächste Etappe',title:`${stage.from} → ${stage.to}`,meta:[ctx.timing,stage.date,stage.time,stage.km].filter(Boolean).join(' · ')};
+  const fallback=`${route.name} · ca. ${tot.km} km · ~${tot.hTxt} Std`;
+  return {eyebrow:'Roadtrip',title:'Route planen',meta:stage?[ctx.timing,stage.to].filter(Boolean).join(' · '):fallback};
 }
 function renderHomeDashboard(route, tot, recent){
-  const routeContext=homeRouteContext();
+  const routeContext=homeRouteContext(route,tot);
   return `
     <div class="home-dashboard">
       <div class="route-hero" onclick="switchTab('route')" role="button" tabindex="0" aria-label="Route planen" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();switchTab('route')}">

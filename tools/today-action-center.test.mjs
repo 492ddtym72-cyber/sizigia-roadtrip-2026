@@ -68,5 +68,7 @@ test('Startseite bleibt kompakt, neutral und verändert den Reise-State nicht', 
   const out=app.run(`(()=>{const before=JSON.stringify(state);renderOverview();const html=document.getElementById('page-uebersicht').innerHTML;return {same:before===JSON.stringify(state),html};})()`);
   assert.equal(out.same,true);
   assert.match(out.html,/route-hero/);
+  assert.match(out.html,/>Roadtrip</);
+  assert.match(out.html,/>Route planen</);
   assert.doesNotMatch(out.html,/Was jetzt zählt|Camperlänge ergänzen|Noch keine Suche/);
 });
