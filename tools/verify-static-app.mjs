@@ -18,11 +18,11 @@ if(app.includes("s.mode==='network'&&c.status==='new'?'network_policy'"))throw n
 if(!app.includes("c.status==='new'?'Verfügbarkeit anfragen'"))throw new Error('Konkrete Verfügbarkeitsaktion fehlt');
 if(!app.includes('id="sleepSearchStrip"')||!app.includes('keepActiveSleepSearchVisible()'))throw new Error('Aktive Nacht wird nicht sichtbar gehalten');
 if(!app.includes("localStorage.setItem(SLEEP_SEARCH_KEY,id)"))throw new Error('Gewählte Nacht wird nicht auf dem Gerät gemerkt');
-if(!app.includes('Campingplatz auf der Route suchen')||!app.includes('function sleepSearchRows()'))throw new Error('Routenweite Campingplatz-Suche fehlt');
+if(!app.includes('Schlafplatz auf der Route suchen')||!app.includes('function sleepSearchRows()'))throw new Error('Routenweite Schlafplatz-Suche fehlt');
 if(!app.includes("const SLEEP_DETAIL_STYLE='https://tiles.openfreemap.org/styles/liberty'")||!app.includes('new maplibregl.Map'))throw new Error('Optionale Detailkarte fehlt');
 if(!app.includes('function sleepDetailFallback(')||!app.includes("sleepMapLayer='offline'"))throw new Error('Detailkarte braucht automatischen Offline-Fallback');
 if(!app.includes("setSleepMapLayer('offline')")||!app.includes('Detailkarte <span>online</span>'))throw new Error('Nutzer muss zwischen Detail- und Offlinekarte wechseln können');
 if(!app.includes('function homeRouteContext(')||app.includes('Was jetzt zählt'))throw new Error('Ruhiger Routenkontext der Startseite fehlt');
 if(!html.includes('<h1>Roadtrip</h1>')||html.includes('<h1>Sizigia 2026</h1>'))throw new Error('App-Identität ist nicht neutral');
-if(!app.includes("const SCHEMA_VERSION = 15")||!app.includes("ownerId:")||!app.includes("dueDate:"))throw new Error('V15-Aufgabenmodell fehlt');
+if(!app.includes("const SCHEMA_VERSION = 16")||!app.includes("ownerId:")||!app.includes("dueDate:"))throw new Error('V16-Unterkunftsmodell fehlt');
 console.log(JSON.stringify({ok:true,classicScripts:true,assetOrder:true,offlineAssets:true,mapEmbedded:true,detailMapOptional:true,detailMapFallback:true,calmStart:true,neutralIdentity:true,actionOwnership:true,etagSync:true,recoverableRejections:true,campsiteSearch:true,rememberedNight:true}));

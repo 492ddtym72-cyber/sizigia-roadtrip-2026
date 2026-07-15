@@ -53,6 +53,9 @@
   bestehenden Einträge migriert. „Camping Río Ara“ wird, solange unkontaktiert,
   durch „Camping Ribera del Ara“ ersetzt. La Chapelle und Ribera del Ara haben
   keine verifizierte offizielle E-Mail und bleiben für E-Mail-Entwürfe gesperrt.
+  V16 ergänzt als erste allgemeine Unterkunft den privaten Stellplatz in Les
+  Salces bei Jakobs Verwandten: nutzbar für ein bis zwei Nächte, auf der Karte,
+  aber ausdrücklich weder gebucht noch mit einer E-Mail-Aktion versehen.
   V11 trennt die geplante Nacht von einem flexiblen Anreisefenster. Die
   mittleren Routenkorridore fragen nun nach genau einer Nacht an einem
   beliebigen verfügbaren Anreisetag innerhalb eines realistischen
