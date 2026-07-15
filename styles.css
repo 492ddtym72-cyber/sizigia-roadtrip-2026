@@ -1,5 +1,5 @@
 /* ============================================================
-   Sizigia 2026 · Roadtrip-Planer
+   Roadtrip · Gruppenplaner
    Theme: „Eclipse Night" — tiefer Nachthimmel, Sonnenkorona-Akzente
    ============================================================ */
 :root{
@@ -137,18 +137,6 @@ nav::-webkit-scrollbar{display:none}
 }
 
 nav{display:none}
-.today-cockpit{display:grid;gap:11px;margin:4px 0 22px}
-.today-hero{border:1px solid rgba(95,212,168,.24);border-radius:18px;padding:16px;background:linear-gradient(145deg,rgba(95,212,168,.10),rgba(84,200,255,.045) 55%,rgba(255,178,87,.045));box-shadow:inset 0 1px rgba(255,255,255,.045)}
-.today-eyebrow{font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--mint);font-weight:900;margin-bottom:6px}
-.today-hero-row{display:flex;align-items:flex-end;gap:14px}.today-hero-row>div{flex:1;min-width:0}.today-hero h2{font-family:var(--font-display);font-size:22px;letter-spacing:.035em;margin:0;color:var(--text)}.today-hero p{font-size:13px;color:var(--muted);margin:4px 0 0}
-.today-route-link{border:0;background:none;color:var(--sun);font:inherit;font-size:12px;font-weight:800;padding:5px 0;cursor:pointer;white-space:nowrap}
-.today-status-grid{display:grid;grid-template-columns:1fr;gap:9px}.today-status-card{display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:100%;min-height:104px;text-align:left;border:1px solid rgba(255,255,255,.09);border-radius:14px;background:rgba(255,255,255,.035);color:var(--text);padding:13px 14px;font:inherit;cursor:pointer}.today-status-card:hover{border-color:rgba(255,255,255,.18);background:rgba(255,255,255,.05)}
-.today-status-card>span{font-size:9.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--faint);font-weight:850}.today-status-card>b{font-size:14px;line-height:1.3;margin-top:2px}.today-status-card>small{font-size:11.5px;line-height:1.35;color:var(--muted);margin-top:auto}.today-status-card.secured,.today-status-card.usable{border-color:rgba(95,212,168,.3)}.today-status-card.secured>b,.today-status-card.usable>b{color:var(--mint)}.today-status-card.waiting{border-color:rgba(84,200,255,.23)}
-.today-actions-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-top:5px;padding:0 2px}.today-actions-head>div span,.home-section-title span{display:block;font-size:9.5px;text-transform:uppercase;letter-spacing:.12em;color:var(--faint);font-weight:850}.today-actions-head>div b,.home-section-title b{display:block;font-family:var(--font-display);font-size:15px;color:var(--text);margin-top:2px}.today-actions-head>button{border:0;background:none;color:var(--sun);font:inherit;font-size:11.5px;font-weight:800;padding:4px 0;cursor:pointer}
-.today-actions{border-top:1px solid rgba(255,255,255,.08)}.today-action{display:grid;grid-template-columns:18px minmax(0,1fr) 14px;gap:10px;align-items:center;padding:11px 2px;border-bottom:1px solid rgba(255,255,255,.07);cursor:pointer;outline:none}.today-action:focus-visible{box-shadow:0 0 0 2px rgba(84,200,255,.35);border-radius:8px}.today-action:hover{background:rgba(255,255,255,.025)}.today-action>div b,.today-action>div span{display:block}.today-action>div b{font-size:12.5px;line-height:1.35;color:var(--text)}.today-action>div span{font-size:10.5px;color:var(--muted);margin-top:2px}.today-arrow{color:var(--faint);font-size:22px;line-height:1}.today-check{width:17px;height:17px;border:1.5px solid rgba(255,255,255,.28);border-radius:5px;background:none;padding:0;cursor:pointer}.today-signal{width:8px;height:8px;margin-left:4px;border-radius:50%;background:var(--sky)}.today-action.decision .today-signal{background:var(--sun)}.today-action.waiting .today-signal{background:var(--sky)}
-.today-clear{padding:15px 2px}.today-clear b,.today-clear span{display:block}.today-clear b{font-size:12.5px;color:var(--mint)}.today-clear span{font-size:11.5px;color:var(--muted);margin-top:3px}
-.today-quick{display:flex;gap:8px;overflow-x:auto;padding-top:2px;scrollbar-width:none}.today-quick::-webkit-scrollbar{display:none}.today-quick button{flex:0 0 auto;border:1px solid rgba(255,255,255,.1);border-radius:9px;background:rgba(255,255,255,.025);color:var(--muted);font:inherit;font-size:11px;font-weight:750;padding:7px 10px;cursor:pointer}.today-quick button:hover{color:var(--text);border-color:rgba(255,255,255,.2)}
-.home-section-title{margin:0 2px 10px}
 .home-dashboard{display:grid;gap:14px;margin:6px 0 18px}
 .route-hero{
   position:relative;display:block;width:100%;min-height:196px;border:1px solid var(--border-strong);border-radius:22px;
@@ -225,7 +213,6 @@ nav{display:none}
 }
 .section-return span{font-size:13px;color:var(--muted);font-weight:700}
 @media(min-width:760px){
-  .today-status-grid{grid-template-columns:1fr 1fr}
   .home-tile-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
   .home-latest-tile{grid-column:span 2}
   .home-reminder-tile{grid-column:1/-1}

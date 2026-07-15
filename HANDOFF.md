@@ -21,15 +21,16 @@
 - Firebase CLI: `export PATH="/Users/anonymous/.hermes/node/bin:$PATH"`,
   eingeloggt mit Freddis Google-Konto (`firebase login:list`).
   Regeln neu deployen: `firebase deploy --only database --project roadtrip-to-sizigia-eclipse`
-- **Heute & Aufgaben (Schema V14):** Die Startseite ist ein ruhiges,
-  abgeleitetes Tages-Cockpit: Reisephase, passende aktuelle/nächste Etappe,
-  Schlafplatzlage, maximal fünf relevante Aufgaben und drei Schnellaktionen.
-  Reines Öffnen verändert keinerlei Reise- oder Buchungsstatus. Passt keine
-  Schlafplatzsuche zum Datum der gezeigten Etappe, wird die Lücke ausdrücklich
-  angezeigt statt ein späterer Korridor fälschlich zugeordnet. Aufgaben kennen
+- **Neutrale Startseite & Aufgaben (Schema V15):** Die App heißt außerhalb des
+  Festivalbereichs neutral „Roadtrip“. Die Startseite bleibt bewusst ruhig:
+  eine bestehende Routenkarte zeigt nur die tatsächliche nächste Etappe und den
+  Countdown; Mail-Diagnostik, Camper-Hinweise, leere Unterkunftsmeldungen und
+  ein zweites Cockpit werden dort nicht dargestellt. Aufgaben kennen weiterhin
   nun Status (`offen`, `wartet`, `Entscheidung`, `erledigt`), verantwortliche
   Person, Fälligkeitsdatum und Notiz. Alte Erinnerungen werden verlustfrei
-  migriert; Erledigen und Wiederöffnen erhält den vorherigen Status.
+  migriert; Erledigen und Wiederöffnen erhält den vorherigen Status. V15 ersetzt
+  nur den früheren Standardtitel „Sizigia 2026“; individuell benannte Reisen
+  bleiben unverändert. Das Festival selbst bleibt Sizigia-spezifisch.
   Produktleitplanken und die nächsten wiederverwendbaren Ausbaustufen stehen
   in `docs/specs/product-direction.md`.
 - **Schlafplatz-Radar (Camping-Grundlage bis V13):** Dauerhaftes Campingplatz-Register

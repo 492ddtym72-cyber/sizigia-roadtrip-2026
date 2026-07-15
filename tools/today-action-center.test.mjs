@@ -2,11 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {loadApp} from './app-testbed.mjs';
 
-test('V14 ergänzt Trip-Profil und Aufgabenfelder ohne alte Erinnerungen zu verlieren', () => {
+test('V15 ergänzt neutrales Trip-Profil und Aufgabenfelder ohne alte Erinnerungen zu verlieren', () => {
   const legacy={schemaVersion:13,meta:{lastSaved:'2026-07-14T12:00:00.000Z'},reminders:[{id:'old-task',title:'Tickets prüfen',done:false,priority:true,createdAt:'2026-07-01T10:00:00.000Z'}]};
   const app=loadApp({localStorageData:{'sizigia-roadtrip-2026':JSON.stringify(legacy)}});
   const out=app.run(`(()=>{const r=state.reminders.find(x=>x.id==='old-task');return {version:state.schemaVersion,trip:state.trip,title:r.title,status:r.status,ownerId:r.ownerId,dueDate:r.dueDate,note:r.note,priority:r.priority};})()`);
-  assert.equal(out.version,14);
+  assert.equal(out.version,15);
+  assert.equal(out.trip.title,'Roadtrip');
   assert.equal(out.trip.startDate,'2026-08-02');
   assert.equal(out.trip.endDate,'2026-08-17');
   assert.equal(out.title,'Tickets prüfen');
@@ -17,7 +18,7 @@ test('V14 ergänzt Trip-Profil und Aufgabenfelder ohne alte Erinnerungen zu verl
   assert.equal(out.priority,true);
 });
 
-test('Today erkennt Vorbereitung, Reisetag und nächste Etappe deterministisch', () => {
+test('Routenkontext erkennt Vorbereitung, Reisetag und nächste Etappe deterministisch', () => {
   const app=loadApp();
   const before=app.run(`tripDayContext(new Date('2026-07-15T12:00:00'))`);
   assert.equal(before.phase,'before');
@@ -31,7 +32,7 @@ test('Today erkennt Vorbereitung, Reisetag und nächste Etappe deterministisch',
   assert.match(underway.stage.to,/Côte d.Azur/);
 });
 
-test('Today berücksichtigt eine frühere erste Etappe, ohne das Trip-Profil umzuschreiben', () => {
+test('Routenkontext berücksichtigt eine frühere erste Etappe, ohne das Trip-Profil umzuschreiben', () => {
   const app=loadApp();
   const out=app.run(`(()=>{const original=state.trip.startDate;state.routes.find(r=>r.id===state.selectedRoute).stages.unshift({id:'early',date:'Sa 01.08.',from:'Hamburg',to:'Innsbruck',km:'900 km',time:'9 Std'});const ctx=tripDayContext(new Date('2026-07-15T12:00:00'));return {timing:ctx.timing,start:ctx.start,stored:state.trip.startDate,original};})()`);
   assert.equal(out.timing,'17 Tage bis zur Abfahrt');
@@ -39,11 +40,16 @@ test('Today berücksichtigt eine frühere erste Etappe, ohne das Trip-Profil umz
   assert.equal(out.stored,out.original);
 });
 
-test('Today zeigt keinen unpassenden späteren Schlafplatz zur aktuellen Etappe', () => {
-  const app=loadApp();
-  const out=app.run(`(()=>{const ctx=tripDayContext(new Date('2026-07-15T12:00:00'));return {stageIso:ctx.stageIso,search:todaySleepSearch(ctx)};})()`);
-  assert.equal(out.stageIso,'2026-08-02');
-  assert.equal(out.search,null);
+test('V15 neutralisiert nur den alten Standardtitel und bewahrt eigene Reisetitel', () => {
+  const oldStandard={schemaVersion:14,meta:{lastSaved:'2026-07-14T12:00:00.000Z'},trip:{id:'trip-sizigia-2026',title:'Sizigia 2026',subtitle:'Roadtrip · München → Huesca',startDate:'2026-08-02',endDate:'2026-08-17',homeBase:'Innsbruck'}};
+  const standard=loadApp({localStorageData:{'sizigia-roadtrip-2026':JSON.stringify(oldStandard)}}).run(`state.trip`);
+  assert.equal(standard.title,'Roadtrip');
+  assert.equal(standard.subtitle,'Gemeinsam unterwegs');
+
+  const custom={...oldStandard,trip:{...oldStandard.trip,title:'Sommerferien mit Freunden',subtitle:'Alpen und Meer'}};
+  const preserved=loadApp({localStorageData:{'sizigia-roadtrip-2026':JSON.stringify(custom)}}).run(`state.trip`);
+  assert.equal(preserved.title,'Sommerferien mit Freunden');
+  assert.equal(preserved.subtitle,'Alpen und Meer');
 });
 
 test('Aufgabe behält Entscheidung-Status nach Erledigen und Wiederöffnen', () => {
@@ -57,11 +63,10 @@ test('Aufgabe behält Entscheidung-Status nach Erledigen und Wiederöffnen', () 
   assert.equal(out.reopened.previousStatus,null);
 });
 
-test('Today zeigt nur abgeleitete Hinweise und verändert den Reise-State nicht', () => {
+test('Startseite bleibt kompakt, neutral und verändert den Reise-State nicht', () => {
   const app=loadApp();
-  const out=app.run(`(()=>{state.sleepSearches[0].candidates[0].nextAction='Camperlänge mitteilen';state.vehicles.find(v=>v.id==='v-camper').lengthM='';const before=JSON.stringify(state),html=renderTodayCockpit();return {same:before===JSON.stringify(state),html};})()`);
+  const out=app.run(`(()=>{const before=JSON.stringify(state);renderOverview();const html=document.getElementById('page-uebersicht').innerHTML;return {same:before===JSON.stringify(state),html};})()`);
   assert.equal(out.same,true);
-  assert.match(out.html,/Was jetzt zählt/);
-  assert.match(out.html,/Camperlänge ergänzen/);
-  assert.match(out.html,/Übernachtung/);
+  assert.match(out.html,/route-hero/);
+  assert.doesNotMatch(out.html,/Was jetzt zählt|Camperlänge ergänzen|Noch keine Suche/);
 });

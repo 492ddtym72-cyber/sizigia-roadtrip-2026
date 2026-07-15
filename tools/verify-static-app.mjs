@@ -22,6 +22,7 @@ if(!app.includes('Campingplatz auf der Route suchen')||!app.includes('function s
 if(!app.includes("const SLEEP_DETAIL_STYLE='https://tiles.openfreemap.org/styles/liberty'")||!app.includes('new maplibregl.Map'))throw new Error('Optionale Detailkarte fehlt');
 if(!app.includes('function sleepDetailFallback(')||!app.includes("sleepMapLayer='offline'"))throw new Error('Detailkarte braucht automatischen Offline-Fallback');
 if(!app.includes("setSleepMapLayer('offline')")||!app.includes('Detailkarte <span>online</span>'))throw new Error('Nutzer muss zwischen Detail- und Offlinekarte wechseln können');
-if(!app.includes('function renderTodayCockpit(')||!app.includes('Was jetzt zählt'))throw new Error('Today-Cockpit fehlt');
-if(!app.includes("const SCHEMA_VERSION = 14")||!app.includes("ownerId:")||!app.includes("dueDate:"))throw new Error('V14-Aufgabenmodell fehlt');
-console.log(JSON.stringify({ok:true,classicScripts:true,assetOrder:true,offlineAssets:true,mapEmbedded:true,detailMapOptional:true,detailMapFallback:true,todayCockpit:true,actionOwnership:true,etagSync:true,recoverableRejections:true,campsiteSearch:true,rememberedNight:true}));
+if(!app.includes('function homeRouteContext(')||app.includes('Was jetzt zählt'))throw new Error('Ruhiger Routenkontext der Startseite fehlt');
+if(!html.includes('<h1>Roadtrip</h1>')||html.includes('<h1>Sizigia 2026</h1>'))throw new Error('App-Identität ist nicht neutral');
+if(!app.includes("const SCHEMA_VERSION = 15")||!app.includes("ownerId:")||!app.includes("dueDate:"))throw new Error('V15-Aufgabenmodell fehlt');
+console.log(JSON.stringify({ok:true,classicScripts:true,assetOrder:true,offlineAssets:true,mapEmbedded:true,detailMapOptional:true,detailMapFallback:true,calmStart:true,neutralIdentity:true,actionOwnership:true,etagSync:true,recoverableRejections:true,campsiteSearch:true,rememberedNight:true}));

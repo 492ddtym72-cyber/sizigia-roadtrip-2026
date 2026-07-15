@@ -1,7 +1,7 @@
 {
-  "name": "Sizigia 2026 Roadtrip",
-  "short_name": "Sizigia",
-  "description": "Roadtrip-Planer München/Innsbruck nach Huesca",
+  "name": "Roadtrip Gruppenplaner",
+  "short_name": "Roadtrip",
+  "description": "Gemeinsam Reisen planen und unterwegs flexibel bleiben",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

@@ -16,8 +16,9 @@ zwischen Idee, Anfrage, Angebot und bestätigter Buchung.
 
 ## Produktprinzipien
 
-- **Heute vor Datenbank:** Die Startseite zeigt Kontext und nächste sinnvolle
-  Schritte; vollständige Listen bleiben in den Werkzeugen.
+- **Relevanz vor Dashboard:** Die Startseite zeigt nur den nächsten echten
+  Reiseabschnitt und die vorhandenen Werkzeuge. Diagnostik, leere Zustände und
+  automatisch abgeleitete Arbeitslisten gehören in ihre Fachbereiche.
 - **Spontanität mit Rückhalt:** Alternativen sind sichtbar, ohne als Notfall
   bezeichnet zu werden. Absagen bleiben gespeichert, aber aus operativen
   Karten und Kartenansichten heraus.
@@ -38,11 +39,11 @@ zwischen Idee, Anfrage, Angebot und bestätigter Buchung.
 
 ## Informationsarchitektur
 
-### Heute
+### Start
 
-Ein abgeleitetes Cockpit mit Reisephase, aktueller oder nächster Etappe,
-passender Unterkunftslage, höchstens fünf priorisierten Punkten und wenigen
-Schnellaktionen. Das Cockpit selbst schreibt keine Daten.
+Eine kompakte Routenkarte mit Reisephase und aktueller oder nächster Etappe.
+Keine zweite Zusammenfassung über der eigentlichen Navigation und keine
+automatisch erzeugte Dringlichkeit.
 
 ### Planen
 
@@ -64,10 +65,10 @@ reduziert und fahrtrelevante Aktionen hervorgehoben.
 
 ## Reihenfolge des Ausbaus
 
-1. **Heute und Aufgaben:** zuverlässiger Tageskontext, Zuständigkeiten,
-   Fälligkeit und Entscheidungen. (Schema V14)
+1. **Ruhiger Start und Aufgaben:** kompakter Routenkontext, Zuständigkeiten,
+   Fälligkeit und Entscheidungen. (Schema V15)
 2. **Navigation vereinfachen:** die vielen Werkzeuge in die vier mentalen
-   Bereiche Heute, Planen, Gruppe und Mehr bündeln, ohne bestehende URLs oder
+   Bereiche Start, Planen, Gruppe und Mehr bündeln, ohne bestehende URLs oder
    Datenmodelle zu brechen.
 3. **Unterkünfte verallgemeinern:** Camping-Funktionen auf andere
    Unterkunftsarten erweitern; bestehende Campingdaten migrieren, nicht
