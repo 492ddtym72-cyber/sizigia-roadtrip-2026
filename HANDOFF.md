@@ -1,6 +1,6 @@
 # HANDOFF — Status
 
-> Stand: 15.07.2026 · `main` ist der stabile Live-Stand.
+> Stand: 16.07.2026 · `main` ist der stabile Live-Stand.
 > Projektüberblick & Konventionen: [AGENTS.md](AGENTS.md).
 
 ## Aktueller Zustand ✅
@@ -109,6 +109,22 @@
   Lizenz liegen unter `vendor/` und werden vom Service Worker mitgecached;
   OpenFreeMap selbst ist ein kostenfreier Dienst ohne SLA, deshalb darf der
   Fallback nicht entfernt werden.
+  Die Detailkarte besitzt zusätzlich eine lokale Frankreich-ZFE-Ebene mit
+  amtlichen, am 16.07.2026 geprüften Grenzen für Nice, Marseille, Nîmes und
+  Montpellier. Marseille und Montpellier zeigen amtliche Transitachsen grün
+  gestrichelt; bei Nîmes wird bewusst nur die exakte Stadt-/ZFE-Grenze plus
+  amtliche Ausnahmeliste gezeigt, weil keine gleichwertige offizielle
+  Liniengeometrie vorliegt. Französische Campingplatz-Karten kennzeichnen den
+  gespeicherten Zielpunkt als innerhalb, nahe oder außerhalb einer Dauer-ZFE;
+  die UI erklärt ausdrücklich, dass dies nicht jede Navigationsroute freigibt.
+  Keiner der aktuell gespeicherten französischen Campingplatz-Punkte liegt in
+  einer beschränkten Dauer-ZFE. Nice wird separat behandelt: leichte Fahrzeuge
+  sind aktuell nicht vom Fahrverbot betroffen, die Stadtseite nennt die
+  Plakette im Gebiet aber weiterhin verpflichtend; die App gibt daher keine
+  pauschale Einfahrtsfreigabe. Temporäre Luftverschmutzungsmaßnahmen bleiben
+  ein Live-Check. Herkunft, Grenzen und Aktualisierung stehen in
+  `docs/specs/france-zfe-overlay.md`; `zfe-data.js` wird reproduzierbar mit
+  `tools/build-zfe-data.mjs` erzeugt.
 - **Camping-Mail-Assistent:** Lokale Codex-Automation prüft tagsüber um ca.
   08:00, 14:00 und 20:00 ausschließlich campingbezogene Antworten in iCloud
   Inbox/Sent. `tools/camping-mail-bridge.mjs` liefert konfliktgeschützte

@@ -70,6 +70,8 @@ export function loadApp({localStorageData = {}, fetchImpl} = {}){
   };
   sandbox.globalThis = sandbox;
   vm.createContext(sandbox);
+  const zfeSource = fs.readFileSync(new URL('../zfe-data.js', import.meta.url), 'utf8');
+  vm.runInContext(zfeSource, sandbox, {filename:'zfe-data.js'});
   const source = fs.readFileSync(new URL('../app.js', import.meta.url), 'utf8');
   vm.runInContext(source, sandbox, {filename:'app.js'});
   return {

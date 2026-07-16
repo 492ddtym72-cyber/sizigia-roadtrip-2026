@@ -3100,11 +3100,14 @@ function pollRow(p){
    ============================================================ */
 const SLEEP_SEARCH_KEY=STORAGE_KEY+'-active-sleep-search';
 const SLEEP_MAP_LAYER_KEY=STORAGE_KEY+'-sleep-map-layer';
+const SLEEP_ZFE_LAYER_KEY=STORAGE_KEY+'-sleep-zfe-layer';
 const SLEEP_DETAIL_STYLE='https://tiles.openfreemap.org/styles/liberty';
 let activeSleepSearchId=null, sleepQuery='', sleepFilter='action', sleepView='list', sleepMapScope='night', sleepMapLayer=navigator.onLine?'detail':'offline';
+let sleepZfeVisible=true;
 let sleepDetailMap=null, sleepDetailLoadTimer=null, sleepDetailGeneration=0, sleepDetailRows=[];
 try{activeSleepSearchId=localStorage.getItem(SLEEP_SEARCH_KEY)||null;}catch(e){}
 try{const saved=localStorage.getItem(SLEEP_MAP_LAYER_KEY);if(saved==='detail'||saved==='offline')sleepMapLayer=saved==='detail'&&!navigator.onLine?'offline':saved;}catch(e){}
+try{sleepZfeVisible=localStorage.getItem(SLEEP_ZFE_LAYER_KEY)!=='off';}catch(e){}
 function sleepUndo(){ return {t:'sleepState',sleepSearches:copyData(state.sleepSearches||[]),sleepPlaces:copyData(state.sleepPlaces||[]),mailAssistant:copyData(state.mailAssistant||{}),reminders:copyData(state.reminders||[]),campContacts:copyData(state.campContacts||[])}; }
 function findSleep(searchId,candidateId){ const s=(state.sleepSearches||[]).find(x=>x.id===searchId); return {s,c:s?.candidates.find(x=>x.id===candidateId)}; }
 function sleepPlace(c){return (state.sleepPlaces||[]).find(p=>p.id===c?.placeId);}
@@ -3215,6 +3218,55 @@ function markSleepDraftSent(searchId,candidateId){const {s,c}=findSleep(searchId
 function cancelSleepDraft(searchId,candidateId){const {c}=findSleep(searchId,candidateId);if(!c)return;const undo=sleepUndo(),req=[...state.mailAssistant.draftRequests].reverse().find(x=>x.candidateId===candidateId&&['opened','requested','ready','fallback'].includes(x.status));if(c.status==='draft_requested')c.status=req?.previousStatus||'awaiting';c.draftState='none';if(req)req.status='cancelled';logChange('hat den E-Mail-Entwurf für „'+sleepCandidateView(c).name+'“ verworfen',undo);save();renderAll();}
 function copySleepEmail(searchId,candidateId,mode='inquiry'){const {s,c}=findSleep(searchId,candidateId);if(!c)return;const txt=sleepEmailText(s,sleepCandidateView(c),mode),done=()=>toast('E-Mail-Text kopiert'); if(navigator.clipboard?.writeText)navigator.clipboard.writeText(txt).then(done,()=>fallbackCopy(txt,done));else fallbackCopy(txt,done);}
 function sleepStatusSummary(c){if(c.reply)return c.reply;return c.status==='available'?'Die Unterkunft hat eine reservierbare Option angeboten.':c.status==='reservable'?'Eine Reservierung ist grundsätzlich möglich; der konkrete Zeitraum ist noch nicht bestätigt.':c.status==='call'?'Keine feste Reservierung, aber eine spontane Anfrage am Reisetag ist ausdrücklich möglich.':c.status==='reserving'?'Unsere Reservierungsanfrage wurde versendet; die definitive Bestätigung steht noch aus.':c.status==='deposit_required'?'Die Unterkunft ist möglich, für die Buchung ist noch eine Anzahlung erforderlich.':c.status==='followup'?'Aktuell keine feste Zusage; die Unterkunft empfiehlt, kurz vor der Reise erneut nachzufragen.':c.status==='awaiting'?'Anfrage gesendet, noch keine Antwort erhalten.':c.status==='unavailable'?'Für diesen Zeitraum wurde keine nutzbare Möglichkeit angeboten.':c.status==='new'?'Noch nicht kontaktiert; Verfügbarkeit und Bedingungen sind offen.':'Status noch nicht eindeutig.';}
+function pointInZfeRing(point,ring){
+  const [x,y]=point;let inside=false;
+  for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+    const [xi,yi]=ring[i],[xj,yj]=ring[j];
+    if(((yi>y)!==(yj>y))&&(x<(xj-xi)*(y-yi)/(yj-yi)+xi))inside=!inside;
+  }
+  return inside;
+}
+function pointInZfeGeometry(point,geometry){
+  const inPolygon=polygon=>pointInZfeRing(point,polygon[0])&&!polygon.slice(1).some(ring=>pointInZfeRing(point,ring));
+  if(geometry?.type==='Polygon')return inPolygon(geometry.coordinates);
+  if(geometry?.type==='MultiPolygon')return geometry.coordinates.some(inPolygon);
+  return false;
+}
+function zfeSegmentDistanceKm(point,a,b){
+  const lat=point[1]*Math.PI/180,scaleX=111.32*Math.cos(lat),scaleY=110.57;
+  const px=point[0]*scaleX,py=point[1]*scaleY,ax=a[0]*scaleX,ay=a[1]*scaleY,bx=b[0]*scaleX,by=b[1]*scaleY;
+  const dx=bx-ax,dy=by-ay,len=dx*dx+dy*dy,t=len?Math.max(0,Math.min(1,((px-ax)*dx+(py-ay)*dy)/len)):0;
+  return Math.hypot(px-(ax+t*dx),py-(ay+t*dy));
+}
+function zfeGeometryDistanceKm(point,geometry){
+  let best=Infinity;
+  const visitRing=ring=>{for(let i=1;i<ring.length;i++)best=Math.min(best,zfeSegmentDistanceKm(point,ring[i-1],ring[i]));};
+  const visitPolygon=polygon=>polygon.forEach(visitRing);
+  if(geometry?.type==='Polygon')visitPolygon(geometry.coordinates);
+  else if(geometry?.type==='MultiPolygon')geometry.coordinates.forEach(visitPolygon);
+  return best;
+}
+function isFrenchSleepCandidate(c){
+  const text=[c.phone,c.email,c.officialUrl,c.link,c.region,c.notes].filter(Boolean).join(' ').toLowerCase();
+  return /\+33|\bfrance\b|\bfrankreich\b|\bmontpellier\b|\bmarseille\b|\bnice\b|\bnîmes\b|\bnimes\b|\bcamargue\b|\bprovence\b|\blanguedoc\b|\bcassis\b|(?:@|\/\/)[^/\s]+\.fr(?:[/:]|$)/.test(text);
+}
+function zfeCandidateAssessment(raw){
+  const c=sleepCandidateView(raw),data=window.ZFE_DATA;
+  if(!data?.areas?.features?.length||!isFrenchSleepCandidate(c)||!Number.isFinite(Number(c.lat))||!Number.isFinite(Number(c.lng)))return null;
+  const point=[Number(c.lng),Number(c.lat)],zones=data.areas.features,inside=zones.find(zone=>pointInZfeGeometry(point,zone.geometry));
+  if(inside)return {status:inside.properties.lightVehiclesFree?'inside-light-free':'inside',zone:inside.properties,distanceKm:0};
+  let nearest=null,distanceKm=Infinity;
+  zones.forEach(zone=>{const d=zfeGeometryDistanceKm(point,zone.geometry);if(d<distanceKm){distanceKm=d;nearest=zone.properties;}});
+  return {status:distanceKm<=25?'near':'outside',zone:nearest,distanceKm};
+}
+function zfeCandidateBadge(raw){
+  const a=zfeCandidateAssessment(raw);if(!a)return '';
+  const checked=window.ZFE_DATA?.checkedAt||'';
+  if(a.status==='inside-light-free')return `<span class="sleep-fact zfe-info" title="Stand ${esc(checked)} · Leichte Fahrzeuge nicht vom Fahrverbot betroffen, Plakettenpflicht trotzdem prüfen">In Nice-ZFE · Plakette prüfen</span>`;
+  if(a.status==='inside')return `<span class="sleep-fact zfe-danger" title="Ohne passende Crit’Air-Plakette nicht anfahren">In ZFE · ${esc(a.zone.shortName)}</span>`;
+  if(a.status==='near')return `<span class="sleep-fact zfe-near" title="Der Punkt liegt außerhalb; die Zufahrt kann durch die Zone führen">Nahe ${esc(a.zone.shortName)}-ZFE · Route prüfen</span>`;
+  return `<span class="sleep-fact zfe-clear" title="Campingplatz-Punkt außerhalb der dargestellten dauerhaften ZFE-Flächen">Außerhalb Dauer-ZFE</span>`;
+}
 function sleepCandidateCard(s,raw){
   const c=sleepCandidateView(raw),st=SLEEP_STATUSES[c.status],maps=c.link||'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(c.name+(c.region?', '+c.region:'')),mode=c.status==='reservable'?'followup':sleepActionMode(c),latestReq=[...(state.mailAssistant.draftRequests||[])].reverse().find(x=>x.candidateId===c.id&&['opened','requested','ready','fallback'].includes(x.status)),hasAnswer=!!(c.reply||c.replyQuote||c.pitchNote||c.parking),statusLabel=latestReq?.status==='ready'?'Entwurf bereit':latestReq?.status==='requested'?'Entwurf wird erstellt':latestReq?.status==='fallback'?'Entwurf prüfen':st.label;
   let primary='',secondary='';
@@ -3235,7 +3287,7 @@ function sleepCandidateCard(s,raw){
   secondary+=`<a class="sleep-link" href="${esc(maps)}" target="_blank" rel="noopener">Karte</a><button class="sleep-link" onclick="editSleepCandidate('${s.id}','${c.id}')">Details</button>`;
   const stateText=latestReq?.status==='ready'?'Der Entwurf liegt in Apple Mail und kann dort geprüft und gesendet werden.':latestReq?.status==='requested'?'Der Mail-Entwurf wird gerade erstellt.':sleepStatusSummary(c),showNext=c.nextAction&&!/^Auf Antwort warten$/i.test(c.nextAction);
   return `<div class="sleep-card ${c.status}${c.preferred?' preferred':''}"><div class="sleep-head"><div class="sleep-head-main"><h3>${esc(c.name)}</h3><div class="sleep-sub">${esc(c.region||s.region||'Ort noch offen')}</div></div><span class="sleep-status ${c.status}">${esc(statusLabel)}</span></div>
-  <div class="sleep-facts">${c.kind&&c.kind!=='camping'?`<span class="sleep-fact">${esc(c.kind==='private'?'Privat':c.kind==='parking'?'Stellplatz':'Unterkunft')}</span>`:''}${c.preferred?'<span class="sleep-fact preferred">★ Favorit</span>':''}${(c.finalPrice||c.price)?`<span class="sleep-fact">💶 ${esc(c.finalPrice||c.price)}${c.finalPrice?' gesamt':''}</span>`:''}${!c.finalPrice&&c.tax?`<span class="sleep-fact">+ ${esc(c.tax)}</span>`:''}${c.deposit?`<span class="sleep-fact">Anzahlung ${esc(c.deposit)}</span>`:''}${c.bookingRef?`<span class="sleep-fact">Nr. ${esc(c.bookingRef)}</span>`:''}${c.offeredArrivalDate?`<span class="sleep-fact">${esc(sleepCandidateStayGerman(c))}</span>`:''}${c.arrivalWindow?`<span class="sleep-fact">Anreise ${esc(c.arrivalWindow)}</span>`:''}${c.callWindow?`<span class="sleep-fact">📞 ${esc(c.callWindow)}</span>`:''}</div>
+  <div class="sleep-facts">${c.kind&&c.kind!=='camping'?`<span class="sleep-fact">${esc(c.kind==='private'?'Privat':c.kind==='parking'?'Stellplatz':'Unterkunft')}</span>`:''}${c.preferred?'<span class="sleep-fact preferred">★ Favorit</span>':''}${zfeCandidateBadge(c)}${(c.finalPrice||c.price)?`<span class="sleep-fact">💶 ${esc(c.finalPrice||c.price)}${c.finalPrice?' gesamt':''}</span>`:''}${!c.finalPrice&&c.tax?`<span class="sleep-fact">+ ${esc(c.tax)}</span>`:''}${c.deposit?`<span class="sleep-fact">Anzahlung ${esc(c.deposit)}</span>`:''}${c.bookingRef?`<span class="sleep-fact">Nr. ${esc(c.bookingRef)}</span>`:''}${c.offeredArrivalDate?`<span class="sleep-fact">${esc(sleepCandidateStayGerman(c))}</span>`:''}${c.arrivalWindow?`<span class="sleep-fact">Anreise ${esc(c.arrivalWindow)}</span>`:''}${c.callWindow?`<span class="sleep-fact">📞 ${esc(c.callWindow)}</span>`:''}</div>
   ${hasAnswer?`<div class="sleep-answer"><div class="sleep-answer-label">Rückmeldung</div><div class="sleep-answer-text">${esc(stateText)}</div>${c.pitchNote?`<div class="sleep-answer-meta"><b>Stellplatz:</b> ${esc(c.pitchNote)}</div>`:''}${c.parking?`<div class="sleep-answer-meta"><b>Auto:</b> ${esc(c.parking)}</div>`:''}${c.replyQuote?`<blockquote class="sleep-answer-quote">„${esc(c.replyQuote.replace(/^[„“\"']+|[„“\"']+$/g,''))}“</blockquote>`:''}</div>`:`<div class="sleep-state-line">${esc(stateText)}</div>`}
   ${c.notes&&!hasAnswer?`<div class="sleep-note">${esc(c.notes)}</div>`:''}${(showNext||c.nextActionDate)?`<div class="sleep-next">${esc(showNext?c.nextAction:'Nachfassen')}${c.nextActionDate?' · '+esc(c.nextActionDate):''}</div>`:''}
   ${(primary||secondary)?`<div class="sleep-actions">${primary}</div><div class="sleep-links">${secondary}</div>`:''}</div>`;
@@ -3247,6 +3299,11 @@ function setSleepMapLayer(v){
   if(v!=='detail'&&v!=='offline')return;
   sleepMapLayer=v;
   try{localStorage.setItem(SLEEP_MAP_LAYER_KEY,v);}catch(e){}
+  renderSleep();
+}
+function setSleepZfeVisible(value){
+  sleepZfeVisible=!!value;
+  try{localStorage.setItem(SLEEP_ZFE_LAYER_KEY,sleepZfeVisible?'on':'off');}catch(e){}
   renderSleep();
 }
 function rememberSleepSearch(id){
@@ -3334,6 +3391,21 @@ function initSleepDetailMap(){
       if(token!==sleepDetailGeneration||map!==sleepDetailMap)return;
       clearTimeout(sleepDetailLoadTimer);sleepDetailLoadTimer=null;
       const status=document.getElementById('sleepDetailMapStatus');if(status)status.remove();
+      const zfe=window.ZFE_DATA;
+      if(sleepZfeVisible&&zfe?.areas?.features?.length){
+        map.addSource('fr-zfe-areas',{type:'geojson',data:zfe.areas});
+        map.addLayer({id:'fr-zfe-fill',type:'fill',source:'fr-zfe-areas',paint:{'fill-color':'#ff6f61','fill-opacity':.19}});
+        map.addLayer({id:'fr-zfe-outline',type:'line',source:'fr-zfe-areas',paint:{'line-color':'#ff7b6d','line-width':['interpolate',['linear'],['zoom'],5,1.4,12,3]}});
+        map.addLayer({id:'fr-zfe-label',type:'symbol',source:'fr-zfe-areas',minzoom:7,layout:{'text-field':['concat',['get','shortName'],' · ZFE'],'text-size':12,'text-allow-overlap':false},paint:{'text-color':'#8b241d','text-halo-color':'rgba(255,255,255,.9)','text-halo-width':1.5}});
+        if(zfe.transitRoads?.features?.length){
+          map.addSource('fr-zfe-transit',{type:'geojson',data:zfe.transitRoads});
+          map.addLayer({id:'fr-zfe-transit-casing',type:'line',source:'fr-zfe-transit',paint:{'line-color':'rgba(12,28,25,.72)','line-width':['interpolate',['linear'],['zoom'],5,2.8,13,7]}});
+          map.addLayer({id:'fr-zfe-transit',type:'line',source:'fr-zfe-transit',paint:{'line-color':'#42d6a4','line-width':['interpolate',['linear'],['zoom'],5,1.4,13,4],'line-dasharray':[1.4,1]}});
+        }
+        map.on('mouseenter','fr-zfe-fill',()=>{map.getCanvas().style.cursor='pointer';});
+        map.on('mouseleave','fr-zfe-fill',()=>{map.getCanvas().style.cursor='';});
+        map.on('click','fr-zfe-fill',e=>{if(map.queryRenderedFeatures(e.point,{layers:['sleep-campsites']}).length)return;const p=e.features?.[0]?.properties;if(p?.id)openZfeInfo(p.id);});
+      }
       map.addSource('sleep-campsites',{type:'geojson',data:{type:'FeatureCollection',features}});
       map.addLayer({id:'sleep-campsite-halo',type:'circle',source:'sleep-campsites',paint:{'circle-radius':11,'circle-color':'rgba(255,255,255,.78)','circle-blur':.15}});
       map.addLayer({id:'sleep-campsites',type:'circle',source:'sleep-campsites',paint:{'circle-radius':7,'circle-color':['get','color'],'circle-stroke-color':'#101522','circle-stroke-width':2}});
@@ -3346,19 +3418,33 @@ function initSleepDetailMap(){
     });
   }catch(e){sleepDetailFallback(token);}
 }
+function openZfeInfo(zoneId){
+  const data=window.ZFE_DATA,zone=data?.areas?.features?.find(x=>x.properties.id===zoneId)?.properties;if(!zone)return;
+  const box=document.getElementById('modalBox');
+  box.innerHTML=`<h3>${esc(zone.name)} · ZFE</h3><div class="zfe-modal"><div class="zfe-modal-rule">${esc(zone.threshold)}</div><p>${esc(zone.rule)}</p><dl><dt>Zeiten</dt><dd>${esc(zone.hours)}</dd><dt>Ausnahmen</dt><dd>${esc(zone.exceptions)}</dd><dt>Datenstand</dt><dd>${esc(zone.checkedAt)}</dd></dl><div class="zfe-warning">Die Fläche ist amtlich. Ob eure konkrete Zufahrt erlaubt ist, hängt trotzdem von Fahrzeugklasse, Plakette, Ausnahmeroute und möglichen temporären Luftreinhalte-Maßnahmen ab.</div><a class="btn primary" href="${esc(zone.sourceUrl)}" target="_blank" rel="noopener">Amtliche Regeln öffnen</a></div><div class="btnrow"><button class="btn ghost" onclick="closeModal()">Schließen</button></div>`;
+  document.getElementById('modalBg').classList.add('open');
+}
+function zfeMapSummary(rows){
+  if(!window.ZFE_DATA)return '';
+  const assessed=rows.map(row=>zfeCandidateAssessment(row.c)).filter(Boolean),inside=assessed.filter(x=>x.status==='inside'),light=assessed.filter(x=>x.status==='inside-light-free'),near=assessed.filter(x=>x.status==='near');
+  if(inside.length)return `<div class="zfe-map-summary danger"><b>${inside.length} Kartenpunkt${inside.length===1?' liegt':'e liegen'} in einer ZFE.</b><span>Ohne passende Plakette nicht anfahren; Zufahrt amtlich prüfen.</span></div>`;
+  if(light.length||near.length)return `<div class="zfe-map-summary"><b>Campingplatz-Punkte geprüft.</b><span>${light.length?`${light.length} in Nice; leichte Fahrzeuge sind nicht vom Fahrverbot betroffen, die Plakettenpflicht muss trotzdem geprüft werden. `:''}${near.length?`${near.length} nahe einer ZFE; Zufahrt auf der Detailkarte prüfen.`:'Die übrigen liegen außerhalb der dargestellten Dauer-ZFEs.'}</span></div>`;
+  if(assessed.length)return `<div class="zfe-map-summary clear"><b>${assessed.length} französische Kartenpunkte außerhalb der Dauer-ZFEs.</b><span>Das gilt für den Zielpunkt, nicht automatisch für jede vorgeschlagene Zufahrt.</span></div>`;
+  return '';
+}
 function buildSleepMap(s,candidates){
   const rows=sleepMapRows(s);
   const plotted=rows.filter(row=>{const c=sleepCandidateView(row.c);return Number.isFinite(Number(c.lat))&&Number.isFinite(Number(c.lng));});
   sleepDetailRows=plotted;
-  const layerSwitch=`<div class="sleep-map-layer" role="group" aria-label="Kartendarstellung"><button class="${sleepMapLayer==='detail'?'active':''}" aria-pressed="${sleepMapLayer==='detail'}" onclick="setSleepMapLayer('detail')">Detailkarte <span>online</span></button><button class="${sleepMapLayer==='offline'?'active':''}" aria-pressed="${sleepMapLayer==='offline'}" onclick="setSleepMapLayer('offline')">Offlinekarte</button></div>`;
+  const layerSwitch=`<div class="sleep-map-layer" role="group" aria-label="Kartendarstellung"><button class="${sleepMapLayer==='detail'?'active':''}" aria-pressed="${sleepMapLayer==='detail'}" onclick="setSleepMapLayer('detail')">Detailkarte <span>online</span></button><button class="${sleepMapLayer==='offline'?'active':''}" aria-pressed="${sleepMapLayer==='offline'}" onclick="setSleepMapLayer('offline')">Offlinekarte</button></div>${sleepMapLayer==='detail'&&window.ZFE_DATA?`<label class="sleep-zfe-toggle"><input type="checkbox" ${sleepZfeVisible?'checked':''} onchange="setSleepZfeVisible(this.checked)"><span>Französische ZFE</span><small>amtlich · Stand ${esc(window.ZFE_DATA.checkedAt)}</small></label>`:''}`;
   let mapHtml='';
   if(sleepMapLayer==='detail')mapHtml=`<div class="sleep-detail-wrap"><div class="sleep-detail-map" id="sleepDetailMap" aria-label="Interaktive Detailkarte mit ${plotted.length} Campingplätzen"></div><div class="sleep-detail-status" id="sleepDetailMapStatus">Detailkarte wird geladen …</div></div>`;
   else{
   const v=mapView('sleep',renderSleep,defaultCorridorView()); MZ=v.z;
   const inner=plotted.map(row=>{const c=sleepCandidateView(row.c);return markerSvg({lat:Number(c.lat),lng:Number(c.lng)},{kind:'dot',color:SLEEP_MAP_COLORS[c.status]||'#b6bfcc',label:{type:'sleep',searchId:row.search.id,candidateId:row.c.id}});}).join('')+userPosMarker();
-    mapHtml=`<div class="sleep-map">${baseMapSvg(inner,'sleep')}</div>`;
+    mapHtml=`<div class="sleep-map">${baseMapSvg(inner,'sleep')}</div><div class="zfe-offline-note">Exakte ZFE-Grenzen sind auf der scharfen Detailkarte sichtbar.</div>`;
   }
-  return `${layerSwitch}${mapHtml}<div class="sleep-legend"><span><i style="background:#8ea8ff"></i>gesichert</span><span><i style="background:#5fd4a8"></i>reservierbar</span><span><i style="background:#ffb257"></i>spontan</span><span><i style="background:#54c8ff"></i>Anfrage offen</span></div>${plotted.length<rows.length?`<p class="hint">${rows.length-plotted.length} Eintrag${rows.length-plotted.length===1?'':'e'} noch ohne Kartenposition.</p>`:''}`;
+  return `${layerSwitch}${mapHtml}<div class="sleep-legend"><span><i style="background:#8ea8ff"></i>gesichert</span><span><i style="background:#5fd4a8"></i>reservierbar</span><span><i style="background:#ffb257"></i>spontan</span><span><i style="background:#54c8ff"></i>Anfrage offen</span>${sleepMapLayer==='detail'&&sleepZfeVisible&&window.ZFE_DATA?'<span><i class="zfe-area-key"></i>ZFE</span><span><i class="zfe-road-key"></i>offizielle Transitroute</span>':''}</div>${zfeMapSummary(plotted)}${sleepMapLayer==='detail'&&sleepZfeVisible&&window.ZFE_DATA?`<p class="zfe-source-note">Dauerhafte ZFE, Stand ${esc(window.ZFE_DATA.checkedAt)}. Flächen anklicken für Regeln. <a href="${esc(window.ZFE_DATA.nationalSource.url)}" target="_blank" rel="noopener">Amtliche Datenquelle</a> · <a href="${esc(window.ZFE_DATA.temporaryRestrictionsUrl)}" target="_blank" rel="noopener">temporäre Warnlage</a>.</p>`:''}${plotted.length<rows.length?`<p class="hint">${rows.length-plotted.length} Eintrag${rows.length-plotted.length===1?'':'e'} noch ohne Kartenposition.</p>`:''}`;
 }
 function openSleepMapInfo(searchId,candidateId){const {s,c}=findSleep(searchId,candidateId);if(!c)return;const box=document.getElementById('modalBox');box.innerHTML=`<h3>Schlafplatz</h3>${sleepCandidateCard(s,c)}<div class="btnrow"><button class="btn ghost" onclick="closeModal()">Schließen</button></div>`;document.getElementById('modalBg').classList.add('open');}
 function nextMailAssistantRun(a){if(a.nextRunAt&&new Date(a.nextRunAt)>new Date())return new Date(a.nextRunAt);const now=new Date(),hours=[8,14,20];for(const h of hours){const d=new Date(now);d.setHours(h,0,0,0);if(d>now)return d;}const d=new Date(now);d.setDate(d.getDate()+1);d.setHours(8,0,0,0);return d;}
