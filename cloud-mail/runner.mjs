@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import {ImapFlow} from 'imapflow';
 import {simpleParser} from 'mailparser';
-import {classifyReply,matchCandidate,messageFingerprint,normalizeSubject,safeExcerpt} from '../tools/camping-mail-core.mjs';
+import {classifyReply,forwardedReviewResult,matchCandidate,matchForwardedCandidate,messageFingerprint,normalizeSubject,parseForwardedMessage,safeExcerpt} from '../tools/camping-mail-core.mjs';
 import {draftBody,draftSubject} from '../tools/camping-mail-templates.mjs';
 
 const ROOT=new URL('../',import.meta.url),OWNER=`github-${process.env.GITHUB_RUN_ID||'manual'}-${process.pid}`,LEASE_MS=12*60*1000;
@@ -30,12 +30,34 @@ function addressOf(list=[]){return list?.[0]?.address||'';}
 function chooseMailbox(list,special,fallback){return list.find(x=>x.specialUse===special)?.path||list.find(x=>fallback.test(x.path))?.path||'';}
 async function envelopes(client,path,sinceDays=45){if(!path)return [];const lock=await client.getMailboxLock(path,{readOnly:true});try{const ids=await client.search({since:new Date(Date.now()-sinceDays*86400000)},{uid:true});const chosen=ids.slice(-120),out=[];if(!chosen.length)return out;for await(const m of client.fetch(chosen.join(','),{uid:true,envelope:true,internalDate:true,size:true},{uid:true}))out.push(m);return out;}finally{lock.release();}}
 async function sourceFor(client,path,uid){const lock=await client.getMailboxLock(path,{readOnly:true});try{return (await client.fetchOne(uid,{source:true},{uid:true}))?.source||Buffer.alloc(0);}finally{lock.release();}}
+async function forwardedFromMail(mail){
+  const inline=parseForwardedMessage(mail.text||'');if(inline)return inline;
+  for(const attachment of mail.attachments||[]){
+    if(!/^message\/rfc822\b/i.test(attachment.contentType||''))continue;
+    const nested=await simpleParser(attachment.content,{skipImageLinks:true,maxHtmlLengthToParse:200000});
+    const from=(nested.from?.value||[]).map(x=>x.address).filter(Boolean).join(', '),to=(nested.to?.value||[]).map(x=>x.address).filter(Boolean).join(', ');
+    if(from||to)return {from,to,subject:nested.subject||'',body:nested.text||''};
+  }
+  return null;
+}
 function draftMessageId(requestId){return `<sizigia-${crypto.createHash('sha256').update(String(requestId||'')).digest('hex').slice(0,32)}@draft.invalid>`;}
 function rawDraft({from,to,subject,body,inReplyTo,messageId}){const enc=`=?UTF-8?B?${Buffer.from(cleanHeader(subject)).toString('base64')}?=`,id=cleanHeader(messageId)||`<sizigia-${crypto.randomUUID()}@local.invalid>`,refs=inReplyTo?`In-Reply-To: ${cleanHeader(inReplyTo)}\r\nReferences: ${cleanHeader(inReplyTo)}\r\n`:'';return Buffer.from(`From: ${cleanHeader(from)}\r\nTo: ${cleanHeader(to)}\r\nSubject: ${enc}\r\nDate: ${new Date().toUTCString()}\r\nMessage-ID: ${id}\r\n${refs}MIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: 8bit\r\n\r\n${String(body).replace(/\r?\n/g,'\r\n')}`);}
 function passwordCandidates(value){const raw=String(value||'').trim(),compact=raw.replace(/[\s-]+/g,'');return [...new Set([raw,compact].filter(Boolean))];}
 function authFailureLabel(error){const kind=error?.authenticationFailed?'auth':error?.constructor?.name||'error',code=error?.serverResponseCode||error?.responseStatus||error?.code||'unknown';return `${kind}:${String(code).replace(/[^A-Za-z0-9_.-]/g,'').slice(0,48)}`;}
 async function connectIcloud(){const email=process.env.ICLOUD_EMAIL,users=[email.split('@')[0],email].filter((x,i,a)=>x&&a.indexOf(x)===i),passwords=passwordCandidates(process.env.ICLOUD_APP_PASSWORD),failures=new Set();for(const user of users){for(const password of passwords){const client=new ImapFlow({host:'imap.mail.me.com',port:993,secure:true,auth:{user,password},logger:false,disableAutoIdle:true});try{await client.connect();return client;}catch(error){failures.add(authFailureLabel(error));await client.logout().catch(()=>{});}}}throw new Error(`iCloud-Anmeldung fehlgeschlagen (${[...failures].join(', ')||'unknown'}); App-Passwort oder Adresse prüfen`);}
-async function collectInbox(client,inbox,state){const all=candidates(state),processed=new Set(assistant(state).processedMessageIds),envs=await envelopes(client,inbox),events=[];for(const m of envs){const id=m.envelope?.messageId||`uid:${m.uid}`;if(processed.has(id))continue;const matched=matchCandidate({from:addressOf(m.envelope?.from),subject:m.envelope?.subject||''},all);if(!matched)continue;const raw=await sourceFor(client,inbox,m.uid);const mail=await simpleParser(raw,{skipImageLinks:true,maxHtmlLengthToParse:200000});const result=classifyReply(mail.text||'');events.push({...matched,messageId:id,receivedAt:(m.internalDate||mail.date||new Date()).toISOString(),subject:m.envelope?.subject||'',result});}return events;}
+async function collectInbox(client,inbox,state){
+  const all=candidates(state),processed=new Set(assistant(state).processedMessageIds),envs=await envelopes(client,inbox),events=[];
+  for(const m of envs){
+    const id=m.envelope?.messageId||`uid:${m.uid}`;if(processed.has(id))continue;
+    const envelopeSubject=m.envelope?.subject||'',direct=matchCandidate({from:addressOf(m.envelope?.from),subject:envelopeSubject},all),couldBeForwarded=/^(?:fwd?|wg|tr|rv|i)\s*:/i.test(envelopeSubject);
+    if(!direct&&!couldBeForwarded)continue;
+    const raw=await sourceFor(client,inbox,m.uid),mail=await simpleParser(raw,{skipImageLinks:true,maxHtmlLengthToParse:200000}),receivedAt=(m.internalDate||mail.date||new Date()).toISOString();
+    if(direct){events.push({...direct,messageId:id,receivedAt,subject:envelopeSubject,result:classifyReply(mail.text||'')});continue;}
+    const forwarded=await forwardedFromMail(mail),forwardMatch=matchForwardedCandidate(forwarded,all);if(!forwardMatch)continue;
+    events.push({...forwardMatch.candidate,messageId:id,receivedAt,subject:forwarded.subject||envelopeSubject,source:'forwarded',forwardDirection:forwardMatch.direction,result:forwardedReviewResult(forwarded,forwardMatch.direction)});
+  }
+  return events;
+}
 async function createDrafts(client,draftsPath,state){if(mode!=='cloud'||!draftsPath)return [];const events=[],existingIds=new Set((await envelopes(client,draftsPath)).map(m=>cleanHeader(m.envelope?.messageId)));for(const req of assistant(state).draftRequests.filter(x=>x.status==='requested')){const found=locate(state,req);if(!found.candidate||!found.search)continue;const to=found.place?.email||found.candidate.email;if(!to)continue;const body=draftBody(state,found.search,found.candidate,found.place,req.template),subject=draftSubject(found.search,{...found.candidate,name:found.place?.name||found.candidate.name},req.template),messageId=draftMessageId(req.id);if(!existingIds.has(messageId)){await client.append(draftsPath,rawDraft({from:process.env.ICLOUD_EMAIL,to,subject,body,inReplyTo:req.messageId,messageId}),['\\Draft']);existingIds.add(messageId);}events.push({type:'draft',requestId:req.id,readyAt:nowIso()});}return events;}
 async function detectSent(client,sentPath,state){if(mode!=='cloud'||!sentPath)return [];const envs=await envelopes(client,sentPath,20),events=[];for(const req of assistant(state).draftRequests.filter(x=>x.status==='ready')){const {search,candidate,place}=locate(state,req);if(!candidate||!search)continue;const email=(place?.email||candidate.email||'').toLowerCase(),subject=normalizeSubject(draftSubject(search,{...candidate,name:place?.name||candidate.name},req.template)),created=Date.parse(req.createdAt||0);const hit=envs.find(m=>Date.parse(m.internalDate||0)>=created&&addressOf(m.envelope?.to).toLowerCase()===email&&normalizeSubject(m.envelope?.subject||'')===subject);if(hit)events.push({type:'sent',requestId:req.id,searchId:req.searchId,candidateId:req.candidateId,sentAt:(hit.internalDate||new Date()).toISOString()});}return events;}
 async function applyEvents(events){return updateState(state=>{
@@ -47,7 +69,7 @@ async function applyEvents(events){return updateState(state=>{
     if(e.messageId&&a.processedMessageIds.includes(e.messageId))continue;
     if(mode==='shadow'){const key=messageFingerprint(e.messageId);if(!a.shadowResults.some(x=>x.messageFingerprint===key))a.shadowResults.push({messageFingerprint:key,candidateId:e.candidateId,predictedStatus:e.result.status,at:nowIso()});continue;}
     const {search,candidate,place}=locate(state,e);if(!candidate)continue;
-    if(e.result.status==='review'||e.result.status==='booked'){const id=messageFingerprint(e.messageId);if(!a.reviewQueue.some(x=>x.id===id))a.reviewQueue.push({id,messageIdHash:id,searchId:e.searchId,candidateId:e.candidateId,campsiteName:place?.name||candidate.name,dateLabel:search.dateLabel,receivedAt:e.receivedAt,subject:e.subject,excerpt:safeExcerpt(e.result.excerpt,600),suggestedStatus:e.result.status==='booked'?'booked':'',status:'pending'});logMailChange(state,place?.name||candidate.name,'zur Prüfung vorgemerkt');}
+    if(e.result.status==='review'||e.result.status==='booked'){const id=messageFingerprint(e.messageId);if(!a.reviewQueue.some(x=>x.id===id))a.reviewQueue.push({id,messageIdHash:id,searchId:e.searchId,candidateId:e.candidateId,campsiteName:place?.name||candidate.name,dateLabel:search.dateLabel,receivedAt:e.receivedAt,subject:e.subject,excerpt:safeExcerpt(e.result.excerpt,600),suggestedStatus:e.result.suggestedStatus||(e.result.status==='booked'?'booked':''),source:e.source||'direct',forwardDirection:e.forwardDirection||'',status:'pending'});logMailChange(state,place?.name||candidate.name,e.source==='forwarded'?'als Weiterleitung zur Prüfung vorgemerkt':'zur Prüfung vorgemerkt');}
     else{candidate.status=e.result.status;candidate.reply=e.result.summary;candidate.replyQuote=e.result.replyQuote;candidate.nextAction=e.result.nextAction;candidate.repliedAt=e.receivedAt;candidate.mailMessageId=e.messageId;candidate.mailThreadSubject=e.subject;syncDerived(state,search,candidate,place);logMailChange(state,place?.name||candidate.name);}
     if(!a.processedMessageIds.includes(e.messageId))a.processedMessageIds.push(e.messageId);
   }

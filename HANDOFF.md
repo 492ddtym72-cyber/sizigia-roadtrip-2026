@@ -162,6 +162,15 @@
   Speichern als „bereit“. Exakte Ein-Nacht-Anfragen nennen kein
   irreführendes flexibles Fenster; flexible Korridore bleiben als Auswahl
   mehrerer möglicher Anreisetage formuliert.
+  Von Crew-Mitgliedern weitergeleitete Korrespondenz wird separat und
+  fehlertolerant behandelt: Nur eine echte Weiterleitungsmarke plus exakt
+  passende, eingebettete Originaladresse kann einen Campingplatz zuordnen.
+  Weitergeleitete Antworten und Versandbelege ändern niemals automatisch den
+  fachlichen Status, sondern landen als klar gekennzeichnete manuelle Prüfung.
+  Ein bestätigter Crew-Versand setzt erst nach Tippen auf „Versand bestätigen“
+  den Platz auf „Auf Antwort warten“. Ähnliche Domains, kopierte Betreffzeilen
+  und Text ohne Forward-Header bleiben wirkungslos; gespeichert wird weiterhin
+  nur ein kurzer Auszug, nie der vollständige Mailtext.
 - **Küstenoptionen V19:** Sechs offiziell geprüfte Stopps ergänzen das Netz:
   Angolo di Sogno und Vallecrosia (03.–04.08.), La Plage du Dramont und
   Saint-Aygulf Plage (04.–05.08.) sowie Les Tamaris und Le Mas (05.–06.08.).

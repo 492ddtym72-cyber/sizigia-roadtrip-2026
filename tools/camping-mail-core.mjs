@@ -60,6 +60,38 @@ export function classifyReply(value=''){
 
 function domain(address=''){return String(address).toLowerCase().split('@')[1]||'';}
 function norm(value=''){return String(value).toLowerCase().replace(/[^a-z0-9à-ž]+/gi,' ').trim();}
+function addresses(value=''){return [...String(value).matchAll(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)].map(x=>x[0].toLowerCase());}
+
+export function parseForwardedMessage(value=''){
+  const text=String(value).replace(/\r/g,''),marker=/(?:^-{2,}\s*(?:forwarded message|weitergeleitete nachricht|message transféré|mensaje reenviado|messaggio inoltrato)\s*-{2,}$|^(?:begin forwarded message|anfang der weitergeleiteten nachricht|début du message transféré|inicio del mensaje reenviado|inizio messaggio inoltrato)\s*:?$)/im,hit=marker.exec(text);
+  if(!hit)return null;
+  const tail=text.slice(hit.index+hit[0].length).replace(/^\s+/,''),lines=tail.split('\n');let from='',to='',subject='',bodyAt=-1,sawHeader=false;
+  const fields={from:/^(?:from|von|de|da|expéditeur)\s*:\s*(.+)$/i,to:/^(?:to|an|à|para|a)\s*:\s*(.+)$/i,subject:/^(?:subject|betreff|objet|asunto|oggetto)\s*:\s*(.+)$/i};
+  for(let i=0;i<Math.min(lines.length,35);i++){
+    const line=lines[i].replace(/^>+\s*/,'').trim();
+    if(!line&&sawHeader){bodyAt=i+1;break;}
+    let matched=false;
+    for(const [key,rx] of Object.entries(fields)){const m=line.match(rx);if(!m)continue;if(key==='from')from=m[1].trim();if(key==='to')to=m[1].trim();if(key==='subject')subject=m[1].trim();sawHeader=matched=true;break;}
+    if(!matched&&sawHeader&&!/^(?:date|datum|sent|gesendet|envoyé|fecha|data)\s*:/i.test(line)){bodyAt=i;break;}
+  }
+  if(!sawHeader||(!addresses(from).length&&!addresses(to).length))return null;
+  const body=lines.slice(bodyAt<0?lines.length:bodyAt).join('\n').trim();
+  return {from,to,subject,body};
+}
+
+export function matchForwardedCandidate(forwarded,candidates=[]){
+  if(!forwarded)return null;
+  const reply=matchCandidate({from:addresses(forwarded.from)[0]||'',subject:forwarded.subject||''},candidates);
+  if(reply)return {candidate:reply,direction:'reply'};
+  const recipients=new Set(addresses(forwarded.to)),sent=candidates.filter(c=>c.email&&recipients.has(String(c.email).toLowerCase().trim()));
+  return sent.length===1?{candidate:sent[0],direction:'sent'}:null;
+}
+
+export function forwardedReviewResult(forwarded,direction){
+  if(direction==='sent')return {status:'review',suggestedStatus:'contacted',confidence:'manual',summary:'Eine weitergeleitete Nachricht kann eine von der Crew gesendete Camping-Anfrage belegen.',nextAction:'Originalempfänger prüfen und Versand manuell bestätigen',excerpt:safeExcerpt(forwarded?.body||forwarded?.subject||'',600),replyQuote:''};
+  const classified=classifyReply(forwarded?.body||'');
+  return {...classified,status:'review',suggestedStatus:classified.status==='review'?'':classified.status,confidence:'manual',summary:'Weitergeleitete Campingplatz-Antwort: '+classified.summary,nextAction:'Originalabsender und Einordnung manuell bestätigen'};
+}
 
 export function matchCandidate({from='',subject=''},candidates=[]){
   const sender=String(from).toLowerCase().trim(),sub=normalizeSubject(subject),senderDomain=domain(sender),scored=[];
