@@ -29,13 +29,16 @@ on run argv
     try
       -- Rich-Text-Entwürfe können per AppleScript versehentlich eine
       -- Zitat-Ebene erben (violette Schrift + Seitenlinie). Ein neuer
-      -- Plain-Text-Entwurf enthält nur normalen Nachrichtentext.
+      -- Plain-Text-Entwurf wird deshalb leer erzeugt und erst danach befüllt.
       set default message format to plain format
-      set draftMessage to make new outgoing message with properties {visible:false, subject:messageSubject, content:messageBody}
+      set draftMessage to make new outgoing message with properties {visible:false, subject:messageSubject}
+      delay 0.2
       tell draftMessage
+        set content to messageBody & linefeed
         make new to recipient at end of to recipients with properties {address:recipientAddress}
         save
       end tell
+      delay 0.2
       set default message format to previousMessageFormat
     on error errorMessage number errorNumber
       set default message format to previousMessageFormat

@@ -44,8 +44,8 @@ const candidateStart=source.indexOf('const CAMPING_NETWORK_CANDIDATES =');
 assert.notEqual(candidateStart,-1,'CAMPING_NETWORK_CANDIDATES fehlt');
 const candidateEnd=source.indexOf('\n];',candidateStart)+3;
 vm.runInNewContext(source.slice(candidateStart,candidateEnd).replace('const CAMPING_NETWORK_CANDIDATES','this.candidates'),sandbox);
-assert.equal(sandbox.candidates.length,47);
-const expectedCounts={liguria:5,'provence-east':8,'cassis-marseille':5,camargue:3,languedoc:8,'cote-vermeille':7,'costa-brava':5,huesca:6};
+assert.equal(sandbox.candidates.length,53);
+const expectedCounts={liguria:7,'provence-east':10,'cassis-marseille':7,camargue:3,languedoc:8,'cote-vermeille':7,'costa-brava':5,huesca:6};
 for(const hub of sandbox.hubs){
   const rows=sandbox.candidates.filter(x=>x.hub===hub.id);
   assert.equal(rows.length,expectedCounts[hub.id],`${hub.id}: unerwartete Kandidatenzahl`);
@@ -53,15 +53,16 @@ for(const hub of sandbox.hubs){
 }
 const mailCandidates=sandbox.candidates.filter(x=>x.email);
 assert.equal(new Set(mailCandidates.map(x=>x.email.toLowerCase())).size,mailCandidates.length,'Vorhandene E-Mail-Adressen müssen eindeutig sein');
-assert.equal(sandbox.candidates.filter(x=>!x.email).map(x=>x.name).sort().join('|'),'Camping La Chapelle|Camping Ribera del Ara|Camping Santa Gusta');
+assert.equal(sandbox.candidates.filter(x=>!x.email).map(x=>x.name).sort().join('|'),'Camping La Chapelle|Camping Le Mas|Camping Ribera del Ara|Camping Santa Gusta');
 assert.equal(sandbox.candidates.find(x=>x.name==='Camping Mare Monti').lat,44.2639,'Mare Monti muss am verifizierten Standort liegen');
+assert.equal(sandbox.candidates.find(x=>x.name==='Camping La Plage du Dramont').email,'info@laplagedudramont.com','Dramont muss die direkt veröffentlichte offizielle Adresse verwenden');
 assert.equal(sandbox.candidates.some(x=>x.name==='Camping Río Ara'),false,'Der nicht verifizierbare Río-Ara-Eintrag darf nicht weiter ausgesät werden');
 const verifiedStart=source.indexOf('const CAMPING_NETWORK_VERIFIED =');
 const verifiedEnd=source.indexOf(';',verifiedStart)+1;
 const verifyBox={CAMPING_NETWORK_CANDIDATES:sandbox.candidates,uid:()=>`new-place`,console};
 vm.runInNewContext(source.slice(verifiedStart,verifiedEnd).replace('const CAMPING_NETWORK_VERIFIED','this.CAMPING_NETWORK_VERIFIED'),verifyBox);
 const preferred=sandbox.candidates.filter(x=>x.preferred);
-assert.equal(preferred.length,11);
+assert.equal(preferred.length,17);
 assert.ok(preferred.every(x=>(x.email||x.contactFormUrl)&&verifyBox.CAMPING_NETWORK_VERIFIED.has(x.name)),'Alle Favoriten brauchen eine offiziell geprüfte Kontaktmöglichkeit');
 vm.runInNewContext(extract('applyCampingContactVerificationV10')+';this.apply=applyCampingContactVerificationV10;',verifyBox);
 const migrationState={meta:{},sleepPlaces:[
@@ -96,11 +97,11 @@ if(fs.existsSync(backupUrl)){
   vm.runInNewContext(seedFn+';this.seed=seedCampingSafetyNetwork;',seedBox);
   seedBox.seed(production);
   assert.equal(production.sleepSearches.length,9);
-  assert.equal(production.sleepSearches.filter(x=>x.mode==='network').reduce((n,x)=>n+x.candidates.length,0),47);
-  assert.equal(production.sleepPlaces.length,placeCount+47);
+  assert.equal(production.sleepSearches.filter(x=>x.mode==='network').reduce((n,x)=>n+x.candidates.length,0),53);
+  assert.equal(production.sleepPlaces.length,placeCount+53);
   assert.equal(firstSearch.candidates.length,firstCount);
   seedBox.seed(production);
   assert.equal(production.sleepSearches.length,9,'Seed darf keine Korridore duplizieren');
-  assert.equal(production.sleepPlaces.length,placeCount+47,'Seed darf keine Plätze duplizieren');
+  assert.equal(production.sleepPlaces.length,placeCount+53,'Seed darf keine Plätze duplizieren');
 }
 console.log(JSON.stringify({ok:true,archived:state.archive.campingReminders.length,hubs:sandbox.hubs.length,candidates:sandbox.candidates.length,production:!!production}));

@@ -36,5 +36,8 @@ assert.ok(twoNightOffer.includes('from 9 August 2026 to 11 August 2026'),'MehrnÃ
 assert.equal(twoNightOffer.includes('from 9 August 2026 to 10 August 2026'),false);
 const appleMailCreator=fs.readFileSync(new URL('./create-apple-mail-draft.mjs',import.meta.url),'utf8');
 assert.ok(appleMailCreator.includes('set default message format to plain format'),'Apple Mail muss normalen Text statt Zitatebene erzeugen');
+assert.ok(appleMailCreator.includes('make new outgoing message with properties {visible:false, subject:messageSubject}'),'Entwurf muss ohne geerbten Rich-Text-Inhalt neu angelegt werden');
+assert.ok(appleMailCreator.includes('set content to messageBody & linefeed'),'Text muss erst im leeren Plain-Text-Entwurf gesetzt werden');
+assert.equal(appleMailCreator.includes('subject:messageSubject, content:messageBody'),false,'Inhalt darf nicht beim Erzeugen eine Zitatebene erben');
 assert.ok(appleMailCreator.match(/set default message format to previousMessageFormat/g)?.length>=2,'Mail-Format muss nach Erfolg und Fehler wiederhergestellt werden');
 console.log(JSON.stringify({ok:true,modes:modes.length,letterSpacing:true,blankSignature:true,twoPitchReply:true,plainTextDrafts:true}));

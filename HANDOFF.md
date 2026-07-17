@@ -162,6 +162,14 @@
   Speichern als „bereit“. Exakte Ein-Nacht-Anfragen nennen kein
   irreführendes flexibles Fenster; flexible Korridore bleiben als Auswahl
   mehrerer möglicher Anreisetage formuliert.
+- **Küstenoptionen V19:** Sechs offiziell geprüfte Stopps ergänzen das Netz:
+  Angolo di Sogno und Vallecrosia (03.–04.08.), La Plage du Dramont und
+  Saint-Aygulf Plage (04.–05.08.) sowie Les Tamaris und Le Mas (05.–06.08.).
+  Alle besitzen exakte Kartenpositionen. Le Mas veröffentlicht keine
+  verifizierte E-Mail und bleibt deshalb bewusst beim offiziellen Formular;
+  die anderen fünf können als normale, ungesendete Plain-Text-Entwürfe in
+  Apple Mail vorbereitet werden. Migration und Cloud-Seed füllen nur leere
+  Felder und überschreiben weder Antworten noch Versand- oder Buchungsstatus.
 - **App-Struktur:** Die Web-App ist ohne Build-Schritt in `index.html`,
   `styles.css`, `map-data.js` und `app.js` getrennt; die optionale
   Detailkarten-Bibliothek liegt statisch unter `vendor/`. V8 ergänzt lokale/cloud

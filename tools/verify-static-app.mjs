@@ -26,5 +26,5 @@ if(!zfe.includes('window.ZFE_DATA=')||!app.includes("map.addSource('fr-zfe-areas
 if(!app.includes('function zfeCandidateAssessment(')||!app.includes('Das gilt für den Zielpunkt, nicht automatisch für jede vorgeschlagene Zufahrt.'))throw new Error('ZFE-Campingplatzprüfung muss ihre Reichweite erklären');
 if(!app.includes('function homeRouteContext(')||app.includes('Was jetzt zählt'))throw new Error('Ruhiger Routenkontext der Startseite fehlt');
 if(!html.includes('<h1>Roadtrip</h1>')||html.includes('<h1>Sizigia 2026</h1>'))throw new Error('App-Identität ist nicht neutral');
-if(!app.includes("const SCHEMA_VERSION = 18")||!app.includes("ownerId:")||!app.includes("dueDate:")||!app.includes("requestedDepartureDate:")||!app.includes("offeredDepartureDate:"))throw new Error('V18-Unterkunftsmodell fehlt');
+if(!app.includes("const SCHEMA_VERSION = 19")||!app.includes("ownerId:")||!app.includes("dueDate:")||!app.includes("requestedDepartureDate:")||!app.includes("offeredDepartureDate:"))throw new Error('V19-Unterkunftsmodell fehlt');
 console.log(JSON.stringify({ok:true,classicScripts:true,assetOrder:true,offlineAssets:true,mapEmbedded:true,detailMapOptional:true,detailMapFallback:true,calmStart:true,neutralIdentity:true,actionOwnership:true,etagSync:true,recoverableRejections:true,campsiteSearch:true,rememberedNight:true}));
