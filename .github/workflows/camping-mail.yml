@@ -20,8 +20,13 @@ jobs:
     timeout-minutes: 10
     env:
       MAIL_RUNNER_MODE: ${{ vars.MAIL_RUNNER_MODE }}
+      MAIL_PROVIDER: ${{ vars.MAIL_PROVIDER }}
       ICLOUD_EMAIL: ${{ secrets.ICLOUD_EMAIL }}
       ICLOUD_APP_PASSWORD: ${{ secrets.ICLOUD_APP_PASSWORD }}
+      GMAIL_EMAIL: ${{ secrets.GMAIL_EMAIL }}
+      GMAIL_CLIENT_ID: ${{ secrets.GMAIL_CLIENT_ID }}
+      GMAIL_CLIENT_SECRET: ${{ secrets.GMAIL_CLIENT_SECRET }}
+      GMAIL_REFRESH_TOKEN: ${{ secrets.GMAIL_REFRESH_TOKEN }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
       - run: npm ci --prefix cloud-mail --ignore-scripts

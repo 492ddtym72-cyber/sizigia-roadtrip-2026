@@ -207,8 +207,8 @@ function makeRunner(state, mode = 'cloud'){
   assert.equal(state.log.length, 1, 'Sent-Erkennung darf nur einmal loggen');
 }
 
-// 10) Runner: ein bereits per IMAP angehängter Entwurf wird nach einem
-//     unterbrochenen Lauf erkannt und nicht ein zweites Mal angelegt.
+// 10) Runner: ein bereits beim aktiven Mail-Provider angelegter Entwurf wird
+//     nach einem unterbrochenen Lauf erkannt und nicht ein zweites Mal angelegt.
 {
   const state = baseState();
   state.mailAssistant.draftRequests = [{id:'req-draft-retry', searchId:'s1', candidateId:'c1', template:'inquiry', status:'requested'}];
@@ -216,21 +216,19 @@ function makeRunner(state, mode = 'cloud'){
   const sandbox = {
     crypto,
     mode:'cloud',
-    process:{env:{ICLOUD_EMAIL:'a@icloud.com'}},
     nowIso:()=> '2026-07-12T12:00:00.000Z',
     cleanHeader:value=>String(value||'').replace(/[\r\n]+/g,' ').trim(),
     draftBody:()=> 'Kind regards,\n\n',
     draftSubject:()=> 'Test subject',
-    rawDraft:()=> Buffer.from('draft'),
-    envelopes:async()=> [{envelope:{messageId:'placeholder'}}],
+    rawDraft:()=> Buffer.from('draft')
   };
   vm.createContext(sandbox);
   for(const name of ['assistant','locate','draftMessageId','createDrafts'])
     vm.runInContext(extract(runnerSrc,name),sandbox);
   const id = vm.runInContext("draftMessageId('req-draft-retry')",sandbox);
-  sandbox.envelopes = async()=> [{envelope:{messageId:id}}];
   let appends = 0;
-  const events = await vm.runInContext('createDrafts',sandbox)({append:async()=>{appends++;}},'Drafts',state);
+  const mailbox={email:'a@example.com',list:async kind=>kind==='drafts'?[{messageId:id}]:[],appendDraft:async()=>{appends++;}};
+  const events = await vm.runInContext('createDrafts',sandbox)(mailbox,state);
   assert.equal(appends,0,'vorhandener deterministischer Entwurf darf nicht erneut angehängt werden');
   assert.equal(events.length,1,'vorhandener Entwurf muss den Status trotzdem auf bereit bringen');
   assert.equal(events[0].requestId,'req-draft-retry');

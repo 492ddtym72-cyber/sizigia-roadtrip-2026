@@ -1,5 +1,9 @@
 # Kostenloser iCloud-Mail-Runner
 
+> Der empfohlene cloud-native Weg ist inzwischen Gmail mit OAuth. Siehe
+> [GMAIL_CLOUD_MAIL_SETUP.md](GMAIL_CLOUD_MAIL_SETUP.md). Diese Datei bleibt als
+> Dokumentation und Rückfallweg für den iCloud-Adapter erhalten.
+
 Der Cloud-Runner ist nach dem Deployment vollständig deaktiviert. Ohne die
 Repository-Variable `MAIL_RUNNER_MODE=shadow|cloud` wird weder auf iCloud noch
 auf Firebase zugegriffen.

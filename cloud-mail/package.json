@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node ../tools/camping-mail-core.test.mjs && node runner.mjs --self-test"
+    "test": "node ../tools/camping-mail-core.test.mjs && node mailbox-providers.test.mjs && node runner.mjs --self-test"
   },
   "dependencies": {
     "imapflow": "1.4.7",

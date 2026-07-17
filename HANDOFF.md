@@ -1,6 +1,6 @@
 # HANDOFF — Status
 
-> Stand: 16.07.2026 · `main` ist der stabile Live-Stand.
+> Stand: 17.07.2026 · `main` ist der stabile Live-Stand.
 > Projektüberblick & Konventionen: [AGENTS.md](AGENTS.md).
 
 ## Aktueller Zustand ✅
@@ -171,6 +171,15 @@
   den Platz auf „Auf Antwort warten“. Ähnliche Domains, kopierte Betreffzeilen
   und Text ohne Forward-Header bleiben wirkungslos; gespeichert wird weiterhin
   nur ein kurzer Auszug, nie der vollständige Mailtext.
+  Der Cloud-Runner besitzt zusätzlich einen providerneutralen Mailbox-Adapter:
+  iCloud-IMAP bleibt als Rückfall erhalten, Gmail kann über die offizielle API
+  und OAuth-Refresh-Tokens gelesen werden. Der Gmail-Pfad prüft das autorisierte
+  Konto gegen `GMAIL_EMAIL`, liest Inbox/Sent ohne Statusänderungen an der
+  Mailbox und nutzt ausschließlich `drafts.create` für ungesendete Entwürfe;
+  ein Sende-Endpunkt ist nicht implementiert. Die GitHub-Variable
+  `MAIL_PROVIDER=gmail|icloud` wählt den Anbieter. Der Runner bleibt bis zum
+  erfolgreichen OAuth- und Shadow-Test deaktiviert. Einrichtung:
+  `docs/GMAIL_CLOUD_MAIL_SETUP.md`.
 - **Küstenoptionen V19:** Sechs offiziell geprüfte Stopps ergänzen das Netz:
   Angolo di Sogno und Vallecrosia (03.–04.08.), La Plage du Dramont und
   Saint-Aygulf Plage (04.–05.08.) sowie Les Tamaris und Le Mas (05.–06.08.).
@@ -183,9 +192,10 @@
   `styles.css`, `map-data.js` und `app.js` getrennt; die optionale
   Detailkarten-Bibliothek liegt statisch unter `vendor/`. V8 ergänzt lokale/cloud
   Runner-Gesundheit und eine begrenzte manuelle Prüfwarteschlange. Der
-  GitHub-iCloud-Runner liegt unter `cloud-mail/` und ist ohne die Repository-
+  GitHub-Mail-Runner liegt unter `cloud-mail/` und ist ohne die Repository-
   Variable `MAIL_RUNNER_MODE=shadow|cloud` vollständig deaktiviert. Keine
-  iCloud-Secrets sind eingerichtet; der lokale Mac-Runner bleibt maßgeblich.
+  Mail-Secrets stehen im Repository; der lokale Mac-Runner bleibt bis zum
+  erfolgreichen Gmail-OAuth-Test maßgeblich.
 
 ## Beim Sync gelernt (nicht kaputt machen!)
 
