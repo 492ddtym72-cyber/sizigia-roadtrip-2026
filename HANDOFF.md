@@ -68,6 +68,15 @@
   Website-Option für 66,16 € (Strom optional), Wecamp Cadaqués verweist ohne
   konkrete Zusage auf die Website; Alquézar, Mare Monti und Youcamp behalten
   ihre vorsichtigen bestehenden Einstufungen.
+  V18 ergänzt drei offiziell geprüfte Küstenstopps als zusammenhängende Folge:
+  Camping Roma (Albenga, 03.–04.08.), Camping Agay Soleil (04.–05.08.) und
+  Camping Santa Gusta (La Ciotat, 05.–06.08.). Platzspezifische Wunschnächte
+  ändern nur den Text der jeweiligen Anfrage, nicht das flexible Fenster des
+  gesamten Reiseabschnitts. Santa Gusta veröffentlicht aktuell keine E-Mail;
+  die App unterstützt deshalb ein zustandsloses Kontaktformular: Text kopieren
+  und Formular öffnen ändern den Status nicht, erst die manuelle
+  Versandbestätigung setzt „Angefragt“. Park4night dient nur zur Entdeckung;
+  Kontakt- und Regelangaben stammen aus offiziellen Platzseiten.
   V11 trennt die geplante Nacht von einem flexiblen Anreisefenster. Die
   mittleren Routenkorridore fragen nun nach genau einer Nacht an einem
   beliebigen verfügbaren Anreisetag innerhalb eines realistischen
