@@ -1,8 +1,14 @@
 # Gmail-Cloud-Mail-Assistent
 
-Der Gmail-Zugang ist eine optionale Alternative zum iCloud-IMAP-Zugang. Die
-App, Firebase-Daten und der lokale Apple-Mail-Ablauf funktionieren unabhängig
-davon weiter. Ohne `MAIL_RUNNER_MODE=shadow|cloud` läuft kein Cloud-Mail-Check.
+> **Aktiver Stand (20.07.2026):** `MAIL_PROVIDER=gmail` und
+> `MAIL_RUNNER_MODE=cloud` sind aktiv. Der zeitgesteuerte GitHub-Runner ist der
+> laptopunabhängige Hintergrundweg. Der separat verbundene ChatGPT-Gmail-
+> Connector dient vollständigen, interaktiven Mailanalysen und teilt seine
+> Autorisierung nicht mit Codex-Cloud-Containern.
+
+Die App und Firebase-Daten funktionieren unabhängig vom Mailanbieter weiter.
+Der frühere iCloud-IMAP-/Apple-Mail-Weg bleibt nur als Rückfall dokumentiert.
+Ohne `MAIL_RUNNER_MODE=shadow|cloud` läuft kein Cloud-Mail-Check.
 
 ## Sicherheitsmodell
 
@@ -45,14 +51,15 @@ Secrets:
 - `GMAIL_CLIENT_SECRET`
 - `GMAIL_REFRESH_TOKEN`
 
-Variables:
+Variables (aktueller Produktionsstand):
 
 - `MAIL_PROVIDER=gmail`
-- zuerst `MAIL_RUNNER_MODE=shadow`
+- `MAIL_RUNNER_MODE=cloud`
 
-`shadow` liest und klassifiziert, erstellt aber keine Entwürfe und ändert keine
-fachlichen Campingstatus. Erst nach einem erfolgreichen Shadow-Test wird
-`MAIL_RUNNER_MODE=cloud` gesetzt.
+Bei einer Neueinrichtung zuerst `MAIL_RUNNER_MODE=shadow` verwenden. `shadow`
+liest und klassifiziert, erstellt aber keine Entwürfe und ändert keine
+fachlichen Campingstatus. Erst nach erfolgreichem Shadow-Test auf `cloud`
+wechseln.
 
 ## Rückfall
 
@@ -60,4 +67,3 @@ Bei Problemen `MAIL_RUNNER_MODE=disabled` setzen und in Firebase/über die
 Bridge den Modus auf `local` zurückstellen. Die App nutzt dann wieder Apple
 Mail auf dem Gerät. `MAIL_PROVIDER=icloud` reaktiviert den bisherigen
 iCloud-Adapter, sofern dessen Secrets gültig sind.
-
