@@ -1,6 +1,6 @@
 # HANDOFF — Status
 
-> Stand: 17.07.2026 · `main` ist der stabile Live-Stand.
+> Stand: 20.07.2026 · `main` ist der stabile Live-Stand.
 > Projektüberblick & Konventionen: [AGENTS.md](AGENTS.md).
 
 ## Aktueller Zustand ✅
@@ -104,20 +104,31 @@
   nur bei tatsächlichem Antwortinhalt. Bereits gesendete Anfragen bieten keine
   zweite Erstanfrage an, und gesunde Mail-Diagnostik bleibt ausgeblendet. Eine
   akzentunabhängige Routensuche findet Campingplätze über Name, Ort, Status und
-  Antworttext. Der zuletzt gewählte Reiseabschnitt bleibt nur auf dem Gerät
-  gespeichert und wird im horizontalen Nachtwähler automatisch sichtbar
-  gehalten.
+  Antworttext und zeigt Reiseabschnitt und Datumsfenster direkt am Treffer.
   Die Schlafplatz-Kartenansicht hat nun zwei Ebenen: „Detailkarte online“ nutzt
   lokal vendortes MapLibre GL JS mit OpenFreeMap-Vektorkarten und erlaubt
   scharfes Zoomen bis auf Straßenebene; „Offlinekarte“ bleibt die bisherige,
-  vollständig eingebettete Europakarte. Nur operative Campingplätze mit
-  gespeicherten Koordinaten werden als Statuspunkte gezeichnet. Der
-  Kartenwechsel ist rein lokal und verändert keine Reise- oder Firebase-Daten.
+  vollständig eingebettete Europakarte. Kontaktierte Unterkünfte mit
+  gespeicherten Koordinaten werden abhängig vom Statusfilter als Punkte
+  gezeichnet. Der Kartenwechsel ist rein lokal und verändert keine Reise- oder
+  Firebase-Daten.
   Ohne Netz, ohne Kartenbibliothek oder wenn der Stil nicht binnen 12 Sekunden
   lädt, schaltet die App automatisch auf die Offlinekarte. MapLibre-Dateien und
   Lizenz liegen unter `vendor/` und werden vom Service Worker mitgecached;
   OpenFreeMap selbst ist ein kostenfreier Dienst ohne SLA, deshalb darf der
   Fallback nicht entfernt werden.
+  Zusätzlich besitzt die Karte einen rein lokalen Kontaktstatus-Filter:
+  „Alle Kontakte“ zeigt auch vollständig ausgebuchte Plätze, „Nutzbar“, „In
+  Klärung“ und „Absagen“ grenzen die Punkte ein. Noch nicht kontaktierte
+  Rechercheoptionen bleiben von der Karte ausgeschlossen. Filter, Zähler und
+  Statusfarben gelten identisch für Detail- und Offlinekarte; die Auswahl wird
+  nur auf dem jeweiligen Gerät gespeichert und nicht synchronisiert.
+  Der Schlafplatz-Bereich startet jetzt als ruhige Übersicht der gesamten
+  Route. Die große Karte ist Standard; die frühere Nachtkarte und der
+  horizontale Abschnittswähler oberhalb der Suche sind entfernt. Abschnitt und
+  Datumsfenster erscheinen beim Öffnen eines Kartenpunkts, in der gruppierten
+  Listenansicht sowie im Hinzufügen-/Bearbeiten-Dialog. Ein kompakter
+  „Abschnitte“-Dialog hält die Zeiträume weiterhin vollständig editierbar.
   Die Detailkarte besitzt zusätzlich eine lokale Frankreich-ZFE-Ebene mit
   amtlichen, am 16.07.2026 geprüften Grenzen für Nice, Marseille, Nîmes und
   Montpellier. Marseille und Montpellier zeigen amtliche Transitachsen grün

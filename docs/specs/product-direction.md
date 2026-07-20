@@ -20,8 +20,12 @@ zwischen Idee, Anfrage, Angebot und bestätigter Buchung.
   Reiseabschnitt und die vorhandenen Werkzeuge. Diagnostik, leere Zustände und
   automatisch abgeleitete Arbeitslisten gehören in ihre Fachbereiche.
 - **Spontanität mit Rückhalt:** Alternativen sind sichtbar, ohne als Notfall
-  bezeichnet zu werden. Absagen bleiben gespeichert, aber aus operativen
-  Karten und Kartenansichten heraus.
+  bezeichnet zu werden. Absagen bleiben gespeichert und dürfen zur Einordnung
+  auf Unterkunftskarten eingeblendet werden, sind dort aber klar von nutzbaren
+  Optionen und offenen Kontakten getrennt.
+- **Route vor Einzelnacht:** Unterkunftsübersichten zeigen zuerst die gesamte
+  Route. Reiseabschnitte und Datumsfenster bleiben als Kontext an Angeboten und
+  in Bearbeitungsdialogen erhalten, dienen aber nicht als primäre Navigation.
 - **Menschen behalten Kontrolle:** Entwürfe, KI-Auswertungen und Vorschläge
   ändern nie selbstständig einen Buchungsstatus. Senden und Buchen bleiben
   bewusste Handlungen.

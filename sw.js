@@ -1,7 +1,7 @@
 /* Service Worker: App lädt auch im Funkloch.
    Strategie: Netz zuerst (immer aktuellste Version), Cache als Fallback.
    Cloud-Sync-Requests (fremde Origins, z. B. Firebase) werden nie angefasst. */
-const CACHE = 'sizigia-app-v20-scenic-coast';
+const CACHE = 'sizigia-app-v22-sleep-route-overview';
 const APP_ASSETS = [
   './',
   './index.html',
