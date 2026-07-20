@@ -71,6 +71,7 @@ async function applyEvents(events){return updateState(state=>{
         subject:cleanHeader(e.subject||'').slice(0,240),
         source:e.source||'direct',
         summary:safeExcerpt(e.result.summary||'',360),
+        excerpt:safeExcerpt(e.result.excerpt||'',500),
         replyQuote:safeExcerpt(e.result.replyQuote||e.result.excerpt||'',360),
         nextAction:safeExcerpt(e.result.nextAction||'',240),
         at:nowIso()

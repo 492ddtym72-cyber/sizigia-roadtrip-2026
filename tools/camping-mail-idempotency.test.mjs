@@ -204,6 +204,7 @@ function makeRunner(state, mode = 'cloud'){
   assert.equal(state.mailAssistant.shadowResults.length, 1, 'Shadow-Diagnose muss per Message-ID idempotent bleiben');
   assert.equal(state.mailAssistant.shadowResults[0].predictedStatus, 'review', 'erneute Shadow-Auswertung muss die bestehende Diagnose aktualisieren');
   assert.equal(state.mailAssistant.shadowResults[0].summary, 'Bitte manuell prüfen.');
+  assert.ok(state.mailAssistant.shadowResults[0].excerpt.length<=501, 'Shadow-Auszug muss kurz und datensparsam bleiben');
   assert.ok(state.mailAssistant.shadowResults[0].replyQuote.length<=361, 'Shadow-Zitat muss kurz und datensparsam bleiben');
 }
 
