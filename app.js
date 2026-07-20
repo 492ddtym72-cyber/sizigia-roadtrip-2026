@@ -3347,18 +3347,18 @@ function sleepCandidateCard(s,raw){
   }else if(c.contactFormUrl&&c.status==='new'){
     primary=`<button class="btn primary small" onclick="prepareSleepReply('${s.id}','${c.id}','inquiry')">Anfrage vorbereiten</button>`;
   }else if(c.status==='call'&&c.phone){
-    primary=`<a class="btn primary small" href="tel:${esc(c.phone.replace(/[^\d+]/g,''))}">📞 Jetzt anrufen</a>`;
+    primary=`<a class="btn primary small" href="tel:${esc(c.phone.replace(/[^\d+]/g,''))}">Jetzt anrufen</a>`;
   }else if(['available','reservable'].includes(c.status)&&c.officialUrl&&/website/i.test(c.nextAction||'')){
     primary=`<a class="btn primary small" href="${esc(c.officialUrl)}" target="_blank" rel="noopener">Auf Website reservieren</a>`;
   }else if(c.email&&['new','available','reservable','followup','reserving','deposit_required'].includes(c.status)){
     const label=c.status==='new'?'Verfügbarkeit anfragen':c.status==='available'?'Reservierung vorbereiten':c.status==='reservable'?'Datum anfragen':c.status==='followup'?'Erneut nachfragen':c.status==='deposit_required'?'Anzahlung klären':'Buchung klären';
-    primary=`<button class="btn primary small" onclick="prepareSleepReply('${s.id}','${c.id}','${mode}')">✉️ ${label}</button>`;
+    primary=`<button class="btn primary small" onclick="prepareSleepReply('${s.id}','${c.id}','${mode}')">${label}</button>`;
   }
   if(c.officialUrl)secondary+=`<a class="sleep-link" href="${esc(c.officialUrl)}" target="_blank" rel="noopener">Website</a>`;
   secondary+=`<a class="sleep-link" href="${esc(maps)}" target="_blank" rel="noopener">Karte</a><button class="sleep-link" onclick="editSleepCandidate('${s.id}','${c.id}')">Details</button>`;
   const stateText=latestReq?.status==='ready'?'Der Entwurf liegt in Apple Mail und kann dort geprüft und gesendet werden.':latestReq?.status==='requested'?'Der Mail-Entwurf wird gerade erstellt.':sleepStatusSummary(c),showNext=c.nextAction&&!/^Auf Antwort warten$/i.test(c.nextAction);
   return `<div class="sleep-card ${c.status}${c.preferred?' preferred':''}"><div class="sleep-head"><div class="sleep-head-main"><h3>${esc(c.name)}</h3><div class="sleep-sub">${esc(c.region||s.region||'Ort noch offen')}</div></div><span class="sleep-status ${c.status}">${esc(statusLabel)}</span></div>
-  <div class="sleep-facts">${c.kind&&c.kind!=='camping'?`<span class="sleep-fact">${esc(c.kind==='private'?'Privat':c.kind==='parking'?'Stellplatz':'Unterkunft')}</span>`:''}${c.preferred?'<span class="sleep-fact preferred">★ Favorit</span>':''}${zfeCandidateBadge(c)}${(c.finalPrice||c.price)?`<span class="sleep-fact">💶 ${esc(c.finalPrice||c.price)}${c.finalPrice?' gesamt':''}</span>`:''}${!c.finalPrice&&c.tax?`<span class="sleep-fact">+ ${esc(c.tax)}</span>`:''}${c.deposit?`<span class="sleep-fact">Anzahlung ${esc(c.deposit)}</span>`:''}${c.bookingRef?`<span class="sleep-fact">Nr. ${esc(c.bookingRef)}</span>`:''}${c.requestedArrivalDate?`<span class="sleep-fact">Wunsch ${esc(sleepCandidateStayGerman({offeredArrivalDate:c.requestedArrivalDate,offeredDepartureDate:c.requestedDepartureDate}))}</span>`:''}${c.offeredArrivalDate?`<span class="sleep-fact">Angebot ${esc(sleepCandidateStayGerman(c))}</span>`:''}${c.arrivalWindow?`<span class="sleep-fact">Anreise ${esc(c.arrivalWindow)}</span>`:''}${c.callWindow?`<span class="sleep-fact">📞 ${esc(c.callWindow)}</span>`:''}</div>
+  <div class="sleep-facts">${c.kind&&c.kind!=='camping'?`<span class="sleep-fact">${esc(c.kind==='private'?'Privat':c.kind==='parking'?'Stellplatz':'Unterkunft')}</span>`:''}${c.preferred?'<span class="sleep-fact preferred">Favorit</span>':''}${zfeCandidateBadge(c)}${(c.finalPrice||c.price)?`<span class="sleep-fact">${esc(c.finalPrice||c.price)}${c.finalPrice?' gesamt':''}</span>`:''}${!c.finalPrice&&c.tax?`<span class="sleep-fact">+ ${esc(c.tax)}</span>`:''}${c.deposit?`<span class="sleep-fact">Anzahlung ${esc(c.deposit)}</span>`:''}${c.bookingRef?`<span class="sleep-fact">Nr. ${esc(c.bookingRef)}</span>`:''}${c.requestedArrivalDate?`<span class="sleep-fact">Wunsch ${esc(sleepCandidateStayGerman({offeredArrivalDate:c.requestedArrivalDate,offeredDepartureDate:c.requestedDepartureDate}))}</span>`:''}${c.offeredArrivalDate?`<span class="sleep-fact">Angebot ${esc(sleepCandidateStayGerman(c))}</span>`:''}${c.arrivalWindow?`<span class="sleep-fact">Anreise ${esc(c.arrivalWindow)}</span>`:''}${c.callWindow?`<span class="sleep-fact">Anruf ${esc(c.callWindow)}</span>`:''}</div>
   ${hasAnswer?`<div class="sleep-answer"><div class="sleep-answer-label">Rückmeldung</div><div class="sleep-answer-text">${esc(stateText)}</div>${c.pitchNote?`<div class="sleep-answer-meta"><b>Stellplatz:</b> ${esc(c.pitchNote)}</div>`:''}${c.parking?`<div class="sleep-answer-meta"><b>Auto:</b> ${esc(c.parking)}</div>`:''}${c.replyQuote?`<blockquote class="sleep-answer-quote">„${esc(c.replyQuote.replace(/^[„“\"']+|[„“\"']+$/g,''))}“</blockquote>`:''}</div>`:`<div class="sleep-state-line">${esc(stateText)}</div>`}
   ${c.notes&&!hasAnswer?`<div class="sleep-note">${esc(c.notes)}</div>`:''}${(showNext||c.nextActionDate)?`<div class="sleep-next">${esc(showNext?c.nextAction:'Nachfassen')}${c.nextActionDate?' · '+esc(c.nextActionDate):''}</div>`:''}
   ${(primary||secondary)?`<div class="sleep-actions">${primary}</div><div class="sleep-links">${secondary}</div>`:''}</div>`;
@@ -3423,9 +3423,9 @@ function renderSleepCandidateList(){
 }
 const SLEEP_MAP_COLORS={booked:'#8ea8ff',available:'#5fd4a8',reservable:'#74c9a5',call:'#ffb257',draft_requested:'#54c8ff',reserving:'#54c8ff',deposit_required:'#ffd76b',followup:'#ffd76b',awaiting:'#54c8ff',new:'#b6bfcc',unavailable:'#737b8d'};
 const SLEEP_MAP_STATUS_FILTERS={
-  all:{label:'Alle Kontakte'},
+  all:{label:'Alle'},
   usable:{label:'Nutzbar'},
-  open:{label:'In Klärung'},
+  open:{label:'Offen'},
   closed:{label:'Absagen'}
 };
 function sleepMapStatusGroup(c){
