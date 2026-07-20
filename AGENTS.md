@@ -1,4 +1,4 @@
-# Roadtrip-Planer „Sizigia 2026"
+# Roadtrip · gemeinsamer Reiseplaner
 
 Interaktiver Reiseplaner (deutsche UI) für einen Roadtrip von 6 Personen:
 München/Innsbruck → **Sizigia Eclipse Gathering 2026** (10.–14.08.2026, Provinz
@@ -13,6 +13,9 @@ und Menschen, die am Projekt arbeiten.
 >
 > **Produkt-Richtung:** [docs/specs/product-direction.md](docs/specs/product-direction.md)
 > beschreibt die Leitplanken für eine wiederverwendbare, ruhige Gruppenreise-App.
+>
+> **Cloud-Betrieb:** [docs/operations/CLOUD_AGENT_RUNBOOK.md](docs/operations/CLOUD_AGENT_RUNBOOK.md)
+> beschreibt den Start einer frischen Cloud-Sitzung, Mailwege und Aktionsgrenzen.
 
 ## Projektstruktur
 
@@ -23,9 +26,11 @@ map-data.js                 # Eingebettete Offline-Karte (große Data-URI)
 app.js                      # Gesamte Browser-Logik, ohne Build-Schritt
 sw.js                       # Offline-Cache für die gehostete App
 vendor/maplibre-*           # Lokal vendorte Detailkarten-Bibliothek + Lizenz
-tools/camping-mail-*.mjs    # Lokale/Cloud-Maillogik, Tests und Firebase-Brücke
-cloud-mail/                 # Deaktivierter GitHub/iCloud-Runner mit eigenem Lockfile
+tools/camping-mail-*.mjs    # Mailklassifikation, Vorlagen, Tests und Firebase-Brücke
+tools/cloud-session-check.mjs # Rein lesender Live-Status für Cloud-Sitzungen
+cloud-mail/                 # Aktiver GitHub-Actions-/Gmail-Runner mit eigenem Lockfile
 docs/specs/                 # Design-Spezifikationen
+docs/operations/            # Aktuelle Betriebs-Runbooks
 AGENTS.md                   # Diese Datei (CLAUDE.md verweist hierauf)
 ```
 
@@ -41,10 +46,15 @@ AGENTS.md                   # Diese Datei (CLAUDE.md verweist hierauf)
 3. **Kein Datenverlust.** Jede Zustandsänderung ruft `save()` auf. Das Schema
    nie umbenennen/entfernen ohne Migration in `migrate()` (siehe unten).
 4. Mobile-first: primäre Nutzung auf Smartphones (~375 px Breite).
+5. **Keine Live-Daten in Seeds.** Mailantworten, Preise, Verfügbarkeiten und
+   Buchungsstatus gehören in Firebase, nicht in neue Migrationen oder Defaults.
+6. **Keine stillen Außenwirkungen.** Mail senden, Formulare absenden,
+   reservieren, zahlen oder eine Unterkunft bestätigen braucht einen
+   ausdrücklichen Auftrag in derselben Unterhaltung.
 
 ## Datenmodell & Persistenz
 
-- Ein einziges State-Objekt (`state`) mit `schemaVersion` (aktuell `17`),
+- Ein einziges State-Objekt (`state`) mit Schema-Version `19`,
   definiert in `defaultState()` in `app.js`.
 - **`StorageAdapter`** (`load()` / `save(state)`) kapselt die lokale Persistenz:
   `localStorage` unter dem Key `sizigia-roadtrip-2026`.
@@ -81,6 +91,18 @@ AGENTS.md                   # Diese Datei (CLAUDE.md verweist hierauf)
   `migrate()` alte Stände konvertieren (fehlende Keys werden bereits defensiv
   aus `defaultState()` ergänzt). Optionale Felder (z. B. `lat`/`lng` an
   Etappen/Spots) brauchen keine Migration.
+
+## Quellen der Wahrheit
+
+- GitHub `main`: Code, Schema, Tests und dauerhafte Betriebsregeln.
+- Firebase: aktueller geteilter Reise-, Unterkunfts- und Antwortstand.
+- Gmail: vollständige Nachrichten und Threads.
+- GitHub Actions: laptopunabhängiger Gmail-Runner und ungesendete Entwürfe.
+- `localStorage`: gerätespezifische Offlinewerte und UI-Präferenzen.
+
+Mailantworten, Preise, Versand- und Buchungsstatus sind Live-Daten in Firebase und keine Migration.
+`SCHEMA_VERSION` nur bei einer dauerhaften
+Strukturänderung erhöhen. Live-Antworten nie als Seed nach `app.js` kopieren.
 
 ## Architektur (in `app.js`)
 
@@ -137,6 +159,27 @@ AGENTS.md                   # Diese Datei (CLAUDE.md verweist hierauf)
 - Budget: geteilte Ausgaben mit wählbaren Teilenden, Salden und
   Greedy-Ausgleichsvorschlägen.
 
+## Mail- und Aktionsgrenzen
+
+- Der aktive GitHub-Actions-Runner nutzt Gmail. Er darf campingbezogene
+  Nachrichten lesen, konservativ klassifizieren, kurze Ergebnisse in Firebase
+  eintragen, Sent Mail erkennen und ungesendete Entwürfe erstellen. Er besitzt
+  keinen Sende-Endpunkt und darf Mail weder löschen, verschieben noch als
+  gelesen markieren.
+- Vollständige Threads werden bei interaktiven Aufgaben über den verbundenen
+  Gmail-Connector gelesen. Codex Cloud erbt diese Autorisierung nicht aus dem
+  Repository und verwendet ohne Connector nur den synchronisierten
+  Firebase-Stand.
+- Entwürfe enden mit `Kind regards,` und einer leeren Namenszeile. Sie sind als
+  normaler Plain Text mit Absätzen anzulegen, nicht als zitierter/violetter
+  Antwortblock.
+- Für Campinganfragen gelten sechs Erwachsene, ein Camper und ein Kleinwagen.
+  Flexible Ein-Nacht-Fenster bleiben flexibel formuliert. Eine Unterkunft wird
+  nur bei einem eindeutigen Beleg für die passenden Daten und Fahrzeuge als
+  bestätigt behandelt.
+- Ein Entwurf verändert keinen fachlichen Status. Erst Sent-Mail-Erkennung oder
+  die bestehende manuelle Versandbestätigung setzt eine Anfrage auf „gesendet“.
+
 ## Sonstige Konventionen
 
 - Druck-Stylesheet (`@media print`): alle Tabs untereinander, hell, ohne
@@ -162,6 +205,20 @@ AGENTS.md                   # Diese Datei (CLAUDE.md verweist hierauf)
 
 ## Verifikation
 
-Kein Test-Framework. Vor dem Commit manuell im Browser prüfen:
-Tabs durchklicken, etwas ändern → neu laden (Persistenz), Export/Import-
-Roundtrip, Darstellung bei ~375 px Breite, Konsole fehlerfrei.
+Vor jeder Änderung in einer Cloud-Sitzung zunächst rein lesend ausführen:
+
+```bash
+node tools/cloud-session-check.mjs
+```
+
+Vor jedem Commit und Push:
+
+```bash
+node --test tools/*.test.mjs
+node tools/verify-static-app.mjs
+npm test --prefix cloud-mail
+```
+
+Danach die betroffene Oberfläche bei ungefähr 375 px Breite prüfen. Bei
+Änderungen an Persistenz oder Import zusätzlich Reload und Export/Import-
+Roundtrip testen; die Browser-Konsole muss fehlerfrei bleiben.
