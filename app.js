@@ -3255,7 +3255,7 @@ function applyCandidateValues(c,v){ const pos=v.pos,confirmation={dates:!!v.conf
 function syncSleepCandidate(s,c){
   c.reminderId=null;
 }
-function addSleepCandidate(searchId=''){ const searches=state.sleepSearches||[];if(!searches.length){addSleepSearch(true);return;}openModal('Unterkunft hinzufügen',sleepCandidateFields({},searchId),v=>{if(!v.name.trim()){toast('Bitte einen Namen eintragen');return;}const s=searches.find(x=>x.id===v.searchId);if(!s){toast('Bitte einen Reiseabschnitt wählen');return;}const undo=sleepUndo(),c=normalizeSleepCandidate({id:uid(),contactedAt:v.status==='awaiting'?new Date().toISOString():null});applyCandidateValues(c,v);s.candidates.push(c);syncSleepCandidate(s,c);logChange('hat Schlafplatz-Option „'+c.name+'“ hinzugefügt',undo);}); }
+function addSleepCandidate(searchId=''){ const searches=state.sleepSearches||[];if(!searches.length){addSleepSearch(true);return;}openModal('Unterkunft hinzufügen',sleepCandidateFields({},searchId),v=>{if(!v.name.trim()){toast('Bitte einen Namen eintragen');return;}const s=searches.find(x=>x.id===v.searchId);if(!s){toast('Bitte einen Reiseabschnitt wählen');return;}const undo=sleepUndo(),c=normalizeSleepCandidate({id:uid(),mapPinned:true,contactedAt:v.status==='awaiting'?new Date().toISOString():null});applyCandidateValues(c,v);s.candidates.push(c);syncSleepCandidate(s,c);logChange('hat Schlafplatz-Option „'+c.name+'“ hinzugefügt',undo);if(!sleepCandidatePositioned(c))toast('Gespeichert · Kartenposition fehlt');}); }
 function editSleepCandidate(searchId,candidateId){ const {s,c}=findSleep(searchId,candidateId);if(!c)return;const view=sleepCandidateView(c);openModal('Schlafplatz-Option bearbeiten',sleepCandidateFields(c,s.id),v=>{if(!v.name.trim()){toast('Bitte einen Namen eintragen');return;}const target=(state.sleepSearches||[]).find(x=>x.id===v.searchId);if(!target){toast('Bitte einen Reiseabschnitt wählen');return;}const undo=sleepUndo();applyCandidateValues(c,v);if(target.id!==s.id){const i=s.candidates.findIndex(x=>x.id===candidateId);if(i>=0)s.candidates.splice(i,1);target.candidates.push(c);}syncSleepCandidate(target,c);logChange('hat Schlafplatz-Option „'+v.name.trim()+'“ bearbeitet',undo);},()=>{const undo=sleepUndo(),i=s.candidates.findIndex(x=>x.id===candidateId);s.candidates.splice(i,1);logChange('hat Schlafplatz-Option „'+view.name+'“ gelöscht',undo);}); }
 function camperProfile(){return state.vehicles.find(v=>v.id==='v-camper')||{};}
 function sleepMailMoney(v){return String(v||'').replace(/^(\d+(?:[.,]\d+)?)\s*€/,'€$1');}
@@ -3438,14 +3438,36 @@ function sleepMapContacted(c){
   // Fachliche Antwortstatus stammen teils aus alten Daten ohne Zeitstempel.
   return !!(c.contactedAt||c.repliedAt||!['new','draft_requested'].includes(c.status));
 }
+function sleepCandidatePositioned(raw){
+  const c=sleepCandidateView(raw);
+  return Number.isFinite(Number(c.lat))&&Number.isFinite(Number(c.lng));
+}
+function sleepMapEligible(c){
+  return !!(c.mapPinned||sleepMapContacted(c));
+}
 function sleepMapBaseRows(){
   const rank={booked:0,deposit_required:1,available:2,reservable:3,call:4,reserving:5,awaiting:6,followup:7,draft_requested:8,new:9,unavailable:10}, seen=new Map();
-  (state.sleepSearches||[]).forEach(search=>(search.candidates||[]).filter(sleepMapContacted).forEach(c=>{const key=c.placeId||c.id,prev=seen.get(key);if(!prev||(rank[c.status]??9)<(rank[prev.c.status]??9))seen.set(key,{search,c});}));
+  (state.sleepSearches||[]).forEach(search=>(search.candidates||[]).filter(sleepMapEligible).forEach(c=>{const key=c.placeId||c.id,prev=seen.get(key);if(!prev||(rank[c.status]??9)<(rank[prev.c.status]??9))seen.set(key,{search,c});}));
   return [...seen.values()];
 }
 function sleepMapRows(status=sleepMapStatus){
   const rows=sleepMapBaseRows();
   return status==='all'?rows:rows.filter(row=>sleepMapStatusGroup(row.c)===status);
+}
+function sleepUnpositionedRows(status=sleepMapStatus){
+  const rank={booked:0,deposit_required:1,available:2,reservable:3,call:4,reserving:5,awaiting:6,followup:7,draft_requested:8,new:9,unavailable:10},seen=new Map();
+  (state.sleepSearches||[]).forEach(search=>(search.candidates||[]).forEach(c=>{
+    if(sleepCandidatePositioned(c))return;
+    if(status!=='all'&&sleepMapStatusGroup(c)!==status)return;
+    const key=c.placeId||c.id,prev=seen.get(key);
+    if(!prev||(rank[c.status]??9)<(rank[prev.c.status]??9))seen.set(key,{search,c});
+  }));
+  return [...seen.values()];
+}
+function sleepUnpositionedList(status=sleepMapStatus){
+  const rows=sleepUnpositionedRows(status);
+  if(!rows.length)return '';
+  return `<section class="sleep-unpositioned"><div class="sleep-unpositioned-head"><b>Position fehlt</b><span>${rows.length}</span></div>${rows.map(({search,c})=>{const view=sleepCandidateView(c);return `<div class="sleep-unpositioned-row"><div><b>${esc(view.name)}</b><span>${esc([view.region||search.region,search.title,SLEEP_STATUSES[c.status]?.label].filter(Boolean).join(' · '))}</span></div><button class="btn ghost small" onclick="editSleepCandidate('${search.id}','${c.id}')">Position setzen</button></div>`;}).join('')}</section>`;
 }
 function destroySleepDetailMap(){
   sleepDetailGeneration++;
@@ -3514,7 +3536,7 @@ function zfeMapSummary(rows){
 }
 function buildSleepMap(){
   const rows=sleepMapRows();
-  const plotted=rows.filter(row=>{const c=sleepCandidateView(row.c);return Number.isFinite(Number(c.lat))&&Number.isFinite(Number(c.lng));});
+  const plotted=rows.filter(row=>sleepCandidatePositioned(row.c));
   sleepDetailRows=plotted;
   const counts=Object.fromEntries(Object.keys(SLEEP_MAP_STATUS_FILTERS).map(key=>[key,sleepMapRows(key).length]));
   const statusFilter=`<div class="sleep-map-filter-label">Kontaktstatus</div><div class="sleep-map-filters" id="sleepMapFilters" role="group" aria-label="Campingplätze nach Kontaktstatus filtern">${Object.entries(SLEEP_MAP_STATUS_FILTERS).map(([key,filter])=>`<button class="${sleepMapStatus===key?'active':''}" aria-pressed="${sleepMapStatus===key}" onclick="setSleepMapStatus('${key}')">${filter.label}<span>${counts[key]}</span></button>`).join('')}</div>`;
@@ -3526,7 +3548,7 @@ function buildSleepMap(){
   const inner=plotted.map(row=>{const c=sleepCandidateView(row.c);return markerSvg({lat:Number(c.lat),lng:Number(c.lng)},{kind:'dot',color:SLEEP_MAP_COLORS[c.status]||'#b6bfcc',label:{type:'sleep',searchId:row.search.id,candidateId:row.c.id}});}).join('')+userPosMarker();
     mapHtml=`<div class="sleep-map">${baseMapSvg(inner,'sleep')}</div><div class="zfe-offline-note">Exakte ZFE-Grenzen sind auf der scharfen Detailkarte sichtbar.</div>`;
   }
-  return `${statusFilter}${layerSwitch}${mapHtml}<div class="sleep-legend"><span><i style="background:#8ea8ff"></i>gesichert</span><span><i style="background:#5fd4a8"></i>reservierbar</span><span><i style="background:#ffb257"></i>spontan</span><span><i style="background:#54c8ff"></i>Anfrage offen</span><span><i style="background:#ffd76b"></i>erneut fragen</span><span><i style="background:#737b8d"></i>nicht verfügbar</span>${sleepMapLayer==='detail'&&sleepZfeVisible&&window.ZFE_DATA?'<span><i class="zfe-area-key"></i>ZFE</span><span><i class="zfe-road-key"></i>offizielle Transitroute</span>':''}</div>${zfeMapSummary(plotted)}${sleepMapLayer==='detail'&&sleepZfeVisible&&window.ZFE_DATA?`<p class="zfe-source-note">Dauerhafte ZFE, Stand ${esc(window.ZFE_DATA.checkedAt)}. Flächen anklicken für Regeln. <a href="${esc(window.ZFE_DATA.nationalSource.url)}" target="_blank" rel="noopener">Amtliche Datenquelle</a> · <a href="${esc(window.ZFE_DATA.temporaryRestrictionsUrl)}" target="_blank" rel="noopener">temporäre Warnlage</a>.</p>`:''}${plotted.length<rows.length?`<p class="hint">${rows.length-plotted.length} ${rows.length-plotted.length===1?'Eintrag':'Einträge'} noch ohne Kartenposition.</p>`:''}`;
+  return `${statusFilter}${layerSwitch}${mapHtml}${sleepUnpositionedList()}<div class="sleep-legend"><span><i style="background:#8ea8ff"></i>gesichert</span><span><i style="background:#5fd4a8"></i>reservierbar</span><span><i style="background:#ffb257"></i>spontan</span><span><i style="background:#54c8ff"></i>Anfrage offen</span><span><i style="background:#ffd76b"></i>erneut fragen</span><span><i style="background:#737b8d"></i>nicht verfügbar</span>${sleepMapLayer==='detail'&&sleepZfeVisible&&window.ZFE_DATA?'<span><i class="zfe-area-key"></i>ZFE</span><span><i class="zfe-road-key"></i>offizielle Transitroute</span>':''}</div>${zfeMapSummary(plotted)}${sleepMapLayer==='detail'&&sleepZfeVisible&&window.ZFE_DATA?`<p class="zfe-source-note">Dauerhafte ZFE, Stand ${esc(window.ZFE_DATA.checkedAt)}. Flächen anklicken für Regeln. <a href="${esc(window.ZFE_DATA.nationalSource.url)}" target="_blank" rel="noopener">Amtliche Datenquelle</a> · <a href="${esc(window.ZFE_DATA.temporaryRestrictionsUrl)}" target="_blank" rel="noopener">temporäre Warnlage</a>.</p>`:''}`;
 }
 function sleepVenueContexts(candidate){
   const name=normalizeSleepQuery(sleepCandidateView(candidate).name),placeId=candidate.placeId;

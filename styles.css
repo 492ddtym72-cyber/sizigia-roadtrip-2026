@@ -665,6 +665,13 @@ a.maplink:hover{text-decoration:underline}
 .sleep-map-layer button{border:0;border-bottom:2px solid transparent;background:none;color:var(--muted);font:inherit;font-size:11.5px;font-weight:750;padding:7px 0 8px;cursor:pointer}
 .sleep-map-layer button.active{color:var(--text);border-bottom-color:var(--sky)}
 .sleep-map-layer button span{font-size:9px;color:var(--faint);font-weight:700;margin-left:3px;text-transform:uppercase;letter-spacing:.06em}
+.sleep-unpositioned{margin:10px 0 2px;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:rgba(255,255,255,.025);overflow:hidden}
+.sleep-unpositioned-head{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;border-bottom:1px solid rgba(255,255,255,.07);font-size:11px;color:var(--muted)}
+.sleep-unpositioned-head span{font-variant-numeric:tabular-nums;color:var(--faint)}
+.sleep-unpositioned-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 11px}
+.sleep-unpositioned-row+.sleep-unpositioned-row{border-top:1px solid rgba(255,255,255,.06)}
+.sleep-unpositioned-row>div{min-width:0}.sleep-unpositioned-row b{display:block;font-size:12.5px}.sleep-unpositioned-row span{display:block;margin-top:2px;color:var(--muted);font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sleep-unpositioned-row .btn{flex:0 0 auto}
 .sleep-zfe-toggle{display:flex;align-items:center;gap:8px;width:max-content;max-width:100%;margin:0 0 9px;color:var(--text);font-size:11.5px;font-weight:750;cursor:pointer}.sleep-zfe-toggle input{width:16px;height:16px;margin:0;accent-color:#ff7668}.sleep-zfe-toggle small{color:var(--faint);font-size:9.5px;font-weight:650}
 .sleep-map .mapwrap{height:auto;min-height:0;margin:0}.sleep-map .mapwrap svg{height:min(66vw,390px)}.sleep-legend{display:flex;gap:10px;flex-wrap:wrap;margin:8px 2px 12px;font-size:10.5px;color:var(--muted)}.sleep-legend i{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px}
 .sleep-legend i.zfe-area-key{border-radius:2px;background:rgba(255,111,97,.45);border:1px solid #ff7b6d}.sleep-legend i.zfe-road-key{width:13px;height:0;border-radius:0;background:none;border-top:2px dashed #42d6a4;vertical-align:middle}
