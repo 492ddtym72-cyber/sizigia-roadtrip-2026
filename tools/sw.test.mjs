@@ -10,7 +10,8 @@ const self={location:{origin:'https://example.test'},addEventListener:(name,hand
 vm.runInNewContext(fs.readFileSync(new URL('../sw.js',import.meta.url),'utf8'),{self,caches,fetch:async()=>{throw new Error('offline')},URL,Response,Promise});
 
 let installPromise;handlers.install({waitUntil:p=>installPromise=p});await installPromise;
-for(const asset of ['./index.html','./styles.css','./map-data.js','./app.js'])assert.ok(added.includes(asset));
+const cached=asset=>added.some(entry=>entry===asset||entry.startsWith(asset+'?'));
+for(const asset of ['./index.html','./styles.css','./map-data.js','./app.js'])assert.ok(cached(asset),`${asset} muss auch mit Cache-Buster offline verfügbar sein`);
 let activatePromise;handlers.activate({waitUntil:p=>activatePromise=p});await activatePromise;assert.deepEqual(deleted,['sizigia-app-v2']);
 async function offlineResponse(url,mode){let promise;handlers.fetch({request:{method:'GET',url,mode},respondWith:p=>promise=p});return promise;}
 const nav=await offlineResponse('https://example.test/route','navigate');assert.equal(await nav.text(),'<!doctype html>');

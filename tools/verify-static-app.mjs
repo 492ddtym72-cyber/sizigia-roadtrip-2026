@@ -8,16 +8,17 @@ const order=['./vendor/maplibre-gl.css','./styles.css','./vendor/maplibre-gl.js'
 if(order.some(x=>x<0)||!order.every((x,i)=>i===0||order[i-1]<x))throw new Error('Asset-Reihenfolge in index.html ist falsch');
 if(/<script[^>]+type=["']module/i.test(html))throw new Error('Module brechen file://');
 if(!/^var MAP_IMG = 'data:image\/webp;base64,/m.test(map))throw new Error('Offline-Karte fehlt');
-for(const asset of ['./index.html','./styles.css','./vendor/maplibre-gl.css','./vendor/maplibre-gl.js','./vendor/maplibre-LICENSE.txt','./map-data.js','./zfe-data.js','./app.js'])if(!sw.includes(`'${asset}'`))throw new Error('Service Worker cached nicht '+asset);
+const swCaches=asset=>new RegExp(`['"]${asset.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')}(?:\\?[^'"]+)?['"]`).test(sw);
+for(const asset of ['./index.html','./styles.css','./vendor/maplibre-gl.css','./vendor/maplibre-gl.js','./vendor/maplibre-LICENSE.txt','./map-data.js','./zfe-data.js','./app.js'])if(!swCaches(asset))throw new Error('Service Worker cached nicht '+asset);
 if(/m \|\| caches\.match\('\.\/index\.html'\)/.test(sw))throw new Error('Service Worker darf HTML nicht als Asset-Fallback liefern');
 if(!app.includes("'X-Firebase-ETag':'true'")||!app.includes("'if-match':etag"))throw new Error('App-Cloud-Sync muss ETag-konfliktgeschützt bleiben');
 if(!app.includes("['action','Nutzbar'],['waiting','Kontakt'],['closed','Absagen']"))throw new Error('Klare Schlafplatz-Filter fehlen');
-if(!app.includes("const operational=['booked','available'"))throw new Error('Bestätigter Schlafplatz fehlt auf der Karte');
-if(!app.includes("'call','awaiting','reserving'"))throw new Error('Offene, gesendete Anfragen fehlen auf der Karte');
+if(!app.includes('const SLEEP_MAP_STATUS_FILTERS=')||!app.includes('function sleepMapRows(')||!app.includes('booked:0'))throw new Error('Bestätigter Schlafplatz fehlt auf der routeweiten Karte');
+if(!app.includes("awaiting:'#54c8ff'")||!app.includes('function sleepMapContacted('))throw new Error('Offene, gesendete Anfragen fehlen auf der Karte');
 if(app.includes("s.mode==='network'&&c.status==='new'?'network_policy'"))throw new Error('Neue Routenkandidaten müssen die konkrete Nacht anfragen');
 if(!app.includes("c.status==='new'?'Verfügbarkeit anfragen'"))throw new Error('Konkrete Verfügbarkeitsaktion fehlt');
-if(!app.includes('id="sleepSearchStrip"')||!app.includes('keepActiveSleepSearchVisible()'))throw new Error('Aktive Nacht wird nicht sichtbar gehalten');
-if(!app.includes("localStorage.setItem(SLEEP_SEARCH_KEY,id)"))throw new Error('Gewählte Nacht wird nicht auf dem Gerät gemerkt');
+if(!app.includes('id="sleepMapFilters"')||!app.includes('keepActiveSleepMapStatusVisible()'))throw new Error('Routeweiter Kartenfilter fehlt');
+if(!app.includes("localStorage.setItem(SLEEP_MAP_STATUS_KEY,v)"))throw new Error('Kartenfilter wird nicht lokal gemerkt');
 if(!app.includes('Unterkunft auf der Route suchen')||!app.includes('function sleepSearchRows()'))throw new Error('Routenweite Unterkunfts-Suche fehlt');
 if(!app.includes("const SLEEP_DETAIL_STYLE='https://tiles.openfreemap.org/styles/liberty'")||!app.includes('new maplibregl.Map'))throw new Error('Optionale Detailkarte fehlt');
 if(!app.includes('function sleepDetailFallback(')||!app.includes("sleepMapLayer='offline'"))throw new Error('Detailkarte braucht automatischen Offline-Fallback');
@@ -27,4 +28,4 @@ if(!app.includes('function zfeCandidateAssessment(')||!app.includes('Das gilt f�
 if(!app.includes('function homeRouteContext(')||app.includes('Was jetzt zählt'))throw new Error('Ruhiger Routenkontext der Startseite fehlt');
 if(!html.includes('<h1>Roadtrip</h1>')||html.includes('<h1>Sizigia 2026</h1>'))throw new Error('App-Identität ist nicht neutral');
 if(!app.includes("const SCHEMA_VERSION = 19")||!app.includes("ownerId:")||!app.includes("dueDate:")||!app.includes("requestedDepartureDate:")||!app.includes("offeredDepartureDate:"))throw new Error('V19-Unterkunftsmodell fehlt');
-console.log(JSON.stringify({ok:true,classicScripts:true,assetOrder:true,offlineAssets:true,mapEmbedded:true,detailMapOptional:true,detailMapFallback:true,calmStart:true,neutralIdentity:true,actionOwnership:true,etagSync:true,recoverableRejections:true,campsiteSearch:true,rememberedNight:true}));
+console.log(JSON.stringify({ok:true,classicScripts:true,assetOrder:true,offlineAssets:true,mapEmbedded:true,detailMapOptional:true,detailMapFallback:true,calmStart:true,neutralIdentity:true,actionOwnership:true,etagSync:true,recoverableRejections:true,campsiteSearch:true,routewideMap:true,localMapFilter:true}));

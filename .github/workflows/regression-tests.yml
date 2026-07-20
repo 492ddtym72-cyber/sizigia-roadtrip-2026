@@ -1,0 +1,29 @@
+name: App regression tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-regression-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - name: Install mail helper dependencies
+        run: npm ci --prefix cloud-mail --ignore-scripts
+      - name: Run browser-logic regressions
+        run: node --test tools/*.test.mjs
+      - name: Verify static and offline app
+        run: node tools/verify-static-app.mjs
+      - name: Verify cloud mail helper
+        run: npm test --prefix cloud-mail

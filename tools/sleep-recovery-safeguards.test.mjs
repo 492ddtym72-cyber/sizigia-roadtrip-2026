@@ -20,7 +20,7 @@ assert.equal(app.run('state.schemaVersion'),19,'Erweiterte Küstenoptionen brauc
 assert.equal(app.run('state.sleepSearches.find(s=>s.networkKey==="camargue").candidates.length'),3,'Camargue ist ein eigener Korridor');
 assert.equal(app.run('state.sleepSearches.flatMap(s=>s.candidates).filter(c=>c.preferred).length'),18,'siebzehn recherchierte Camping-Favoriten plus private Option');
 assert.equal(app.run('state.sleepSearches.flatMap(s=>s.candidates).filter(c=>c.preferred&&c.kind!=="private").every(c=>c.status!=="booked"&&c.contactVerified===true)'),true,'Camping-Favoriten bleiben ungeplant, sind nach offizieller Prüfung aber freigeschaltet');
-assert.ok(app.run(`(()=>{const s=state.sleepSearches.find(x=>x.networkKey==='camargue'),c=s.candidates.find(x=>x.preferred);return sleepCandidateCard(s,c);})()`).includes('★ Favorit'),'Favorit muss auf der Karte lesbar sein');
+assert.ok(app.run(`(()=>{const s=state.sleepSearches.find(x=>x.networkKey==='camargue'),c=s.candidates.find(x=>x.preferred);return sleepCandidateCard(s,c);})()`).includes('>Favorit<'),'Favorit muss auf der Karte lesbar sein');
 
 // V18 ergänzt drei aufeinanderfolgende Küstenoptionen. Die E-Mail-Plätze
 // verwenden ihre exakte Wunschnacht; Santa Gusta bleibt ein zustandsloser
@@ -38,27 +38,26 @@ assert.ok(app.run(`(()=>{const s=state.sleepSearches.find(x=>x.networkKey==='cam
   assert.ok(seaside.santa.card.includes('Anfrage vorbereiten'));
 }
 
-// Die gewählte Nacht ist eine reine Geräteeinstellung: sie bleibt nach jedem
-// Re-Render aktiv, ohne das synchronisierte Reise-State-Objekt zu verändern.
+// Die Unterkunftsübersicht startet routeweit auf der Karte. Der Kartenfilter
+// ist eine reine Geräteeinstellung und verändert den synchronisierten State nie.
 {
-  const selected=app.run(`(()=>{const s=state.sleepSearches.at(-1);selectSleepSearch(s.id);return {id:s.id,active:activeSleepSearchId,stored:localStorage.getItem(SLEEP_SEARCH_KEY),inState:Object.prototype.hasOwnProperty.call(state,'activeSleepSearchId')};})()`);
-  assert.equal(selected.active,selected.id,'gewählte Nacht bleibt aktiv');
-  assert.equal(selected.stored,selected.id,'gewählte Nacht wird auf dem Gerät gespeichert');
-  assert.equal(selected.inState,false,'Geräteauswahl darf nicht in die Gruppe synchronisiert werden');
-  assert.ok(app.run(`document.getElementById('page-sleep').innerHTML`).includes('id="sleepSearchStrip"'),'Nachtwähler braucht eine gezielt scrollbar gehaltene Leiste');
+  const overview=app.run(`(()=>{renderSleep();const before=JSON.stringify(state);setSleepMapStatus('closed');const html=document.getElementById('page-sleep').innerHTML;return {view:sleepView,status:sleepMapStatus,stored:localStorage.getItem(SLEEP_MAP_STATUS_KEY),stateSame:JSON.stringify(state)===before,html};})()`);
+  assert.equal(overview.view,'map','Schlafplätze starten als routeweite Karte');
+  assert.equal(overview.status,'closed','Kartenfilter bleibt nach dem Rendern aktiv');
+  assert.equal(overview.stored,'closed','Kartenfilter wird nur auf dem Gerät gespeichert');
+  assert.equal(overview.stateSame,true,'Kartenfilter darf nicht in die Gruppe synchronisiert werden');
+  assert.ok(overview.html.includes('Ganze Route'),'Übersicht benennt den routeweiten Kontext');
+  assert.ok(overview.html.includes('id="sleepMapFilters"'),'Kontaktstatus bleibt direkt auf der Karte filterbar');
+  app.run(`setSleepMapStatus('all')`);
 }
 
-// Routensuche arbeitet über alle Nächte, ignoriert Akzente und führt beim
-// Öffnen eines Treffers in den richtigen Abschnitt und Status-Tab zurück.
+// Routensuche arbeitet über alle Abschnitte, ignoriert Akzente und zeigt den
+// Abschnitt direkt am Treffer, ohne eine versteckte aktive Nacht zu verändern.
 {
   const search=app.run(`(()=>{sleepQuery='laspaules';const rows=sleepSearchRows(),html=renderSleepSearchResults(),row=rows.find(x=>x.view.name==='Camping Laspaúles');return {count:rows.length,html,searchId:row?.search.id,candidateId:row?.candidate.id};})()`);
   assert.ok(search.count>=1,'akzentunabhängige Suche muss Laspaúles finden');
   assert.ok(search.html.includes('Camping Laspaúles'),'Treffer zeigt den Campingplatz');
   assert.ok(search.html.includes('Huesca-Anfahrt'),'Treffer zeigt den Reiseabschnitt');
-  const opened=app.run(`(()=>{openSleepSearchResult('${search.searchId}','${search.candidateId}');return {active:activeSleepSearchId,filter:sleepFilter,query:sleepQuery};})()`);
-  assert.equal(opened.active,search.searchId,'Treffer öffnet den richtigen Reiseabschnitt');
-  assert.equal(opened.filter,'action','verfügbares Angebot öffnet im Nutzbar-Tab');
-  assert.equal(opened.query,'','Treffer schließt die Routensuche');
   const short=app.run(`(()=>{sleepQuery='a';const html=renderSleepSearchResults();sleepQuery='';return html;})()`);
   assert.ok(short.includes('Mindestens zwei Zeichen'),'Einzelzeichen dürfen keine riesige Trefferliste öffnen');
 }
@@ -75,7 +74,7 @@ assert.ok(app.run(`(()=>{const s=state.sleepSearches.find(x=>x.networkKey==='cam
 // V16 ergänzt die private Familien-Option einmalig als nutzbar, aber nicht
 // fälschlich als gebucht. Der Ort bleibt auf der Karte und braucht keine Mail.
 {
-  const privateStay=app.run(`(()=>{const s=state.sleepSearches.find(x=>x.networkKey==='languedoc'),rows=s.candidates.filter(x=>x.name==='Privater Stellplatz · Les Salces'),c=rows[0],p=state.sleepPlaces.find(x=>x.id===c.placeId);return {count:rows.length,status:c.status,kind:p.kind,preferred:c.preferred,email:c.email||'',lat:p.lat,lng:p.lng,action:sleepCandidateCard(s,c).includes('Verfügbarkeit anfragen'),onMap:sleepMapRows(s).some(x=>x.c.id===c.id)};})()`);
+  const privateStay=app.run(`(()=>{const s=state.sleepSearches.find(x=>x.networkKey==='languedoc'),rows=s.candidates.filter(x=>x.name==='Privater Stellplatz · Les Salces'),c=rows[0],p=state.sleepPlaces.find(x=>x.id===c.placeId);return {count:rows.length,status:c.status,kind:p.kind,preferred:c.preferred,email:c.email||'',lat:p.lat,lng:p.lng,action:sleepCandidateCard(s,c).includes('Verfügbarkeit anfragen'),onMap:sleepMapRows().some(x=>x.c.id===c.id)};})()`);
   assert.equal(JSON.stringify(privateStay),JSON.stringify({count:1,status:'available',kind:'private',preferred:true,email:'',lat:43.7549461,lng:3.4355718,action:false,onMap:true}));
 }
 
@@ -109,15 +108,17 @@ assert.ok(app.run(`(()=>{const s=state.sleepSearches.find(x=>x.networkKey==='cam
     const pa=sleepPlace(a)||a,pd=sleepPlace(d)||d,prev={statuses:s.candidates.map(c=>c.status),alat:pa.lat,alng:pa.lng,dlat:pd.lat,dlng:pd.lng};
     s.candidates.forEach(c=>c.status='new');
     a.status='awaiting';pa.lat=43;pa.lng=5;d.status='draft_requested';pd.lat=43.2;pd.lng=5.2;
-    const html=buildSleepMap(s,[]),points=(html.match(/map-pt/g)||[]).length,blue=html.includes('#54c8ff');
+    const rows=sleepMapRows(),html=buildSleepMap(),awaitingShown=rows.some(x=>x.c.id===a.id),draftShown=rows.some(x=>x.c.id===d.id),blue=html.includes('#54c8ff');
     s.candidates.forEach((c,i)=>c.status=prev.statuses[i]);Object.assign(pa,{lat:prev.alat,lng:prev.alng});Object.assign(pd,{lat:prev.dlat,lng:prev.dlng});
-    return {points,blue};
+    return {awaitingShown,draftShown,blue};
   })()`);
-  assert.equal(result.points,1,'nur die wirklich gesendete Anfrage gehört auf die Karte');
+  assert.equal(result.awaitingShown,true,'wirklich gesendete Anfrage gehört auf die Karte');
+  assert.equal(result.draftShown,false,'nur geöffneter Entwurf gehört nicht auf die Karte');
   assert.equal(result.blue,true,'offene Anfrage muss blau markiert sein');
 }
 
-// 2) „Bestätigt“ (booked) erscheint auf der Karte — in beiden Karten-Modi.
+// 2) „Bestätigt“ (booked) erscheint auf der routeweiten Karte und im
+//    Nutzbar-Filter — in beiden Karten-Modi.
 {
   const marked = app.run(`(()=>{
     const s = state.sleepSearches.find(x=>x.candidates.length);
@@ -125,15 +126,16 @@ assert.ok(app.run(`(()=>{const s=state.sleepSearches.find(x=>x.networkKey==='cam
     const place = sleepPlace(c) || c;
     const prev = {status:c.status, lat:place.lat, lng:place.lng};
     c.status = 'booked'; place.lat = 43.0; place.lng = 5.0;
-    const night = (buildSleepMap(s, []).match(/map-pt/g) || []).length;
-    sleepMapScope = 'route';
-    const route = (buildSleepMap(s, []).match(/map-pt/g) || []).length;
-    sleepMapScope = 'night';
+    sleepMapStatus='usable';sleepMapLayer='detail';buildSleepMap();
+    const detail=sleepDetailRows.some(x=>x.c.id===c.id);
+    sleepMapLayer='offline';const offlineHtml=buildSleepMap();
+    const offline=sleepMapRows('usable').some(x=>x.c.id===c.id)&&offlineHtml.includes('map-pt');
+    sleepMapStatus='all';
     c.status = prev.status; place.lat = prev.lat; place.lng = prev.lng;
-    return {night, route};
+    return {detail,offline};
   })()`);
-  assert.ok(marked.night >= 1, 'booked muss auf „Diese Nacht“ erscheinen');
-  assert.ok(marked.route >= 1, 'booked muss auf „Gesamte Route“ erscheinen');
+  assert.equal(marked.detail,true,'booked muss auf der Detailkarte erscheinen');
+  assert.equal(marked.offline,true,'booked muss auf der Offlinekarte erscheinen');
 }
 
 // 8) Flexible Korridore fragen nach genau einer Nacht innerhalb des Fensters;
@@ -171,8 +173,8 @@ assert.ok(app.run(`(()=>{const s=state.sleepSearches.find(x=>x.networkKey==='cam
   assert.ok(mail.decoded.includes('\r\n\r\nIf advance reservations'));
 }
 
-// 3) „Nicht verfügbar“ (unavailable) bleibt aus operativen Ansichten und der
-//    Karte heraus und erscheint NUR unter „Absagen“.
+// 3) „Nicht verfügbar“ (unavailable) bleibt aus operativen Listen und ist auf
+//    der Karte klar über „Absagen“ getrennt (bei „Alle“ weiterhin auffindbar).
 {
   const vis = app.run(`(()=>{
     const probe = {status:'unavailable'};
@@ -194,11 +196,11 @@ assert.ok(app.run(`(()=>{const s=state.sleepSearches.find(x=>x.networkKey==='cam
     const prev = {statuses:s.candidates.map(x=>x.status), lat:place.lat, lng:place.lng};
     s.candidates.forEach(x=>x.status='new');
     c.status = 'unavailable'; place.lat = 43.0; place.lng = 5.0;
-    const n = (buildSleepMap(s, []).match(/map-pt/g) || []).length;
+    const all=sleepMapRows('all').some(x=>x.c.id===c.id),usable=sleepMapRows('usable').some(x=>x.c.id===c.id),open=sleepMapRows('open').some(x=>x.c.id===c.id),closed=sleepMapRows('closed').some(x=>x.c.id===c.id);
     s.candidates.forEach((x,i)=>x.status=prev.statuses[i]);place.lat = prev.lat; place.lng = prev.lng;
-    return n;
+    return {all,usable,open,closed};
   })()`);
-  assert.equal(mapCount, 0, 'unavailable darf nie auf der Karte erscheinen');
+  assert.equal(JSON.stringify(mapCount),JSON.stringify({all:true,usable:false,open:false,closed:true}),'Absage muss nur in Alle/Absagen auftauchen');
   const tabs = app.run(`(()=>{renderSleep(); return document.getElementById('page-sleep').innerHTML;})()`);
   assert.ok(tabs.includes('Absagen'), 'Filter „Absagen“ muss in der Ansicht existieren');
 }
@@ -248,9 +250,9 @@ assert.ok(app.run(`(()=>{const s=state.sleepSearches.find(x=>x.networkKey==='cam
     c.status='new';
     const fresh=sleepCandidateCard(s,c);
     state.mailAssistant.draftRequests.push({id:'ui-ready',searchId:s.id,candidateId:c.id,template:'inquiry',status:'ready',previousStatus:'new'});
-    const draft=sleepCandidateCard(s,c),counts=sleepFilterCounts({candidates:[{status:'available'},{status:'call'},{status:'new'},{status:'awaiting'},{status:'unavailable'}]});
+    const draft=sleepCandidateCard(s,c),counts=sleepFilterCounts(),expected=Object.fromEntries(Object.entries(SLEEP_FILTER_STATUSES).map(([key,statuses])=>[key,state.sleepSearches.flatMap(x=>x.candidates||[]).filter(x=>statuses.includes(x.status)).length]));
     state.mailAssistant.draftRequests.splice(draftCount);Object.assign(c,before);
-    return {awaitingHasMail:awaiting.includes('prepareSleepReply'),awaitingHasAnswerBox:awaiting.includes('sleep-answer'),awaitingState:awaiting.includes('Anfrage gesendet, noch keine Antwort erhalten.'),freshAction:fresh.includes('Verfügbarkeit anfragen'),freshHasAnswerBox:fresh.includes('sleep-answer'),draftMark:draft.includes('Als gesendet markieren'),draftReask:draft.includes('Verfügbarkeit anfragen'),counts};
+    return {awaitingHasMail:awaiting.includes('prepareSleepReply'),awaitingHasAnswerBox:awaiting.includes('sleep-answer'),awaitingState:awaiting.includes('Anfrage gesendet, noch keine Antwort erhalten.'),freshAction:fresh.includes('Verfügbarkeit anfragen'),freshHasAnswerBox:fresh.includes('sleep-answer'),draftMark:draft.includes('Als gesendet markieren'),draftReask:draft.includes('Verfügbarkeit anfragen'),counts,expected};
   })()`);
   assert.equal(ui.awaitingHasMail,false,'Gesendete Anfrage darf keine zweite Erstanfrage anbieten');
   assert.equal(ui.awaitingHasAnswerBox,false,'Ohne echte Antwort erscheint kein Antwortkasten');
@@ -259,7 +261,7 @@ assert.ok(app.run(`(()=>{const s=state.sleepSearches.find(x=>x.networkKey==='cam
   assert.equal(ui.freshHasAnswerBox,false,'Recherchehinweis ist keine Campingplatz-Antwort');
   assert.equal(ui.draftMark,true,'Bereiter Entwurf bietet die manuelle Versandbestätigung');
   assert.equal(ui.draftReask,false,'Bereiter Entwurf erzeugt keine zweite Anfrage');
-  assert.equal(JSON.stringify(ui.counts),JSON.stringify({action:2,waiting:2,closed:1}));
+  assert.equal(JSON.stringify(ui.counts),JSON.stringify(ui.expected),'routeweite Filterzähler müssen alle Abschnitte korrekt gruppieren');
 }
 
 // 7) Legacy-Status draft_requested ohne Anfrage-Historie fällt auf
