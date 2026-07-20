@@ -161,7 +161,7 @@ function makeRunner(state, mode = 'cloud'){
     updateState: async mutator => { mutator(state); return state; },
   };
   vm.createContext(sandbox);
-  for(const name of ['assistant', 'locate', 'logMailChange', 'applyEvents'])
+  for(const name of ['assistant', 'locate', 'logMailChange', 'reviewContentFingerprint', 'dedupeReviewQueue', 'applyEvents'])
     vm.runInContext(extract(runnerSrc, name), sandbox);
   return events => vm.runInContext('applyEvents', sandbox)(events);
 }
@@ -191,7 +191,20 @@ function makeRunner(state, mode = 'cloud'){
   assert.equal(state.log.length, 1, 'Review-Log darf nicht doppeln');
 }
 
-// 9) Runner: Shadow-Diagnose bleibt kurz, idempotent und verändert keinen Status.
+// 9) Zwei verschiedene äußere Message-IDs derselben weitergeleiteten Antwort
+//    dürfen nur eine manuelle Aufgabe erzeugen. Beide Mails gelten danach als
+//    verarbeitet, damit der Runner sie bei späteren Läufen nicht erneut liest.
+{
+  const state = baseState();
+  const apply = makeRunner(state);
+  const base = {searchId:'s1', candidateId:'c1', receivedAt:'2026-07-12T11:00:00.000Z', subject:'Re: Reserva', source:'forwarded', forwardDirection:'reply', result:{status:'review', suggestedStatus:'unavailable', summary:'', replyQuote:'', nextAction:'', excerpt:'No puc acceptar vuestra reserva. El camping es ple fins al 10 d’Agost.'}};
+  await apply([{...base,messageId:'<forward-one@mail>'},{...base,messageId:'<forward-two@mail>'}]);
+  assert.equal(state.mailAssistant.reviewQueue.length, 1, 'Identische Weiterleitungen mit neuer äußerer Message-ID müssen zusammengeführt werden');
+  assert.deepEqual(state.mailAssistant.processedMessageIds.sort(), ['<already@done>','<forward-one@mail>','<forward-two@mail>']);
+  assert.equal(state.log.length, 1, 'Identische Weiterleitungen dürfen nur einen Prüf-Log erzeugen');
+}
+
+// 10) Runner: Shadow-Diagnose bleibt kurz, idempotent und verändert keinen Status.
 {
   const state = baseState();
   const apply = makeRunner(state, 'shadow');
@@ -208,7 +221,7 @@ function makeRunner(state, mode = 'cloud'){
   assert.ok(state.mailAssistant.shadowResults[0].replyQuote.length<=361, 'Shadow-Zitat muss kurz und datensparsam bleiben');
 }
 
-// 10) Runner: Sent-Erkennung befördert eine Anfrage genau einmal.
+// 11) Runner: Sent-Erkennung befördert eine Anfrage genau einmal.
 {
   const state = baseState();
   state.sleepSearches[0].candidates[0].status = 'new'; // echter Übergang new → awaiting

@@ -35,4 +35,14 @@ const pinned=app.run(`(()=>{
 })()`);
 assert.equal(pinned,true,'manuell hinzugefügter neuer Ort darf nach Positionierung nicht wieder verschwinden');
 
+const activeFilter=app.run(`(()=>{
+  const s=state.sleepSearches[0],open=normalizeSleepCandidate({id:'active-open',name:'Offene Anfrage',status:'awaiting',mapPinned:true}),closed=normalizeSleepCandidate({id:'active-closed',name:'Absage',status:'unavailable',mapPinned:true});
+  s.candidates.push(open,closed);
+  return {rows:sleepMapRows('active').map(row=>row.c.id),missing:sleepUnpositionedRows('active').map(row=>row.c.id)};
+})()`);
+assert.ok(activeFilter.rows.includes('active-open'),'Aktive Kartenansicht zeigt offene Anfragen');
+assert.ok(!activeFilter.rows.includes('active-closed'),'Aktive Kartenansicht blendet Absagen aus');
+assert.ok(activeFilter.missing.includes('active-open'),'Aktive Fehlpositionsliste zeigt offene Anfragen');
+assert.ok(!activeFilter.missing.includes('active-closed'),'Aktive Fehlpositionsliste blendet Absagen aus');
+
 console.log(JSON.stringify({ok:true,missingVisible:true,bothMaps:true,manualPin:true}));

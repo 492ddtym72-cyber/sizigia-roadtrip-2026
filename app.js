@@ -3162,7 +3162,7 @@ const SLEEP_MAP_LAYER_KEY=STORAGE_KEY+'-sleep-map-layer';
 const SLEEP_MAP_STATUS_KEY=STORAGE_KEY+'-sleep-map-status';
 const SLEEP_ZFE_LAYER_KEY=STORAGE_KEY+'-sleep-zfe-layer';
 const SLEEP_DETAIL_STYLE='https://tiles.openfreemap.org/styles/liberty';
-let sleepQuery='', sleepFilter='action', sleepView='map', sleepMapStatus='all', sleepMapLayer=navigator.onLine?'detail':'offline';
+let sleepQuery='', sleepFilter='action', sleepView='map', sleepMapStatus='active', sleepMapLayer=navigator.onLine?'detail':'offline';
 let sleepZfeVisible=true;
 let sleepDetailMap=null, sleepDetailLoadTimer=null, sleepDetailGeneration=0, sleepDetailRows=[];
 try{const saved=localStorage.getItem(SLEEP_MAP_LAYER_KEY);if(saved==='detail'||saved==='offline')sleepMapLayer=saved==='detail'&&!navigator.onLine?'offline':saved;}catch(e){}
@@ -3425,7 +3425,7 @@ function renderSleepCandidateList(){
 }
 const SLEEP_MAP_COLORS={booked:'#8ea8ff',available:'#5fd4a8',reservable:'#74c9a5',call:'#ffb257',draft_requested:'#54c8ff',reserving:'#54c8ff',deposit_required:'#ffd76b',followup:'#ffd76b',awaiting:'#54c8ff',new:'#b6bfcc',unavailable:'#737b8d'};
 const SLEEP_MAP_STATUS_FILTERS={
-  all:{label:'Alle'},
+  active:{label:'Aktiv'},
   usable:{label:'Nutzbar'},
   open:{label:'Offen'},
   closed:{label:'Absagen'}
@@ -3454,13 +3454,13 @@ function sleepMapBaseRows(){
 }
 function sleepMapRows(status=sleepMapStatus){
   const rows=sleepMapBaseRows();
-  return status==='all'?rows:rows.filter(row=>sleepMapStatusGroup(row.c)===status);
+  return status==='all'?rows:rows.filter(row=>status==='active'?sleepMapStatusGroup(row.c)!=='closed':sleepMapStatusGroup(row.c)===status);
 }
 function sleepUnpositionedRows(status=sleepMapStatus){
   const rank={booked:0,deposit_required:1,available:2,reservable:3,call:4,reserving:5,awaiting:6,followup:7,draft_requested:8,new:9,unavailable:10},seen=new Map();
   (state.sleepSearches||[]).forEach(search=>(search.candidates||[]).forEach(c=>{
     if(sleepCandidatePositioned(c))return;
-    if(status!=='all'&&sleepMapStatusGroup(c)!==status)return;
+    if(status!=='all'&&(status==='active'?sleepMapStatusGroup(c)==='closed':sleepMapStatusGroup(c)!==status))return;
     const key=c.placeId||c.id,prev=seen.get(key);
     if(!prev||(rank[c.status]??9)<(rank[prev.c.status]??9))seen.set(key,{search,c});
   }));

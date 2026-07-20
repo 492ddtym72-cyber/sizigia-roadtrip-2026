@@ -25,6 +25,16 @@ function syncDerived(state,search,candidate,place){
   candidate.reminderId=null;
 }
 function logMailChange(state,name,desc='ausgewertet'){state.log=Array.isArray(state.log)?state.log:[];state.log.push({id:`mail-${crypto.randomUUID()}`,ts:nowIso(),who:'Mail-Assistent',desc:`hat die Antwort von „${name}“ ${desc}`,undo:null});state.log=state.log.slice(-60);}
+function reviewContentFingerprint(item){
+  if(item?.source!=='forwarded')return '';
+  const excerpt=safeExcerpt(item.result?.excerpt??item.excerpt??'',600).toLowerCase().replace(/\s+/g,' ').trim(),subject=cleanHeader(item.subject||'').toLowerCase().replace(/^(?:re|aw|sv|antw)\s*:\s*/,'');
+  if(!excerpt)return '';
+  return crypto.createHash('sha256').update([item.candidateId||'',item.forwardDirection||'',subject,excerpt].join('\n')).digest('hex').slice(0,24);
+}
+function dedupeReviewQueue(rows=[]){
+  const seen=new Set();
+  return rows.filter(item=>{const fingerprint=item.contentFingerprint||reviewContentFingerprint(item);if(!fingerprint)return true;if(seen.has(fingerprint))return false;seen.add(fingerprint);item.contentFingerprint=fingerprint;return true;});
+}
 async function acquireLease(){let acquired=false;await updateState(state=>{const a=assistant(state),until=Date.parse(a.lease?.expiresAt||'');if(until>Date.now()&&a.lease.owner!==OWNER)return false;a.lease={owner:OWNER,expiresAt:new Date(Date.now()+LEASE_MS).toISOString()};acquired=true;return true;});if(!acquired)throw new Error('Ein anderer Mail-Check läuft bereits');}
 async function releaseLease(error=''){await updateState(state=>{const a=assistant(state),r=a.runners.cloud;a.runnerMode=mode;a.mailProvider=provider;r.provider=provider;r.lastRunAt=nowIso();r.nextRunAt=nextRun();if(error)r.lastError=error;else{r.lastSuccessAt=r.lastRunAt;r.lastError='';}if(a.lease?.owner===OWNER)a.lease=null;return true;});}
 async function forwardedFromMail(mail,allowHeaderBlock=false){
@@ -80,11 +90,11 @@ async function applyEvents(events){return updateState(state=>{
       continue;
     }
     const {search,candidate,place}=locate(state,e);if(!candidate)continue;
-    if(e.result.status==='review'||e.result.status==='booked'){const id=messageFingerprint(e.messageId);if(!a.reviewQueue.some(x=>x.id===id))a.reviewQueue.push({id,messageIdHash:id,searchId:e.searchId,candidateId:e.candidateId,campsiteName:place?.name||candidate.name,dateLabel:search.dateLabel,receivedAt:e.receivedAt,subject:e.subject,excerpt:safeExcerpt(e.result.excerpt,600),suggestedStatus:e.result.suggestedStatus||(e.result.status==='booked'?'booked':''),source:e.source||'direct',forwardDirection:e.forwardDirection||'',status:'pending'});logMailChange(state,place?.name||candidate.name,e.source==='forwarded'?'als Weiterleitung zur Prüfung vorgemerkt':'zur Prüfung vorgemerkt');}
+    if(e.result.status==='review'||e.result.status==='booked'){const id=messageFingerprint(e.messageId),contentFingerprint=reviewContentFingerprint(e),duplicate=a.reviewQueue.some(x=>x.id===id||(contentFingerprint&&(x.contentFingerprint===contentFingerprint||reviewContentFingerprint(x)===contentFingerprint)));if(!duplicate){a.reviewQueue.push({id,messageIdHash:id,contentFingerprint,searchId:e.searchId,candidateId:e.candidateId,campsiteName:place?.name||candidate.name,dateLabel:search.dateLabel,receivedAt:e.receivedAt,subject:e.subject,excerpt:safeExcerpt(e.result.excerpt,600),suggestedStatus:e.result.suggestedStatus||(e.result.status==='booked'?'booked':''),source:e.source||'direct',forwardDirection:e.forwardDirection||'',status:'pending'});logMailChange(state,place?.name||candidate.name,e.source==='forwarded'?'als Weiterleitung zur Prüfung vorgemerkt':'zur Prüfung vorgemerkt');}}
     else{candidate.status=e.result.status;candidate.reply=e.result.summary;candidate.replyQuote=e.result.replyQuote;candidate.nextAction=e.result.nextAction;candidate.repliedAt=e.receivedAt;candidate.mailMessageId=e.messageId;candidate.mailThreadSubject=e.subject;syncDerived(state,search,candidate,place);logMailChange(state,place?.name||candidate.name);}
     if(!a.processedMessageIds.includes(e.messageId))a.processedMessageIds.push(e.messageId);
   }
-  a.processedMessageIds=a.processedMessageIds.slice(-500);a.reviewQueue=a.reviewQueue.slice(-50);a.shadowResults=a.shadowResults.slice(-50);return true;
+  a.processedMessageIds=a.processedMessageIds.slice(-500);a.reviewQueue=dedupeReviewQueue(a.reviewQueue).slice(-50);a.shadowResults=a.shadowResults.slice(-50);return true;
 });}
 async function main(){if(!['shadow','cloud'].includes(mode)){console.log(JSON.stringify({ok:true,disabled:true,provider}));return;}await acquireLease();let mailbox,error='';try{const {state}=await readState();mailbox=await connectMailbox(process.env);const inbound=await collectInbox(mailbox,state),draftEvents=await createDrafts(mailbox,state),sentEvents=await detectSent(mailbox,state);await applyEvents([...inbound,...draftEvents,...sentEvents]);console.log(JSON.stringify({ok:true,mode,provider,matched:inbound.length,drafts:draftEvents.length,sent:sentEvents.length}));}catch(e){error=String(e.message||e);throw e;}finally{if(mailbox)await mailbox.close().catch(()=>{});await releaseLease(error).catch(()=>{});}}
 

@@ -67,8 +67,10 @@ beiden Kartenebenen zuverlässig auffindbar sind.
 ## 3. Ruhig strukturierte Kontaktkarten
 
 - Jede Unterkunft erhält wieder eine subtile eigene Fläche: niedriger Kontrast,
-  feine Kontur, etwa 10 px Radius und ein schmaler Statusakzent. Keine großen
-  runden Pills oder stark gefärbten Container.
+  feine Kontur und etwa 10 px Radius. Der Status steht ausschließlich als
+  kleiner Punkt mit Text im Kopf; ein zusätzlicher Farbstreifen an der
+  Kartenkante entfällt. Keine großen runden Pills oder stark gefärbten
+  Container.
 - Kopf, Fakten, Rückmeldung und Aktionen bilden klar getrennte Ebenen. Die
   Rückmeldung liegt in einer leicht abgesetzten Innenfläche, damit langer Text
   eindeutig beim richtigen Platz bleibt.

@@ -1,17 +1,17 @@
 /* Service Worker: App lädt auch im Funkloch.
    Strategie: Netz zuerst (immer aktuellste Version), Cache als Fallback.
    Cloud-Sync-Requests (fremde Origins, z. B. Firebase) werden nie angefasst. */
-const CACHE = 'sizigia-app-v24-versioned-ui-assets';
+const CACHE = 'sizigia-app-v25-active-sleep-map';
 const APP_ASSETS = [
   './',
   './index.html',
-  './styles.css?v=2026-07-20-sleep-ui-v23',
+  './styles.css?v=2026-07-20-sleep-ui-v24',
   './vendor/maplibre-gl.css',
   './vendor/maplibre-gl.js',
   './vendor/maplibre-LICENSE.txt',
   './map-data.js',
   './zfe-data.js',
-  './app.js?v=2026-07-20-sleep-ui-v23',
+  './app.js?v=2026-07-20-sleep-ui-v24',
   './manifest.webmanifest',
   './app-icon.png',
   './icon-180.png',
