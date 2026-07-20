@@ -14,7 +14,8 @@ const cases=[
   ['Nous sommes complets pour cette période.','unavailable'],
   ['Vous pouvez nous appeler le jour même sans réservation.','call'],
   ['Tenemos una parcela disponible.','available'],
-  ['Estamos completos, pero pueden llamar el mismo día.','call']
+  ['Estamos completos, pero pueden llamar el mismo día.','call'],
+  ['Nous avons encore quelques disponibilités. Merci de réserver sur notre site. N’hésitez pas à nous appeler pour tout renseignement complémentaire.','available']
 ];
 for(const [body,status] of cases)assert.equal(classifyReply(body).status,status,body);
 assert.equal(newestReply('New answer here.\n\nOn 1 July Someone wrote:\nOld text'),'New answer here.');
