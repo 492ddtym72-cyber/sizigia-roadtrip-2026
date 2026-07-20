@@ -669,6 +669,7 @@ a.maplink:hover{text-decoration:underline}
 .sleep-unpositioned{margin:10px 0 2px;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:rgba(255,255,255,.025);overflow:hidden}
 .sleep-unpositioned-head{display:flex;align-items:center;justify-content:space-between;padding:9px 11px;border-bottom:1px solid rgba(255,255,255,.07);font-size:11px;color:var(--muted)}
 .sleep-unpositioned-head span{font-variant-numeric:tabular-nums;color:var(--faint)}
+.sleep-unpositioned-list{max-height:238px;overflow:auto;overscroll-behavior:contain}
 .sleep-unpositioned-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 11px}
 .sleep-unpositioned-row+.sleep-unpositioned-row{border-top:1px solid rgba(255,255,255,.06)}
 .sleep-unpositioned-row>div{min-width:0}.sleep-unpositioned-row b{display:block;font-size:12.5px}.sleep-unpositioned-row span{display:block;margin-top:2px;color:var(--muted);font-size:10.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

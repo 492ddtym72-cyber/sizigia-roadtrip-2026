@@ -3469,7 +3469,7 @@ function sleepUnpositionedRows(status=sleepMapStatus){
 function sleepUnpositionedList(status=sleepMapStatus){
   const rows=sleepUnpositionedRows(status);
   if(!rows.length)return '';
-  return `<section class="sleep-unpositioned"><div class="sleep-unpositioned-head"><b>Position fehlt</b><span>${rows.length}</span></div>${rows.map(({search,c})=>{const view=sleepCandidateView(c);return `<div class="sleep-unpositioned-row"><div><b>${esc(view.name)}</b><span>${esc([view.region||search.region,search.title,SLEEP_STATUSES[c.status]?.label].filter(Boolean).join(' · '))}</span></div><button class="btn ghost small" onclick="editSleepCandidate('${search.id}','${c.id}')">Position setzen</button></div>`;}).join('')}</section>`;
+  return `<section class="sleep-unpositioned"><div class="sleep-unpositioned-head"><b>Position fehlt</b><span>${rows.length}</span></div><div class="sleep-unpositioned-list">${rows.map(({search,c})=>{const view=sleepCandidateView(c);return `<div class="sleep-unpositioned-row"><div><b>${esc(view.name)}</b><span>${esc([view.region||search.region,search.title,SLEEP_STATUSES[c.status]?.label].filter(Boolean).join(' · '))}</span></div><button class="btn ghost small" onclick="editSleepCandidate('${search.id}','${c.id}')">Position setzen</button></div>`;}).join('')}</div></section>`;
 }
 function destroySleepDetailMap(){
   sleepDetailGeneration++;

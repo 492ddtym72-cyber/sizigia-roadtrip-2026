@@ -16,6 +16,7 @@ assert.ok(missing.html.includes('Position fehlt'));
 assert.ok(missing.html.includes('Manual Test Camp'));
 assert.ok(missing.html.includes('Position setzen'));
 assert.ok(missing.html.includes("editSleepCandidate('"),'Aktion nutzt den bestehenden Bearbeiten-Dialog');
+assert.ok(missing.html.includes('sleep-unpositioned-list'),'viele fehlende Positionen liegen in einer kompakten Liste');
 
 const positioned=app.run(`(()=>{
   const s=state.sleepSearches[0],c=s.candidates.find(x=>x.id==='manual-candidate'),p=sleepPlace(c);
