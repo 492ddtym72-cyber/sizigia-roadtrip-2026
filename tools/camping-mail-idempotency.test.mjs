@@ -156,6 +156,7 @@ function makeRunner(state, mode = 'cloud'){
     mode,
     messageFingerprint, safeExcerpt,
     nowIso: () => '2026-07-12T12:00:00.000Z',
+    cleanHeader: value => String(value||'').replace(/[\r\n]+/g,' ').trim(),
     syncDerived: () => {},
     updateState: async mutator => { mutator(state); return state; },
   };
@@ -190,7 +191,23 @@ function makeRunner(state, mode = 'cloud'){
   assert.equal(state.log.length, 1, 'Review-Log darf nicht doppeln');
 }
 
-// 9) Runner: Sent-Erkennung befördert eine Anfrage genau einmal.
+// 9) Runner: Shadow-Diagnose bleibt kurz, idempotent und verändert keinen Status.
+{
+  const state = baseState();
+  const apply = makeRunner(state, 'shadow');
+  const processedBefore = [...state.mailAssistant.processedMessageIds];
+  const event = {searchId:'s1', candidateId:'c1', messageId:'<shadow@mail>', receivedAt:'2026-07-12T11:00:00.000Z', subject:'Re: Anfrage', result:{status:'available', summary:'Ein Stellplatz ist frei.', replyQuote:'We have a pitch available.', nextAction:'Angebot prüfen', excerpt:'We have a pitch available. '+'.'.repeat(800)}};
+  await apply([event]);
+  await apply([{...event,result:{...event.result,status:'review',summary:'Bitte manuell prüfen.'}}]);
+  assert.equal(state.sleepSearches[0].candidates[0].status, 'awaiting', 'Shadow-Modus darf den fachlichen Status nicht ändern');
+  assert.deepEqual(state.mailAssistant.processedMessageIds, processedBefore, 'Shadow-Modus darf Nachrichten nicht als verarbeitet markieren');
+  assert.equal(state.mailAssistant.shadowResults.length, 1, 'Shadow-Diagnose muss per Message-ID idempotent bleiben');
+  assert.equal(state.mailAssistant.shadowResults[0].predictedStatus, 'review', 'erneute Shadow-Auswertung muss die bestehende Diagnose aktualisieren');
+  assert.equal(state.mailAssistant.shadowResults[0].summary, 'Bitte manuell prüfen.');
+  assert.ok(state.mailAssistant.shadowResults[0].replyQuote.length<=361, 'Shadow-Zitat muss kurz und datensparsam bleiben');
+}
+
+// 10) Runner: Sent-Erkennung befördert eine Anfrage genau einmal.
 {
   const state = baseState();
   state.sleepSearches[0].candidates[0].status = 'new'; // echter Übergang new → awaiting
@@ -207,7 +224,7 @@ function makeRunner(state, mode = 'cloud'){
   assert.equal(state.log.length, 1, 'Sent-Erkennung darf nur einmal loggen');
 }
 
-// 10) Runner: ein bereits beim aktiven Mail-Provider angelegter Entwurf wird
+// 11) Runner: ein bereits beim aktiven Mail-Provider angelegter Entwurf wird
 //     nach einem unterbrochenen Lauf erkannt und nicht ein zweites Mal angelegt.
 {
   const state = baseState();
@@ -234,4 +251,4 @@ function makeRunner(state, mode = 'cloud'){
   assert.equal(events[0].requestId,'req-draft-retry');
 }
 
-console.log(JSON.stringify({ok:true, bridgeCases:6, runnerCases:4, firebaseMocked:true}));
+console.log(JSON.stringify({ok:true, bridgeCases:6, runnerCases:5, firebaseMocked:true}));

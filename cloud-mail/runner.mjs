@@ -61,7 +61,23 @@ async function applyEvents(events){return updateState(state=>{
     if(e.type==='sent'){const req=a.draftRequests.find(x=>x.id===e.requestId),{search,candidate,place}=locate(state,e);if(req&&candidate&&req.status==='ready'){const policy=['network_policy','inquiry','followup'].includes(req.template);req.status='sent_detected';req.sentAt=e.sentAt;candidate.status=policy?'awaiting':'reserving';candidate.draftState='sent';candidate.contactedAt=e.sentAt;candidate.nextAction=policy?'Auf Antwort warten':'Auf definitive Bestätigung warten';syncDerived(state,search,candidate,place);logMailChange(state,place?.name||candidate.name,'als gesendet erkannt');}continue;}
     if(!e.result)continue;
     if(e.messageId&&a.processedMessageIds.includes(e.messageId))continue;
-    if(mode==='shadow'){const key=messageFingerprint(e.messageId);if(!a.shadowResults.some(x=>x.messageFingerprint===key))a.shadowResults.push({messageFingerprint:key,candidateId:e.candidateId,predictedStatus:e.result.status,at:nowIso()});continue;}
+    if(mode==='shadow'){
+      const key=messageFingerprint(e.messageId),diagnostic={
+        messageFingerprint:key,
+        candidateId:e.candidateId,
+        predictedStatus:e.result.status,
+        suggestedStatus:e.result.suggestedStatus||'',
+        receivedAt:e.receivedAt||'',
+        subject:cleanHeader(e.subject||'').slice(0,240),
+        source:e.source||'direct',
+        summary:safeExcerpt(e.result.summary||'',360),
+        replyQuote:safeExcerpt(e.result.replyQuote||e.result.excerpt||'',360),
+        nextAction:safeExcerpt(e.result.nextAction||'',240),
+        at:nowIso()
+      },existing=a.shadowResults.find(x=>x.messageFingerprint===key);
+      if(existing)Object.assign(existing,diagnostic);else a.shadowResults.push(diagnostic);
+      continue;
+    }
     const {search,candidate,place}=locate(state,e);if(!candidate)continue;
     if(e.result.status==='review'||e.result.status==='booked'){const id=messageFingerprint(e.messageId);if(!a.reviewQueue.some(x=>x.id===id))a.reviewQueue.push({id,messageIdHash:id,searchId:e.searchId,candidateId:e.candidateId,campsiteName:place?.name||candidate.name,dateLabel:search.dateLabel,receivedAt:e.receivedAt,subject:e.subject,excerpt:safeExcerpt(e.result.excerpt,600),suggestedStatus:e.result.suggestedStatus||(e.result.status==='booked'?'booked':''),source:e.source||'direct',forwardDirection:e.forwardDirection||'',status:'pending'});logMailChange(state,place?.name||candidate.name,e.source==='forwarded'?'als Weiterleitung zur Prüfung vorgemerkt':'zur Prüfung vorgemerkt');}
     else{candidate.status=e.result.status;candidate.reply=e.result.summary;candidate.replyQuote=e.result.replyQuote;candidate.nextAction=e.result.nextAction;candidate.repliedAt=e.receivedAt;candidate.mailMessageId=e.messageId;candidate.mailThreadSubject=e.subject;syncDerived(state,search,candidate,place);logMailChange(state,place?.name||candidate.name);}
