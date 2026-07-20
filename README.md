@@ -1,42 +1,47 @@
-# 🌒 Sizigia 2026 · Roadtrip-Planer
+# Roadtrip · gemeinsamer Reiseplaner
 
-Interaktiver Planer für unseren Roadtrip zum **Sizigia Eclipse Gathering 2026**
-(10.–14.08.2026, Provinz Huesca, Spanien) — Abfahrt am 02.08.2026 ab
-München/Innsbruck. Crew: Jakob, Christoph, Bernhard, Max, Lukas, Freddi.
+Mobile-first Reiseplaner für eine sechsköpfige Gruppe auf dem Weg zum Sizigia
+Eclipse Gathering 2026. Die App bleibt grundsätzlich für andere Gruppenreisen
+weiterentwickelbar.
 
-## Benutzung
+**Live-App:** https://492ddtym72-cyber.github.io/sizigia-roadtrip-2026/
 
-**[`index.html`](index.html) im Browser öffnen — fertig.** Keine Installation,
-kein Internet nötig. Am Handy: Datei öffnen und über „Zum Home-Bildschirm
-hinzufügen" wie eine App nutzen.
+Die gehostete App synchronisiert den geteilten Stand über Firebase und bleibt
+dank Service Worker und lokaler Speicherung auch bei Funklöchern nutzbar. Der
+statische `file://`-Start bleibt ein technischer Offline-Rückfall.
 
-### Wichtig: Datensicherung 💾
+## Nutzung
 
-Alle Eingaben werden automatisch **lokal im Browser des jeweiligen Geräts**
-gespeichert. Damit nichts verloren geht und alle den gleichen Stand haben:
+- Die Live-App auf dem Telefon öffnen und bei Bedarf zum Home-Bildschirm
+  hinzufügen.
+- Änderungen werden lokal gespeichert und mit dem Gruppenstand in Firebase
+  abgeglichen. Der Status oben in der App zeigt den Sync-Zustand.
+- Lokale Snapshots und JSON-Export schützen zusätzlich vor Bedienfehlern und
+  ermöglichen eine bewusste Wiederherstellung ohne versehentliches
+  Überschreiben des Gruppenstands.
+- Der Bereich **Schlafplätze** bündelt Route, Kartenpunkte, Kontaktstatus,
+  Antworten und mögliche Reservierungsschritte.
 
-1. Oben rechts **⬇︎ Backup exportieren** → JSON-Datei
-2. Datei in die Gruppe schicken (WhatsApp, Signal, …)
-3. Auf anderen Geräten oben rechts **⬆︎ importieren**
+## Mail-Assistent
 
-### Cloud-Sync (alle sehen denselben Stand)
+Der aktive Gmail-Runner in GitHub Actions prüft tagsüber campingbezogene Mails,
+ordnet eindeutige Antworten dem Firebase-Stand zu und darf ungesendete Entwürfe
+erstellen. Er sendet keine Mails, reserviert nichts und benötigt keinen
+eingeschalteten Laptop. Für eine sofortige vollständige Mailanalyse kann der
+separat autorisierte Gmail-Connector in ChatGPT verwendet werden.
 
-Ist `CLOUD_URL` in `app.js` gesetzt (Firebase Realtime Database), synchron­isieren
-sich alle Geräte automatisch: Änderungen werden ~1 s nach dem Tippen hochgeladen,
-alle 25 s sowie beim Öffnen/Fokussieren abgeglichen. Offline funktioniert alles
-weiter (lokal), synchronisiert wird sobald wieder Netz da ist — Status steht
-oben in der Speicherleiste. Details: `AGENTS.md`.
+## Entwicklung
 
-### Verlauf & Rückgängig
+Die App bleibt ohne Build-Schritt: `index.html` lädt ausschließlich lokale,
+klassische Assets. Verbindliche Architektur- und Datenregeln stehen in
+[`AGENTS.md`](AGENTS.md), der aktuelle Betriebsstand in
+[`HANDOFF.md`](HANDOFF.md), und eine neue Cloud-Sitzung beginnt mit dem
+[`Codex-Cloud-Runbook`](docs/operations/CLOUD_AGENT_RUNBOOK.md).
 
-Der Tab **🕘 Verlauf** protokolliert, wer was geändert hat (beim ersten Öffnen
-wählst du einmal, wer du bist — nur auf deinem Gerät gespeichert). Jeder
-einzelne Schritt lässt sich dort per ↩︎ rückgängig machen; für größere Sprünge
-gibt es die automatischen Sicherungen in der Übersicht.
+Verifikation:
 
-## Für Entwickler & KI-Agenten
-
-Die App bleibt ohne Build-Schritt: `index.html` lädt `styles.css`,
-`map-data.js` und `app.js` als lokale klassische Assets. Alles Wichtige steht
-in [`AGENTS.md`](AGENTS.md); der standardmäßig deaktivierte iCloud-Runner ist in
-[`docs/CLOUD_MAIL_SETUP.md`](docs/CLOUD_MAIL_SETUP.md) beschrieben.
+```bash
+node --test tools/*.test.mjs
+node tools/verify-static-app.mjs
+npm test --prefix cloud-mail
+```
