@@ -7,7 +7,7 @@ const RX={
   followup:/\b(?:ask|check|contact|email|write) again\b|\ba few days before\b|\bcloser to (?:the )?date\b|\bkurz vor(?:her| der reise)?\b|\bnoch einmal (?:anfragen|nachfragen|melden)\b|\bricontatt(?:are|ate|arci)\b|\bqualche giorno prima\b|\brecontactez-nous\b|\bquelques jours avant\b|\bvuelva[n]? a (?:consultar|contactar|escribir)\b|\bunos días antes\b/i,
   available:/\b(?:we |still )?have (?:a few |some )?(?:pitches|places|availability)\b|\b(?:pitch|place) (?:is )?available\b|\bcan offer\b|\bverfügbar\b|\bfrei(?:e|en|er)? (?:stellplätze?|plätze?)\b|\bposto disponibile\b|\bdisponibilità\b|\babbiamo (?:alcune?|un) piazzol|\b(?:emplacement|place)s? disponible?s?\b|\bnous avons (?:(?:effectivement|actuellement) )?(?:encore )?(?:(?:des|quelques) )?disponibilit(?:é|és)(?![\p{L}\p{N}])|\b(?:parcela|plaza)s? disponible?s?\b|\btenemos disponibilidad\b/iu,
   reservable:/\b(?:accept|take|offer) (?:advance )?reservations?\b|\bone[- ]night (?:stays?|bookings?|reservations?)\b|\bshort stays? (?:are )?(?:accepted|possible|bookable)\b|\breservations? (?:are )?possible\b|\bkurzaufenthalt\b|\bein[- ]nacht[- ](?:aufenthalt|buchung)\b|\bprenotazioni? (?:sono )?(?:possibili|accettate)\b|\bréservations? (?:sont )?(?:possibles|acceptées)\b|\bune nuit\b|\breservas? (?:son )?(?:posibles|aceptadas)\b|\buna noche\b/i,
-  unavailable:/\bfully booked\b|\bno (?:pitches?|places?|availability)\b|\bnot available\b|\bkeine (?:stellplätze?|plätze?|verfügbarkeit)\b|\bausgebucht\b|\bcompletamente prenotat[oi]\b|\bnessuna disponibilità\b|\bnon (?:abbiamo|c['’]è) disponibilità\b|\besaurit[oi]\b|\b(?:complet|complète|complets|complètes)\b|\baucune disponibilité(?![\p{L}\p{N}])|\bpas de disponibilité(?![\p{L}\p{N}])|\b(?:completo|completa|completos|completas)\b|\bno hay disponibilidad\b/iu,
+  unavailable:/\bfully booked\b|\bno (?:pitches?|places?|availability)\b|\bnot available\b|\bkeine (?:stellplätze?|plätze?|verfügbarkeit)\b|\bausgebucht\b|\bcompletamente prenotat[oi]\b|\bnessuna disponibilità\b|\bnon (?:abbiamo|c['’]è) disponibilità\b|\besaurit[oi]\b|\b(?:complet|complète|complets|complètes)\b|\baucune disponibilité(?![\p{L}\p{N}])|\bpas de disponibilité(?![\p{L}\p{N}])|\b(?:completo|completa|completos|completas)\b|\bno hay disponibilidad\b|\bno puc acceptar\b|\b(?:camping|càmping)\s+(?:està|es)\s+ple\b/iu,
   parking:/\b(?:small )?car\b|\bparking\b|\bpark(?:ed|ing)?\b|\bkleinwagen\b|\bparkplatz\b|\bauto\b|\bparcheggio\b/i
 };
 
@@ -62,20 +62,25 @@ function domain(address=''){return String(address).toLowerCase().split('@')[1]||
 function norm(value=''){return String(value).toLowerCase().replace(/[^a-z0-9à-ž]+/gi,' ').trim();}
 function addresses(value=''){return [...String(value).matchAll(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi)].map(x=>x[0].toLowerCase());}
 
-export function parseForwardedMessage(value=''){
+export function parseForwardedMessage(value='',{allowHeaderBlock=false}={}){
   const text=String(value).replace(/\r/g,''),marker=/(?:^-{2,}\s*(?:forwarded message|weitergeleitete nachricht|message transféré|mensaje reenviado|messaggio inoltrato)\s*-{2,}$|^(?:begin forwarded message|anfang der weitergeleiteten nachricht|début du message transféré|inicio del mensaje reenviado|inizio messaggio inoltrato)\s*:?$)/im,hit=marker.exec(text);
-  if(!hit)return null;
-  const tail=text.slice(hit.index+hit[0].length).replace(/^\s+/,''),lines=tail.split('\n');let from='',to='',subject='',bodyAt=-1,sawHeader=false;
+  if(!hit&&!allowHeaderBlock)return null;
+  const tail=hit?text.slice(hit.index+hit[0].length).replace(/^\s+/,''):text,allLines=tail.split('\n');let from='',to='',subject='',bodyAt=-1;
   const fields={from:/^(?:from|von|de|da|expéditeur)\s*:\s*(.+)$/i,to:/^(?:to|an|à|para|a)\s*:\s*(.+)$/i,subject:/^(?:subject|betreff|objet|asunto|oggetto)\s*:\s*(.+)$/i};
-  for(let i=0;i<Math.min(lines.length,35);i++){
-    const line=lines[i].replace(/^>+\s*/,'').trim();
-    if(!line&&sawHeader){bodyAt=i+1;break;}
+  const normalized=line=>line.replace(/^>+\s*/,'').trim(),headerStart=hit?0:allLines.findIndex((line,i)=>i<40&&fields.from.test(normalized(line)));
+  if(headerStart<0)return null;
+  const lines=allLines.slice(headerStart);
+  for(let i=0;i<Math.min(lines.length,40);i++){
+    const line=normalized(lines[i]),complete=!!(from&&to&&subject);
+    if(!line){if(complete){bodyAt=i+1;break;}continue;}
     let matched=false;
-    for(const [key,rx] of Object.entries(fields)){const m=line.match(rx);if(!m)continue;if(key==='from')from=m[1].trim();if(key==='to')to=m[1].trim();if(key==='subject')subject=m[1].trim();sawHeader=matched=true;break;}
-    if(!matched&&sawHeader&&!/^(?:date|datum|sent|gesendet|envoyé|fecha|data)\s*:/i.test(line)){bodyAt=i;break;}
+    for(const [key,rx] of Object.entries(fields)){const m=line.match(rx);if(!m)continue;if(key==='from')from=m[1].trim();if(key==='to')to=m[1].trim();if(key==='subject')subject=m[1].trim();matched=true;break;}
+    if(matched)continue;
+    if(/^(?:date|datum|sent|gesendet|envoyé|fecha|data)\s*:/i.test(line))continue;
+    if(complete){bodyAt=i;break;}
   }
-  if(!sawHeader||(!addresses(from).length&&!addresses(to).length))return null;
-  const body=lines.slice(bodyAt<0?lines.length:bodyAt).join('\n').trim();
+  if(!addresses(from).length||!addresses(to).length||!subject)return null;
+  const body=lines.slice(bodyAt<0?lines.length:bodyAt).map(line=>line.replace(/^>+\s?/,'')).join('\n').trim();
   return {from,to,subject,body};
 }
 

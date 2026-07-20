@@ -27,8 +27,8 @@ function syncDerived(state,search,candidate,place){
 function logMailChange(state,name,desc='ausgewertet'){state.log=Array.isArray(state.log)?state.log:[];state.log.push({id:`mail-${crypto.randomUUID()}`,ts:nowIso(),who:'Mail-Assistent',desc:`hat die Antwort von „${name}“ ${desc}`,undo:null});state.log=state.log.slice(-60);}
 async function acquireLease(){let acquired=false;await updateState(state=>{const a=assistant(state),until=Date.parse(a.lease?.expiresAt||'');if(until>Date.now()&&a.lease.owner!==OWNER)return false;a.lease={owner:OWNER,expiresAt:new Date(Date.now()+LEASE_MS).toISOString()};acquired=true;return true;});if(!acquired)throw new Error('Ein anderer Mail-Check läuft bereits');}
 async function releaseLease(error=''){await updateState(state=>{const a=assistant(state),r=a.runners.cloud;a.runnerMode=mode;a.mailProvider=provider;r.provider=provider;r.lastRunAt=nowIso();r.nextRunAt=nextRun();if(error)r.lastError=error;else{r.lastSuccessAt=r.lastRunAt;r.lastError='';}if(a.lease?.owner===OWNER)a.lease=null;return true;});}
-async function forwardedFromMail(mail){
-  const inline=parseForwardedMessage(mail.text||'');if(inline)return inline;
+async function forwardedFromMail(mail,allowHeaderBlock=false){
+  const inline=parseForwardedMessage(mail.text||'',{allowHeaderBlock});if(inline)return inline;
   for(const attachment of mail.attachments||[]){
     if(!/^message\/rfc822\b/i.test(attachment.contentType||''))continue;
     const nested=await simpleParser(attachment.content,{skipImageLinks:true,maxHtmlLengthToParse:200000});
@@ -47,7 +47,7 @@ async function collectInbox(mailbox,state){
     if(!direct&&!couldBeForwarded)continue;
     const raw=await mailbox.source('inbox',m.id),mail=await simpleParser(raw,{skipImageLinks:true,maxHtmlLengthToParse:200000}),receivedAt=(m.internalDate||mail.date||new Date()).toISOString();
     if(direct){events.push({...direct,messageId:id,receivedAt,subject:envelopeSubject,result:classifyReply(mail.text||'')});continue;}
-    const forwarded=await forwardedFromMail(mail),forwardMatch=matchForwardedCandidate(forwarded,all);if(!forwardMatch)continue;
+    const forwarded=await forwardedFromMail(mail,couldBeForwarded),forwardMatch=matchForwardedCandidate(forwarded,all);if(!forwardMatch)continue;
     events.push({...forwardMatch.candidate,messageId:id,receivedAt,subject:forwarded.subject||envelopeSubject,source:'forwarded',forwardDirection:forwardMatch.direction,result:forwardedReviewResult(forwarded,forwardMatch.direction)});
   }
   return events;
