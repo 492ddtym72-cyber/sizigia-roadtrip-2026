@@ -48,7 +48,7 @@ assert.ok(app.run(`(()=>{const s=state.sleepSearches.find(x=>x.networkKey==='cam
   assert.equal(overview.stateSame,true,'Kartenfilter darf nicht in die Gruppe synchronisiert werden');
   assert.ok(overview.html.includes('Ganze Route'),'Übersicht benennt den routeweiten Kontext');
   assert.ok(overview.html.includes('id="sleepMapFilters"'),'Kontaktstatus bleibt direkt auf der Karte filterbar');
-  app.run(`setSleepMapStatus('all')`);
+  app.run(`setSleepMapStatus('active')`);
 }
 
 // Routensuche arbeitet über alle Abschnitte, ignoriert Akzente und zeigt den

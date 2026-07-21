@@ -45,4 +45,13 @@ assert.ok(!activeFilter.rows.includes('active-closed'),'Aktive Kartenansicht ble
 assert.ok(activeFilter.missing.includes('active-open'),'Aktive Fehlpositionsliste zeigt offene Anfragen');
 assert.ok(!activeFilter.missing.includes('active-closed'),'Aktive Fehlpositionsliste blendet Absagen aus');
 
+const activeButton=app.run(`(()=>{
+  sleepMapStatus='closed';
+  setSleepMapStatus('active');
+  return {status:sleepMapStatus,stored:localStorage.getItem(SLEEP_MAP_STATUS_KEY),html:document.getElementById('page-sleep').innerHTML};
+})()`);
+assert.equal(activeButton.status,'active','Aktiv-Button wechselt aus einem anderen Kartenfilter zurück');
+assert.equal(activeButton.stored,'active','Aktiv-Filter wird als lokale Geräteeinstellung gespeichert');
+assert.ok(activeButton.html.includes('aria-pressed="true" onclick="setSleepMapStatus(\'active\')"'),'Aktiv-Button bleibt nach dem Rendern sichtbar ausgewählt');
+
 console.log(JSON.stringify({ok:true,missingVisible:true,bothMaps:true,manualPin:true}));

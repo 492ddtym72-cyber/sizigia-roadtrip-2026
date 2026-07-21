@@ -3166,7 +3166,7 @@ let sleepQuery='', sleepFilter='action', sleepView='map', sleepMapStatus='active
 let sleepZfeVisible=true;
 let sleepDetailMap=null, sleepDetailLoadTimer=null, sleepDetailGeneration=0, sleepDetailRows=[];
 try{const saved=localStorage.getItem(SLEEP_MAP_LAYER_KEY);if(saved==='detail'||saved==='offline')sleepMapLayer=saved==='detail'&&!navigator.onLine?'offline':saved;}catch(e){}
-try{const saved=localStorage.getItem(SLEEP_MAP_STATUS_KEY);if(['all','usable','open','closed'].includes(saved))sleepMapStatus=saved;}catch(e){}
+try{const saved=localStorage.getItem(SLEEP_MAP_STATUS_KEY);if(['active','usable','open','closed'].includes(saved))sleepMapStatus=saved;}catch(e){}
 try{sleepZfeVisible=localStorage.getItem(SLEEP_ZFE_LAYER_KEY)!=='off';}catch(e){}
 function sleepUndo(){ return {t:'sleepState',sleepSearches:copyData(state.sleepSearches||[]),sleepPlaces:copyData(state.sleepPlaces||[]),mailAssistant:copyData(state.mailAssistant||{}),reminders:copyData(state.reminders||[]),campContacts:copyData(state.campContacts||[])}; }
 function findSleep(searchId,candidateId){ const s=(state.sleepSearches||[]).find(x=>x.id===searchId); return {s,c:s?.candidates.find(x=>x.id===candidateId)}; }
@@ -3368,7 +3368,7 @@ function sleepCandidateCard(s,raw){
 function setSleepFilter(f){sleepFilter=f;renderSleep();}
 function setSleepView(v){sleepView=v;renderSleep();}
 function setSleepMapStatus(v){
-  if(!['all','usable','open','closed'].includes(v))return;
+  if(!['active','usable','open','closed'].includes(v))return;
   sleepMapStatus=v;
   try{localStorage.setItem(SLEEP_MAP_STATUS_KEY,v);}catch(e){}
   renderSleep();
