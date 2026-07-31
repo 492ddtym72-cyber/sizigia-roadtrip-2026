@@ -1,7 +1,7 @@
 /* Service Worker: App lädt auch im Funkloch.
    Strategie: Netz zuerst (immer aktuellste Version), Cache als Fallback.
    Cloud-Sync-Requests (fremde Origins, z. B. Firebase) werden nie angefasst. */
-const CACHE = 'sizigia-app-v26-sleep-card-tint';
+const CACHE = 'sizigia-app-v27-weighted-expenses';
 const APP_ASSETS = [
   './',
   './index.html',
@@ -12,6 +12,7 @@ const APP_ASSETS = [
   './map-data.js',
   './zfe-data.js',
   './app.js?v=2026-07-20-sleep-ui-v24',
+  './weighted-expenses.js?v=2026-07-31-v2',
   './manifest.webmanifest',
   './app-icon.png',
   './icon-180.png',
