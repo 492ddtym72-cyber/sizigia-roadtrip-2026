@@ -7,11 +7,16 @@
 
   const MIN_WEIGHT = 0.25;
   const MAX_WEIGHT = 10;
+  let weightDetailsOpen = false;
 
   function validWeight(value){
     const n = Number(value);
     if(!Number.isFinite(n)) return 1;
     return Math.min(MAX_WEIGHT, Math.max(MIN_WEIGHT, Math.round(n * 100) / 100));
+  }
+
+  function expenseSharers(expense){
+    return [...new Set((expense?.sharers || []).filter(id=>state.crew.some(c=>c.id===id)))];
   }
 
   function expenseWeights(expense, sharers){
@@ -21,31 +26,43 @@
     return out;
   }
 
+  // Centgenaue proportionale Verteilung nach dem Largest-Remainder-Verfahren.
+  // Dadurch addieren sich angezeigte Anteile immer exakt zum Ausgabenbetrag.
   function expenseShares(expense){
-    const sharers = (expense.sharers || []).filter(id=>state.crew.some(c=>c.id===id));
+    const sharers = expenseSharers(expense);
     if(!sharers.length) return {};
     const weights = expenseWeights(expense, sharers);
     const totalWeight = sharers.reduce((sum,id)=>sum+weights[id],0);
-    const shares = {};
-    sharers.forEach(id=>{ shares[id] = expense.amount * weights[id] / totalWeight; });
-    return shares;
+    const amountCents = Math.round((Number(expense.amount) || 0) * 100);
+    const rows = sharers.map((id,index)=>{
+      const raw = amountCents * weights[id] / totalWeight;
+      const cents = Math.floor(raw);
+      return {id,index,cents,remainder:raw-cents};
+    });
+    let left = amountCents - rows.reduce((sum,row)=>sum+row.cents,0);
+    [...rows]
+      .sort((a,b)=>b.remainder-a.remainder || a.index-b.index)
+      .forEach(row=>{ if(left>0){ row.cents++; left--; } });
+    return Object.fromEntries(rows.map(row=>[row.id,row.cents/100]));
   }
 
   window.expenseShares = expenseShares;
 
   window.budgetCalc = function budgetCalc(){
     const ex = state.budget.expenses;
-    const total = ex.reduce((s,e)=>s+e.amount,0);
+    const total = ex.reduce((s,e)=>s+(Number(e.amount)||0),0);
     const bal = {};
     state.crew.forEach(c=>bal[c.id]=0);
     ex.forEach(e=>{
-      if(bal[e.payer]!==undefined) bal[e.payer] += e.amount;
+      const amount = Math.round((Number(e.amount)||0)*100)/100;
+      if(bal[e.payer]!==undefined) bal[e.payer] += amount;
       const shares = expenseShares(e);
       Object.entries(shares).forEach(([id,share])=>{ if(bal[id]!==undefined) bal[id] -= share; });
     });
     const debtors = [], creditors = [];
     state.crew.forEach(c=>{
       const b = Math.round(bal[c.id]*100)/100;
+      bal[c.id] = b;
       if(b < -0.01) debtors.push({id:c.id, amt:-b});
       else if(b > 0.01) creditors.push({id:c.id, amt:b});
     });
@@ -53,13 +70,18 @@
     const settlements = [];
     let di=0, ci=0;
     while(di<debtors.length && ci<creditors.length){
-      const pay = Math.min(debtors[di].amt, creditors[ci].amt);
+      const pay = Math.round(Math.min(debtors[di].amt, creditors[ci].amt)*100)/100;
       settlements.push({from:debtors[di].id, to:creditors[ci].id, amt:pay});
-      debtors[di].amt -= pay; creditors[ci].amt -= pay;
+      debtors[di].amt = Math.round((debtors[di].amt-pay)*100)/100;
+      creditors[ci].amt = Math.round((creditors[ci].amt-pay)*100)/100;
       if(debtors[di].amt < 0.01) di++;
       if(creditors[ci].amt < 0.01) ci++;
     }
-    return {total, bal, settlements};
+    return {total:Math.round(total*100)/100, bal, settlements};
+  };
+
+  window.rememberWeightDetails = function rememberWeightDetails(open){
+    weightDetailsOpen = !!open;
   };
 
   window.toggleExpenseSharer = function toggleExpenseSharer(id){
@@ -86,23 +108,64 @@
       const input = document.querySelector('.expense-weight-input[data-id="'+id+'"]');
       weights[id] = validWeight(input ? input.value : 1);
     });
-    const totalWeight = active.reduce((sum,id)=>sum+weights[id],0) || 1;
+    const previewExpense = {amount, sharers:active, weights};
+    const shares = expenseShares(previewExpense);
     state.crew.forEach(c=>{
       const row = document.querySelector('.expense-weight-row[data-id="'+c.id+'"]');
       if(!row) return;
       row.hidden = !active.includes(c.id);
       const preview = row.querySelector('.expense-weight-preview');
-      if(preview) preview.textContent = amount>0 ? euro(amount * weights[c.id] / totalWeight) : '—';
+      if(preview) preview.textContent = amount>0 && shares[c.id]!=null ? euro(shares[c.id]) : '—';
     });
   };
 
   function splitLabel(e){
-    const sharers=(e.sharers||[]).filter(id=>crewById(id));
+    const sharers=expenseSharers(e);
     const weights=expenseWeights(e,sharers);
     const custom=sharers.some(id=>Math.abs(weights[id]-1)>0.001);
     if(!custom) return 'gleichmäßig durch '+sharers.length;
     return sharers.map(id=>(crewById(id)?.name||'?')+' '+weights[id]+'×').join(' · ');
   }
+
+  function expenseDate(e){
+    const d = new Date(e.date);
+    return Number.isNaN(d.getTime()) ? 'Datum unbekannt' : d.toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit',year:'numeric'});
+  }
+
+  window.openExpenseDetails = function openExpenseDetails(id){
+    const e = state.budget.expenses.find(x=>x.id===id);
+    if(!e){ toast('Ausgabe nicht mehr gefunden'); return; }
+    const payer = crewById(e.payer);
+    const sharers = expenseSharers(e);
+    const weights = expenseWeights(e,sharers);
+    const shares = expenseShares(e);
+    const custom = sharers.some(cid=>Math.abs(weights[cid]-1)>0.001);
+    const sum = sharers.reduce((total,cid)=>total+(shares[cid]||0),0);
+    modalCtx = null;
+    document.getElementById('modalBox').innerHTML = `
+      <h3>💶 ${esc(e.desc)}</h3>
+      <div class="expense-detail-meta">${expenseDate(e)}</div>
+      <div class="expense-detail-summary">
+        <div><span>Gesamtbetrag</span><b>${euro(Number(e.amount)||0)}</b></div>
+        <div><span>Bezahlt von</span><b>${payer?esc(payer.name):'Unbekannt'}</b></div>
+      </div>
+      <div class="expense-detail-heading">Anteile</div>
+      <div class="expense-detail-list">
+        ${sharers.length ? sharers.map(cid=>{
+          const c=crewById(cid);
+          const isPayer=cid===e.payer;
+          return `<div class="expense-detail-row">
+            <span class="chip static" style="--c:${c?.color||'#777'}"><span class="dot"></span>${esc(c?.name||'?')}${isPayer?' · Zahler':''}</span>
+            <span class="expense-detail-weight">${weights[cid]}×</span>
+            <b>${euro(shares[cid]||0)}</b>
+          </div>`;
+        }).join('') : '<p class="hint" style="margin:0">Keine gültigen Teilnehmer hinterlegt.</p>'}
+      </div>
+      <div class="expense-detail-total"><span>Summe der Anteile</span><b>${euro(sum)}</b></div>
+      <p class="hint expense-detail-note">${custom?'Die Faktoren bestimmen das Verhältnis der Anteile.':'Diese Ausgabe wurde gleichmäßig verteilt.'} Rundungen werden centgenau verteilt, sodass die Summe immer dem Gesamtbetrag entspricht.</p>
+      <div class="btnrow"><button class="btn primary" onclick="closeModal()">Schließen</button></div>`;
+    document.getElementById('modalBg').classList.add('open');
+  };
 
   window.renderBudget = function renderBudget(){
     const ex = state.budget.expenses;
@@ -119,21 +182,21 @@
         <div class="chips" id="exSharers">
           ${state.crew.map(c=>`<span class="chip on" style="--c:${c.color}" data-id="${c.id}" onclick="toggleExpenseSharer('${c.id}')"><span class="dot"></span>${esc(c.name)}</span>`).join('')}
         </div>
-        <details class="expense-weight-details">
+        <details id="exWeightDetails" class="expense-weight-details"${weightDetailsOpen?' open':''} ontoggle="rememberWeightDetails(this.open)">
           <summary>Anteile anpassen <span class="hint">optional · Standard 1×</span></summary>
           <div class="expense-weight-list">
             ${state.crew.map(c=>`<div class="expense-weight-row" data-id="${c.id}">
               <span class="chip static" style="--c:${c.color}"><span class="dot"></span>${esc(c.name)}</span>
               <div class="expense-weight-control">
                 <button type="button" class="btn ghost small" onclick="changeExpenseWeight('${c.id}',-0.25)" aria-label="Anteil verringern">−</button>
-                <input class="expense-weight-input" data-id="${c.id}" type="number" min="${MIN_WEIGHT}" max="${MAX_WEIGHT}" step="0.25" value="1" oninput="updateWeightPreview()" aria-label="Anteil von ${esc(c.name)}">
+                <input id="exWeight-${c.id}" class="expense-weight-input" data-id="${c.id}" type="number" min="${MIN_WEIGHT}" max="${MAX_WEIGHT}" step="0.25" value="1" oninput="updateWeightPreview()" aria-label="Anteil von ${esc(c.name)}">
                 <span>×</span>
                 <button type="button" class="btn ghost small" onclick="changeExpenseWeight('${c.id}',0.25)" aria-label="Anteil erhöhen">+</button>
               </div>
               <b class="expense-weight-preview">—</b>
             </div>`).join('')}
           </div>
-          <p class="hint">Beispiel: Max 2×, alle anderen 1× — Max übernimmt damit doppelt so viel wie jede andere Person.</p>
+          <p class="hint">Beispiel: Max 2×, alle anderen 1× — Max übernimmt damit ungefähr doppelt so viel wie jede andere Person; unvermeidbare Rundungscent werden transparent verteilt.</p>
         </details>
         <div style="margin-top:13px"><button class="btn primary" style="width:100%" onclick="addExpense()">Ausgabe hinzufügen</button></div>
       </div>
@@ -152,9 +215,19 @@
 
       <div class="card">
         <h2>🧾 Alle Ausgaben</h2>
-        ${ex.length===0?'<p class="hint" style="margin:0">Noch keine Ausgaben erfasst.</p>':[...ex].reverse().map(e=>{ const payer=crewById(e.payer); return `<div class="expense"><div class="info"><div class="desc">${esc(e.desc)}</div><div class="sub">${payer?esc(payer.name):'?'} · ${esc(splitLabel(e))} · ${new Date(e.date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})}</div></div><span class="amt">${euro(e.amount)}</span><button class="del" onclick="deleteExpense('${e.id}')" aria-label="löschen">✕</button></div>`; }).join('')}
+        ${ex.length===0?'<p class="hint" style="margin:0">Noch keine Ausgaben erfasst.</p>':[...ex].reverse().map(e=>{
+          const payer=crewById(e.payer);
+          return `<div class="expense expense-open" role="button" tabindex="0" aria-label="Details zu ${esc(e.desc)} öffnen" onclick="openExpenseDetails('${e.id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openExpenseDetails('${e.id}')}">
+            <div class="info"><div class="desc">${esc(e.desc)}</div><div class="sub">${payer?esc(payer.name):'?'} · ${esc(splitLabel(e))} · ${expenseDate(e)}</div></div>
+            <span class="amt">${euro(e.amount)}</span>
+            <span class="expense-open-icon" aria-hidden="true">›</span>
+            <button class="del" onclick="event.stopPropagation();deleteExpense('${e.id}')" aria-label="löschen">✕</button>
+          </div>`;
+        }).join('')}
       </div>`;
-    updateWeightPreview();
+    // renderAll() stellt Formwerte erst nach renderBudget() wieder her.
+    // Der verzögerte Aufruf aktualisiert danach Vorschau und ausgeblendete Zeilen.
+    setTimeout(updateWeightPreview,0);
   };
 
   window.addExpense = function addExpense(){
@@ -170,10 +243,10 @@
       const input=document.querySelector('.expense-weight-input[data-id="'+id+'"]');
       weights[id]=validWeight(input ? input.value : 1);
     });
-    const exp = {id:uid(), date:new Date().toISOString(), desc, amount, payer, sharers};
+    const exp = {id:uid(), date:new Date().toISOString(), desc, amount:Math.round(amount*100)/100, payer, sharers};
     if(sharers.some(id=>Math.abs(weights[id]-1)>0.001)) exp.weights=weights;
     state.budget.expenses.push(exp);
-    logChange('hat Ausgabe „'+desc+'" ('+euro(amount)+', gezahlt von '+(crewById(payer)?.name||'?')+') eingetragen', {t:'expAdd', id:exp.id});
+    logChange('hat Ausgabe „'+desc+'" ('+euro(exp.amount)+', gezahlt von '+(crewById(payer)?.name||'?')+') eingetragen', {t:'expAdd', id:exp.id});
     save(); renderAll();
     toast('Ausgabe gespeichert 💶');
   };
@@ -192,7 +265,25 @@
     .expense-weight-control{display:flex;align-items:center;gap:5px}
     .expense-weight-input{width:54px;text-align:center;padding:7px 5px}
     .expense-weight-preview{text-align:right;font-size:13px}
-    @media(max-width:520px){.expense-split-head{display:block}.expense-split-head .hint{display:block;margin-top:3px}.expense-weight-row{grid-template-columns:minmax(0,1fr) auto}.expense-weight-preview{grid-column:2}.expense-weight-control{grid-row:1 / span 2;grid-column:2}.expense-weight-preview{display:none}}
+    .expense-open{cursor:pointer;position:relative;transition:border-color .16s ease,background .16s ease}
+    .expense-open:hover,.expense-open:focus-visible{background:rgba(255,255,255,.035);outline:none}
+    .expense-open:focus-visible{box-shadow:0 0 0 2px var(--sun)}
+    .expense-open-icon{font-size:24px;color:var(--faint);line-height:1}
+    .expense-detail-meta{font-size:12px;color:var(--muted);margin:-10px 0 14px}
+    .expense-detail-summary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+    .expense-detail-summary>div{padding:12px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.02);display:flex;flex-direction:column;gap:5px}
+    .expense-detail-summary span,.expense-detail-heading{font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted)}
+    .expense-detail-summary b{font-size:16px}
+    .expense-detail-heading{margin-bottom:7px}
+    .expense-detail-list{display:grid;gap:7px}
+    .expense-detail-row{display:grid;grid-template-columns:minmax(0,1fr) 46px 82px;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+    .expense-detail-row:last-child{border-bottom:0}
+    .expense-detail-row b{text-align:right}
+    .expense-detail-weight{text-align:center;color:var(--muted);font-size:12px}
+    .expense-detail-total{display:flex;justify-content:space-between;align-items:center;padding-top:12px;margin-top:4px;border-top:1px solid var(--line)}
+    .expense-detail-note{margin:12px 0 0}
+    @media(max-width:520px){.expense-split-head{display:block}.expense-split-head .hint{display:block;margin-top:3px}.expense-weight-row{grid-template-columns:minmax(0,1fr) auto}.expense-weight-preview{grid-column:2}.expense-weight-control{grid-row:1 / span 2;grid-column:2}.expense-weight-preview{display:none}.expense-detail-summary{grid-template-columns:1fr}.expense-detail-row{grid-template-columns:minmax(0,1fr) 38px 72px}}
+    @media print{.expense-weight-details,.expense-open-icon{display:none!important}.expense-open{cursor:default}}
   `;
   document.head.appendChild(style);
 
