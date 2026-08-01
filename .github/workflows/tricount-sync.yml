@@ -54,7 +54,7 @@ jobs:
           TRICOUNT_TOKEN: ${{ secrets.TRICOUNT_TOKEN }}
           TRICOUNT_CREDENTIALS_PATH: tricount_credentials.json
           SYNC_REPORT: tricount-sync-report.json
-        run: python tools/tricount_sync/sync.py
+        run: python tools/tricount_sync/sync_engine.py
 
       - name: Maintain human-review issue
         if: always()
