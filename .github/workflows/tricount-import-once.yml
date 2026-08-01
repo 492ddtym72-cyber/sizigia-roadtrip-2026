@@ -7,6 +7,12 @@ on:
     paths:
       - "tools/tricount_sync/import_missing_once.py"
       - ".github/workflows/tricount-import-once.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "tools/tricount_sync/import_missing_once.py"
+      - ".github/workflows/tricount-import-once.yml"
 
 permissions:
   contents: read
