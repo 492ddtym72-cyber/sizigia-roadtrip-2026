@@ -7,6 +7,12 @@ on:
     paths:
       - "tools/tricount_sync/**"
       - ".github/workflows/tricount-reconcile.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "tools/tricount_sync/**"
+      - ".github/workflows/tricount-reconcile.yml"
   workflow_dispatch:
 
 permissions:
