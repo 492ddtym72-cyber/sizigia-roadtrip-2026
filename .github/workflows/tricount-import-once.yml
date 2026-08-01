@@ -1,0 +1,35 @@
+name: Tricount one-time import
+
+on:
+  push:
+    branches:
+      - agent/tricount-readonly-reconcile
+    paths:
+      - "tools/tricount_sync/import_missing_once.py"
+      - ".github/workflows/tricount-import-once.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: tools/tricount_sync/requirements.txt
+
+      - name: Install Tricount dependency
+        run: python -m pip install -r tools/tricount_sync/requirements.txt
+
+      - name: Import exactly the approved missing expenses
+        env:
+          TRICOUNT_TOKEN: ${{ secrets.TRICOUNT_TOKEN }}
+        run: python tools/tricount_sync/import_missing_once.py
