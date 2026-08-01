@@ -16,6 +16,7 @@ import urllib.request
 from dataclasses import asdict, dataclass
 from decimal import Decimal, ROUND_FLOOR, ROUND_HALF_UP
 from difflib import SequenceMatcher
+from itertools import combinations
 from pathlib import Path
 from typing import Any
 
@@ -145,6 +146,46 @@ def tricount_expenses(token: str) -> tuple[str, list[Expense], list[str]]:
     return str(tricount.title), out, [str(member.display_name) for member in tricount.members]
 
 
+def nonzero_shares(expense: Expense) -> dict[str, int]:
+    return {name: value for name, value in expense.shares.items() if value != 0}
+
+
+def shares_equivalent(a: Expense, b: Expense) -> bool:
+    left, right = nonzero_shares(a), nonzero_shares(b)
+    if left == right:
+        return True
+    if set(left) != set(right) or sum(left.values()) != sum(right.values()):
+        return False
+    # Equal/ratio splits can assign unavoidable remainder cents to different
+    # participants depending on participant order. A one-cent permutation is
+    # semantically identical and must not create a false sync conflict.
+    return all(abs(left[name] - right[name]) <= 1 for name in left)
+
+
+def balance_effect(expense: Expense) -> dict[str, int]:
+    effect: dict[str, int] = {}
+    if expense.payer:
+        effect[expense.payer] = effect.get(expense.payer, 0) + expense.amount_cents
+    for name, share in nonzero_shares(expense).items():
+        effect[name] = effect.get(name, 0) - share
+    return {name: value for name, value in effect.items() if value != 0}
+
+
+def combined_effect(expenses: list[Expense]) -> dict[str, int]:
+    total: dict[str, int] = {}
+    for expense in expenses:
+        for name, value in balance_effect(expense).items():
+            total[name] = total.get(name, 0) + value
+    return {name: value for name, value in total.items() if value != 0}
+
+
+def description_similarity(a: Expense, b: Expense) -> float:
+    ad, bd = norm(a.description), norm(b.description)
+    if not ad or not bd:
+        return 0.0
+    return SequenceMatcher(None, ad, bd).ratio()
+
+
 def score(a: Expense, b: Expense) -> int:
     if a.amount_cents != b.amount_cents:
         return -1
@@ -153,51 +194,94 @@ def score(a: Expense, b: Expense) -> int:
         result += 35
     if a.date and b.date and a.date == b.date:
         result += 15
-    ad, bd = norm(a.description), norm(b.description)
-    if ad and ad == bd:
-        result += 25
-    elif ad and bd:
-        result += round(25 * SequenceMatcher(None, ad, bd).ratio())
-    if a.shares and a.shares == b.shares:
+    similarity = description_similarity(a, b)
+    result += 25 if similarity == 1 else round(25 * similarity)
+    if shares_equivalent(a, b):
         result += 30
-    elif set(a.shares) == set(b.shares):
+    elif set(nonzero_shares(a)) == set(nonzero_shares(b)):
         result += 10
     return result
 
 
 def reconcile(tricount: list[Expense], roadtrip: list[Expense]) -> dict[str, Any]:
-    unused = set(range(len(roadtrip)))
+    unused_tc = set(range(len(tricount)))
+    unused_rt = set(range(len(roadtrip)))
     matched: list[dict[str, Any]] = []
-    ambiguous: list[dict[str, Any]] = []
-    tricount_only: list[dict[str, Any]] = []
+    compound_matched: list[dict[str, Any]] = []
 
-    for tc in tricount:
-        candidates = sorted(((score(tc, roadtrip[i]), i) for i in unused), reverse=True)
-        candidates = [(s, i) for s, i in candidates if s >= 0]
-        if not candidates:
-            tricount_only.append(tc.public())
-            continue
-        best_score, best_idx = candidates[0]
-        second_score = candidates[1][0] if len(candidates) > 1 else -1
-        if best_score >= 90 and best_score - second_score >= 10:
-            rt = roadtrip[best_idx]
-            unused.remove(best_idx)
-            matched.append({"score": best_score, "tricount": tc.public(), "roadtrip": rt.public()})
-        elif best_score >= 55:
-            ambiguous.append(
+    # Conservative one-to-one pass. A confident match must be clearly better
+    # than the runner-up so repeated same-price expenses do not get guessed.
+    progress = True
+    while progress:
+        progress = False
+        for ti in sorted(unused_tc):
+            candidates = sorted(((score(tricount[ti], roadtrip[ri]), ri) for ri in unused_rt), reverse=True)
+            candidates = [(s, ri) for s, ri in candidates if s >= 0]
+            if not candidates:
+                continue
+            best_score, best_ri = candidates[0]
+            second_score = candidates[1][0] if len(candidates) > 1 else -1
+            if best_score >= 90 and best_score - second_score >= 10:
+                matched.append(
+                    {"score": best_score, "tricount": tricount[ti].public(), "roadtrip": roadtrip[best_ri].public()}
+                )
+                unused_tc.remove(ti)
+                unused_rt.remove(best_ri)
+                progress = True
+                break
+
+    # Some Tricount users represent one weighted expense as a base expense plus
+    # a small adjustment expense. Detect a two-transaction compound only when
+    # its complete per-person balance effect exactly equals one Roadtrip entry.
+    # This prevents the adjustment from being copied as a second real expense.
+    for ri in list(sorted(unused_rt)):
+        rt = roadtrip[ri]
+        candidates: list[tuple[int, int]] = []
+        for a, b in combinations(sorted(unused_tc), 2):
+            pair = [tricount[a], tricount[b]]
+            if not any(item.amount_cents == rt.amount_cents for item in pair):
+                continue
+            if rt.date and any(item.date and item.date != rt.date for item in pair):
+                continue
+            if max(description_similarity(item, rt) for item in pair) < 0.45:
+                continue
+            if combined_effect(pair) == balance_effect(rt):
+                candidates.append((a, b))
+        if len(candidates) == 1:
+            a, b = candidates[0]
+            compound_matched.append(
                 {
-                    "tricount": tc.public(),
-                    "candidates": [
-                        {"score": s, "roadtrip": roadtrip[i].public()} for s, i in candidates[:3]
-                    ],
+                    "tricount": [tricount[a].public(), tricount[b].public()],
+                    "roadtrip": rt.public(),
+                    "reason": "combined balance effect is identical",
                 }
             )
-        else:
-            tricount_only.append(tc.public())
+            unused_tc.remove(a)
+            unused_tc.remove(b)
+            unused_rt.remove(ri)
 
-    roadtrip_only = [roadtrip[i].public() for i in sorted(unused)]
+    ambiguous: list[dict[str, Any]] = []
+    review_tc: set[int] = set()
+    review_rt: set[int] = set()
+    for ti in sorted(unused_tc):
+        candidates = sorted(((score(tricount[ti], roadtrip[ri]), ri) for ri in unused_rt), reverse=True)
+        candidates = [(s, ri) for s, ri in candidates if s >= 55]
+        if not candidates:
+            continue
+        review_tc.add(ti)
+        review_rt.update(ri for _, ri in candidates[:3])
+        ambiguous.append(
+            {
+                "tricount": tricount[ti].public(),
+                "candidates": [{"score": s, "roadtrip": roadtrip[ri].public()} for s, ri in candidates[:3]],
+            }
+        )
+
+    tricount_only = [tricount[i].public() for i in sorted(unused_tc - review_tc)]
+    roadtrip_only = [roadtrip[i].public() for i in sorted(unused_rt - review_rt)]
     return {
         "matched": matched,
+        "compound_matched": compound_matched,
         "ambiguous": ambiguous,
         "tricount_only": tricount_only,
         "roadtrip_only": roadtrip_only,
@@ -216,12 +300,18 @@ def write_summary(title: str, members: list[str], result: dict[str, Any], warnin
         f"Members: {', '.join(members)}",
         "",
         f"- Matched confidently: **{len(result['matched'])}**",
+        f"- Compound-equivalent matches: **{len(result['compound_matched'])}**",
         f"- Needs review: **{len(result['ambiguous'])}**",
         f"- Only in Tricount: **{len(result['tricount_only'])}**",
         f"- Only in Roadtrip: **{len(result['roadtrip_only'])}**",
     ]
     if warnings:
         lines += ["", "## Mapping warnings"] + [f"- {w}" for w in warnings]
+    if result["compound_matched"]:
+        lines += ["", "## Compound-equivalent"]
+        for row in result["compound_matched"]:
+            tc_names = " + ".join(item["description"] for item in row["tricount"])
+            lines.append(f"- {tc_names} ↔ {row['roadtrip']['description']} (same per-person balance effect)")
     if result["ambiguous"]:
         lines += ["", "## Needs review"]
         for row in result["ambiguous"]:
@@ -269,6 +359,7 @@ def main() -> int:
             "tricount": len(tricount),
             "roadtrip": len(roadtrip),
             "matched": len(result["matched"]),
+            "compound_matched": len(result["compound_matched"]),
             "ambiguous": len(result["ambiguous"]),
             "tricount_only": len(result["tricount_only"]),
             "roadtrip_only": len(result["roadtrip_only"]),
