@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""Read-only live balance diagnostics for the Roadtrip expense ledger."""
+"""Read-only live balance diagnostics for the Roadtrip expense ledger.
+
+Used to explain how each person's net balance is built from individual expenses.
+"""
 from __future__ import annotations
 
 import json
