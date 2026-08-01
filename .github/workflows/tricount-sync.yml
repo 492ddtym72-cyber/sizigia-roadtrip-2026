@@ -57,6 +57,9 @@ jobs:
           SYNC_REPORT: tricount-sync-report.json
         run: python tools/tricount_sync/sync_engine.py
 
+      - name: Print live balance diagnostics
+        run: python tools/tricount_sync/balance_diagnostics.py
+
       - name: Maintain human-review issue
         if: always()
         uses: actions/github-script@v7
