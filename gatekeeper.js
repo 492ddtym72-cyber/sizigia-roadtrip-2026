@@ -5,29 +5,13 @@
   // barrier, not hardened authentication. Keeping all gate logic in this file
   // makes the feature easy to remove or replace later.
   const ACCESS_PASSWORD = 'sizigia26';
-  const UNLOCK_KEY = 'sizigia-roadtrip-2026-gate-unlocked';
+  const LEGACY_UNLOCK_KEY = 'sizigia-roadtrip-2026-gate-unlocked';
 
-  function isUnlocked() {
+  function clearLegacyUnlock() {
     try {
-      return localStorage.getItem(UNLOCK_KEY) === '1';
+      localStorage.removeItem(LEGACY_UNLOCK_KEY);
     } catch (_) {
-      return false;
-    }
-  }
-
-  function rememberUnlocked() {
-    try {
-      localStorage.setItem(UNLOCK_KEY, '1');
-    } catch (_) {
-      // The app remains usable for the current page load if storage is blocked.
-    }
-  }
-
-  function clearUnlock() {
-    try {
-      localStorage.removeItem(UNLOCK_KEY);
-    } catch (_) {
-      // Nothing else to do.
+      // Storage may be unavailable; the gate still works for this page load.
     }
   }
 
@@ -97,13 +81,14 @@
   }
 
   function unlock(gate) {
-    rememberUnlocked();
     setAppLocked(false);
     gate.hidden = true;
   }
 
   function init() {
-    if (isUnlocked()) return;
+    // Earlier versions remembered successful access in localStorage forever.
+    // Remove that legacy flag so every new page/app launch shows the gate.
+    clearLegacyUnlock();
 
     setAppLocked(true);
     const gate = buildGate();
@@ -127,10 +112,10 @@
     });
   }
 
-  // Optional hook for a future "App sperren" control. It is deliberately
-  // independent of the main app so removing this file removes the feature.
+  // Optional hook for a future "App sperren" control. The current unlock is
+  // intentionally page-lifetime only, so reloading always restores the gate.
   window.lockRoadtripApp = function lockRoadtripApp() {
-    clearUnlock();
+    clearLegacyUnlock();
     window.location.reload();
   };
 
