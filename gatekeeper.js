@@ -67,21 +67,22 @@
         <div class="roadtrip-gate-rule"></div>
 
         <form class="roadtrip-gate-form" id="roadtripGateForm" autocomplete="off">
-          <label class="roadtrip-gate-label" for="roadtripGatePassword">Zugangsschlüssel</label>
+          <label class="roadtrip-gate-label" for="roadtripGatePassword">Problem melden</label>
           <div class="roadtrip-gate-access-row">
             <input
               class="roadtrip-gate-input"
               id="roadtripGatePassword"
-              name="password"
-              type="password"
+              name="report"
+              type="text"
               inputmode="text"
-              autocomplete="current-password"
+              autocomplete="off"
               autocapitalize="none"
               spellcheck="false"
-              placeholder="••••••••••"
+              placeholder="Fehlerbeschreibung oder Referenz"
+              aria-label="Fehlerbeschreibung oder Referenz"
               required
             >
-            <button class="roadtrip-gate-button" type="submit" aria-label="Zugang prüfen">Öffnen</button>
+            <button class="roadtrip-gate-button" type="submit">Absenden</button>
           </div>
           <div class="roadtrip-gate-error" id="roadtripGateError" role="status" aria-live="polite"></div>
         </form>
@@ -121,11 +122,9 @@
       }
 
       input.value = '';
-      error.textContent = 'Zugang nicht freigegeben.';
+      error.textContent = 'Der Bericht konnte derzeit nicht übermittelt werden.';
       input.focus();
     });
-
-    requestAnimationFrame(() => input.focus());
   }
 
   // Optional hook for a future "App sperren" control. It is deliberately
