@@ -17,3 +17,4 @@ Expenses require an exact amount match and a high-confidence combination of paye
 - `RECONCILE_REPORT` — optional output path.
 
 Automatic writes and recurring scheduling must only be enabled after a successful read-only run has verified the token, member mapping, and existing ledger reconciliation.
+
