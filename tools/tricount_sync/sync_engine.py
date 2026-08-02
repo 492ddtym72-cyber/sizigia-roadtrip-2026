@@ -273,8 +273,11 @@ def tricount_to_roadtrip(tc: Expense, state: dict[str, Any]) -> dict[str, Any]:
         "tricountId": tc.source_id,
         "syncSource": "tricount",
     }
-    if len(set(values)) > 1:
-        # Cent amounts used as weights reproduce the exact Tricount allocation.
+    # Equal splits naturally differ by at most one cent when the total cannot be
+    # divided evenly. That remainder is not a custom weight and must not become
+    # a misleading 2394x/2393x factor in Roadtrip. Genuine unequal allocations
+    # keep their cent ratios so the browser can reproduce the exact shares.
+    if values and max(values) - min(values) > 1:
         item["weights"] = {cid: positive[norm(by_id[cid])] for cid in sharers}
     return item
 
