@@ -1,7 +1,7 @@
 /* Service Worker: App lädt auch im Funkloch.
    Strategie: Netz zuerst (immer aktuellste Version), Cache als Fallback.
    Cloud-Sync-Requests (fremde Origins, z. B. Firebase) werden nie angefasst. */
-const CACHE = 'sizigia-app-v29-disguised-gate';
+const CACHE = 'sizigia-app-v30-fresh-shell';
 const APP_ASSETS = [
   './',
   './index.html',
@@ -12,9 +12,9 @@ const APP_ASSETS = [
   './vendor/maplibre-LICENSE.txt',
   './map-data.js',
   './zfe-data.js',
-  './gatekeeper.js?v=2026-08-03-v2',
+  './gatekeeper.js?v=2026-08-03-v3',
   './app.js?v=2026-07-20-sleep-ui-v24',
-  './weighted-expenses.js?v=2026-07-31-v2',
+  './weighted-expenses.js?v=2026-08-03-v3',
   './manifest.webmanifest',
   './app-icon.png',
   './icon-180.png',
@@ -43,8 +43,22 @@ self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
   if (url.origin !== self.location.origin) return; // Firebase & Co. nie cachen
+
+  const isAppShell = e.request.mode === 'navigate' ||
+    url.pathname.endsWith('/index.html') ||
+    url.pathname.endsWith('/gatekeeper.js') ||
+    url.pathname.endsWith('/weighted-expenses.js');
+
+  // iOS standalone web apps can otherwise reuse a stale HTTP-cache response
+  // even though our service-worker strategy is network-first. For the app
+  // shell and frequently changed gate/budget scripts, explicitly bypass that
+  // HTTP cache; the service-worker cache remains the offline fallback.
+  const networkRequest = isAppShell
+    ? new Request(e.request, { cache: 'no-store' })
+    : e.request;
+
   e.respondWith(
-    fetch(e.request)
+    fetch(networkRequest)
       .then(r => {
         const copy = r.clone();
         caches.open(CACHE).then(c => c.put(e.request, copy));
