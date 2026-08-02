@@ -1,0 +1,204 @@
+name: One-time bus toll entry
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/bus-toll-once.yml"
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: one-time-bus-toll-entry
+  cancel-in-progress: false
+
+jobs:
+  add-bus-tolls:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Restore Tricount device credentials
+        uses: actions/cache@v4
+        with:
+          path: tricount_credentials.json
+          key: tricount-device-credentials-v1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: tools/tricount_sync/requirements.txt
+
+      - name: Install Tricount dependency
+        run: python -m pip install -r tools/tricount_sync/requirements.txt
+
+      - name: Copy Jakob tolls to bus split
+        env:
+          TRICOUNT_TOKEN: ${{ secrets.TRICOUNT_TOKEN }}
+          TRICOUNT_CREDENTIALS_PATH: tricount_credentials.json
+        run: |
+          python - <<'PY'
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, str(Path('tools/tricount_sync').resolve()))
+          from tricount import load_client
+          from reconcile import norm, tricount_expenses
+
+          token = os.environ['TRICOUNT_TOKEN']
+          credentials = os.environ.get('TRICOUNT_CREDENTIALS_PATH', 'tricount_credentials.json')
+          trip_start = '2026-08-02'
+
+          def is_person(value, aliases):
+              n = norm(value)
+              return any(n == a or n.startswith(a + ' ') for a in aliases)
+
+          def is_toll(description):
+              n = norm(description)
+              return any(word in n.split() for word in ('maut', 'toll', 'peage')) and 'vignette' not in n
+
+          _, before, _ = tricount_expenses(token)
+          candidates = [
+              e for e in before
+              if is_person(e.payer, {'jakob'})
+              and e.date >= trip_start
+              and is_toll(e.description)
+          ]
+
+          client = load_client(credentials)
+          tc = client.join_tricount(token)
+          members = list(tc.members)
+
+          def resolve_member(aliases):
+              matches = [m for m in members if is_person(m.display_name, aliases)]
+              if len(matches) != 1:
+                  raise RuntimeError(f'Expected exactly one Tricount member for {sorted(aliases)}, found {[m.display_name for m in matches]}')
+              return matches[0]
+
+          lukas = resolve_member({'lukas'})
+          max_member = resolve_member({'max'})
+          freddy = resolve_member({'freddy', 'freddi'})
+
+          def canonical_share_names(expense):
+              out = {}
+              for name, cents in expense.shares.items():
+                  if not cents:
+                      continue
+                  if is_person(name, {'lukas'}): key = 'lukas'
+                  elif is_person(name, {'max'}): key = 'max'
+                  elif is_person(name, {'freddy', 'freddi'}): key = 'freddy'
+                  else: key = norm(name)
+                  out[key] = out.get(key, 0) + cents
+              return out
+
+          created = []
+          skipped = []
+          expected_people = {'lukas', 'max', 'freddy'}
+
+          for source in candidates:
+              duplicate = None
+              for existing in before:
+                  if not is_person(existing.payer, {'lukas'}):
+                      continue
+                  if norm(existing.description) != norm(source.description):
+                      continue
+                  if existing.amount_cents != source.amount_cents or existing.date != source.date:
+                      continue
+                  shares = canonical_share_names(existing)
+                  if set(shares) == expected_people and sum(shares.values()) == source.amount_cents:
+                      duplicate = existing
+                      break
+
+              if duplicate:
+                  skipped.append({
+                      'description': source.description,
+                      'amount': source.amount_cents / 100,
+                      'date': source.date,
+                      'reason': 'matching Lukas/Max/Freddy bus entry already exists',
+                  })
+                  continue
+
+              total = source.amount_cents
+              base, rem = divmod(total, 3)
+              cents = [base + (1 if i < rem else 0) for i in range(3)]
+              allocations = [
+                  (lukas, cents[0] / 100),
+                  (max_member, cents[1] / 100),
+                  (freddy, cents[2] / 100),
+              ]
+              client.create_transaction_custom_split(
+                  tricount=tc,
+                  description=source.description,
+                  amount=total / 100,
+                  payer=lukas,
+                  allocations=allocations,
+                  date=None,
+              )
+              created.append({
+                  'description': source.description,
+                  'amount': total / 100,
+                  'sourceDate': source.date,
+                  'payer': lukas.display_name,
+                  'splitCents': {
+                      lukas.display_name: cents[0],
+                      max_member.display_name: cents[1],
+                      freddy.display_name: cents[2],
+                  },
+              })
+
+          result = {
+              'candidateCount': len(candidates),
+              'candidates': [
+                  {'description': e.description, 'amount': e.amount_cents / 100, 'date': e.date}
+                  for e in candidates
+              ],
+              'created': created,
+              'skipped': skipped,
+          }
+          Path('bus-toll-result.json').write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
+          print(json.dumps(result, ensure_ascii=False, indent=2))
+          PY
+
+      - name: Synchronize Tricount and Roadtrip app
+        id: sync
+        continue-on-error: true
+        env:
+          TRICOUNT_TOKEN: ${{ secrets.TRICOUNT_TOKEN }}
+          TRICOUNT_CREDENTIALS_PATH: tricount_credentials.json
+          SYNC_REPORT: tricount-sync-report.json
+        run: python tools/tricount_sync/sync_engine.py
+
+      - name: Publish one-time result
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '[bus-toll-once]';
+            const read = (path) => fs.existsSync(path) ? JSON.parse(fs.readFileSync(path, 'utf8')) : null;
+            const bus = read('bus-toll-result.json');
+            const sync = read('tricount-sync-report.json');
+            const title = `${marker} Bus toll entry result`;
+            const body = [
+              'One-time confirmed bus toll operation finished.',
+              '',
+              '```json',
+              JSON.stringify({ bus, sync }, null, 2),
+              '```',
+            ].join('\n');
+            const { data: issues } = await github.rest.issues.listForRepo({ owner: context.repo.owner, repo: context.repo.repo, state: 'all', per_page: 100 });
+            const existing = issues.find(i => !i.pull_request && i.title === title);
+            if (existing) {
+              await github.rest.issues.update({ owner: context.repo.owner, repo: context.repo.repo, issue_number: existing.number, state: 'open', body });
+            } else {
+              await github.rest.issues.create({ owner: context.repo.owner, repo: context.repo.repo, title, body });
+            }
