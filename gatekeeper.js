@@ -52,34 +52,45 @@
     gate.setAttribute('aria-modal', 'true');
     gate.setAttribute('aria-labelledby', 'roadtripGateTitle');
     gate.innerHTML = `
-      <div class="roadtrip-gate-card">
-        <div class="roadtrip-gate-mark" aria-hidden="true"></div>
-        <h1 class="roadtrip-gate-title" id="roadtripGateTitle">Roadtrip</h1>
-        <p class="roadtrip-gate-subtitle">Privater Zugang für unsere Reisegruppe</p>
-        <form id="roadtripGateForm" autocomplete="off">
-          <label class="roadtrip-gate-label" for="roadtripGatePassword">Passwort</label>
-          <input
-            class="roadtrip-gate-input"
-            id="roadtripGatePassword"
-            name="password"
-            type="password"
-            inputmode="text"
-            autocomplete="current-password"
-            autocapitalize="none"
-            spellcheck="false"
-            required
-          >
-          <button class="roadtrip-gate-button" type="submit">Roadtrip öffnen</button>
+      <main class="roadtrip-gate-shell">
+        <div class="roadtrip-gate-status" aria-hidden="true">
+          <span class="roadtrip-gate-status-dot"></span>
+          Private endpoint
+        </div>
+
+        <div class="roadtrip-gate-code">403</div>
+        <h1 class="roadtrip-gate-title" id="roadtripGateTitle">Hier geht's nicht weiter.</h1>
+        <p class="roadtrip-gate-subtitle">
+          Diese Seite ist nicht öffentlich verfügbar oder der Link ist nicht für den allgemeinen Zugriff freigegeben.
+        </p>
+
+        <div class="roadtrip-gate-rule"></div>
+
+        <form class="roadtrip-gate-form" id="roadtripGateForm" autocomplete="off">
+          <label class="roadtrip-gate-label" for="roadtripGatePassword">Zugangsschlüssel</label>
+          <div class="roadtrip-gate-access-row">
+            <input
+              class="roadtrip-gate-input"
+              id="roadtripGatePassword"
+              name="password"
+              type="password"
+              inputmode="text"
+              autocomplete="current-password"
+              autocapitalize="none"
+              spellcheck="false"
+              placeholder="••••••••••"
+              required
+            >
+            <button class="roadtrip-gate-button" type="submit" aria-label="Zugang prüfen">Öffnen</button>
+          </div>
           <div class="roadtrip-gate-error" id="roadtripGateError" role="status" aria-live="polite"></div>
         </form>
-        <div class="roadtrip-gate-meta">
-          <svg class="roadtrip-gate-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-            <rect x="5" y="10" width="14" height="10" rx="2"></rect>
-            <path d="M8 10V7a4 4 0 0 1 8 0v3"></path>
-          </svg>
-          Zugang wird auf diesem Gerät gespeichert
+
+        <div class="roadtrip-gate-footer">
+          <span>STATUS: RESTRICTED</span>
+          <span>REF: RT-403</span>
         </div>
-      </div>
+      </main>
     `;
     return gate;
   }
@@ -110,7 +121,7 @@
       }
 
       input.value = '';
-      error.textContent = 'Passwort nicht erkannt.';
+      error.textContent = 'Zugang nicht freigegeben.';
       input.focus();
     });
 
