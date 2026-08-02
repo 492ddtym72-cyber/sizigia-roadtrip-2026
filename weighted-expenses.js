@@ -19,11 +19,55 @@
     return [...new Set((expense?.sharers || []).filter(id=>state.crew.some(c=>c.id===id)))];
   }
 
+  function legacyTricountCentWeights(expense, sharers){
+    if(expense?.syncSource !== 'tricount' || !expense.weights || typeof expense.weights !== 'object') return null;
+    const values = sharers.map(id=>Number(expense.weights[id]));
+    if(!values.length || values.some(value=>!Number.isFinite(value) || value<=0)) return null;
+    const amountCents = Math.round((Number(expense.amount) || 0) * 100);
+    const weightSum = Math.round(values.reduce((sum,value)=>sum+value,0));
+    if(amountCents<=0 || weightSum!==amountCents) return null;
+    return Object.fromEntries(sharers.map((id,index)=>[id,values[index]]));
+  }
+
   function expenseWeights(expense, sharers){
+    // Older Tricount imports stored each person's allocated cents directly as
+    // weights (e.g. 2394/2393). Keep those raw ratios for the calculation so
+    // the imported cent allocation remains exact; do not clamp them to 10x.
+    const legacy = legacyTricountCentWeights(expense, sharers);
+    if(legacy) return legacy;
+
     const stored = expense && expense.weights && typeof expense.weights === 'object' ? expense.weights : {};
     const out = {};
     sharers.forEach(id=>{ out[id] = validWeight(stored[id] == null ? 1 : stored[id]); });
     return out;
+  }
+
+  function displayWeights(expense, sharers){
+    const legacy = legacyTricountCentWeights(expense, sharers);
+    if(!legacy) return expenseWeights(expense, sharers);
+
+    const values = sharers.map(id=>legacy[id]);
+    const min = Math.min(...values);
+    const max = Math.max(...values);
+
+    // A one-cent spread is the unavoidable remainder of an equal split, not a
+    // meaningful custom factor. Show the intended equal 1x split.
+    if(max-min<=1) return Object.fromEntries(sharers.map(id=>[id,1]));
+
+    // For genuine custom Tricount allocations, show readable relative factors
+    // while the calculation above continues using the exact cent ratios.
+    const ratios = Object.fromEntries(sharers.map(id=>[id,legacy[id]/min]));
+    const maxRatio = Math.max(...Object.values(ratios));
+    const scale = maxRatio>MAX_WEIGHT ? MAX_WEIGHT/maxRatio : 1;
+    return Object.fromEntries(sharers.map(id=>[
+      id,
+      Math.round(Math.max(MIN_WEIGHT, ratios[id]*scale)*100)/100
+    ]));
+  }
+
+  function isCustomSplit(expense, sharers){
+    const shown = displayWeights(expense, sharers);
+    return sharers.some(id=>Math.abs(shown[id]-1)>0.001);
   }
 
   // Centgenaue proportionale Verteilung nach dem Largest-Remainder-Verfahren.
@@ -121,10 +165,10 @@
 
   function splitLabel(e){
     const sharers=expenseSharers(e);
-    const weights=expenseWeights(e,sharers);
-    const custom=sharers.some(id=>Math.abs(weights[id]-1)>0.001);
+    const shown=displayWeights(e,sharers);
+    const custom=isCustomSplit(e,sharers);
     if(!custom) return 'gleichmäßig durch '+sharers.length;
-    return sharers.map(id=>(crewById(id)?.name||'?')+' '+weights[id]+'×').join(' · ');
+    return sharers.map(id=>(crewById(id)?.name||'?')+' '+shown[id]+'×').join(' · ');
   }
 
   function expenseDate(e){
@@ -137,9 +181,9 @@
     if(!e){ toast('Ausgabe nicht mehr gefunden'); return; }
     const payer = crewById(e.payer);
     const sharers = expenseSharers(e);
-    const weights = expenseWeights(e,sharers);
+    const shownWeights = displayWeights(e,sharers);
     const shares = expenseShares(e);
-    const custom = sharers.some(cid=>Math.abs(weights[cid]-1)>0.001);
+    const custom = isCustomSplit(e,sharers);
     const sum = sharers.reduce((total,cid)=>total+(shares[cid]||0),0);
     modalCtx = null;
     document.getElementById('modalBox').innerHTML = `
@@ -156,7 +200,7 @@
           const isPayer=cid===e.payer;
           return `<div class="expense-detail-row">
             <span class="chip static" style="--c:${c?.color||'#777'}"><span class="dot"></span>${esc(c?.name||'?')}${isPayer?' · Zahler':''}</span>
-            <span class="expense-detail-weight">${weights[cid]}×</span>
+            <span class="expense-detail-weight">${shownWeights[cid]}×</span>
             <b>${euro(shares[cid]||0)}</b>
           </div>`;
         }).join('') : '<p class="hint" style="margin:0">Keine gültigen Teilnehmer hinterlegt.</p>'}
