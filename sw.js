@@ -53,12 +53,10 @@ self.addEventListener('fetch', e => {
   // even though our service-worker strategy is network-first. For the app
   // shell and frequently changed gate/budget scripts, explicitly bypass that
   // HTTP cache; the service-worker cache remains the offline fallback.
-  const networkRequest = isAppShell
-    ? new Request(e.request, { cache: 'no-store' })
-    : e.request;
+  const fetchOptions = isAppShell ? { cache: 'no-store' } : undefined;
 
   e.respondWith(
-    fetch(networkRequest)
+    fetch(e.request, fetchOptions)
       .then(r => {
         const copy = r.clone();
         caches.open(CACHE).then(c => c.put(e.request, copy));
