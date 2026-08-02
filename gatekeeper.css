@@ -1,0 +1,142 @@
+.roadtrip-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: max(24px, env(safe-area-inset-top)) 20px max(24px, env(safe-area-inset-bottom));
+  background:
+    radial-gradient(circle at 50% 18%, rgba(255, 190, 92, 0.12), transparent 28%),
+    radial-gradient(circle at 20% 80%, rgba(113, 91, 255, 0.10), transparent 32%),
+    #0b0d16;
+  color: #f7f5ef;
+  font-family: inherit;
+}
+
+.roadtrip-gate[hidden] {
+  display: none;
+}
+
+.roadtrip-gate-card {
+  width: min(100%, 390px);
+  padding: 30px 24px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  border-radius: 24px;
+  background: rgba(20, 22, 34, 0.88);
+  box-shadow: 0 28px 80px rgba(0, 0, 0, 0.42);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.roadtrip-gate-mark {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 58% 42%, #0b0d16 0 43%, transparent 44%),
+    radial-gradient(circle, #f7b95f 0 52%, #f08d62 53% 66%, transparent 67%);
+  box-shadow: 0 0 36px rgba(247, 185, 95, 0.24);
+}
+
+.roadtrip-gate-title {
+  margin: 0;
+  text-align: center;
+  font-size: 28px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.roadtrip-gate-subtitle {
+  margin: 9px 0 24px;
+  text-align: center;
+  color: rgba(247, 245, 239, 0.62);
+  font-size: 14px;
+}
+
+.roadtrip-gate-label {
+  display: block;
+  margin-bottom: 8px;
+  color: rgba(247, 245, 239, 0.72);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.roadtrip-gate-input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 52px;
+  padding: 0 15px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 14px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.055);
+  color: #fff;
+  font: inherit;
+  font-size: 16px;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
+}
+
+.roadtrip-gate-input:focus {
+  border-color: rgba(247, 185, 95, 0.76);
+  background: rgba(255, 255, 255, 0.075);
+  box-shadow: 0 0 0 4px rgba(247, 185, 95, 0.10);
+}
+
+.roadtrip-gate-button {
+  width: 100%;
+  height: 50px;
+  margin-top: 12px;
+  border: 0;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #f7b95f, #f08d62);
+  color: #17130f;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 120ms ease, filter 120ms ease;
+}
+
+.roadtrip-gate-button:active {
+  transform: translateY(1px) scale(0.995);
+}
+
+.roadtrip-gate-error {
+  min-height: 20px;
+  margin: 10px 2px 0;
+  color: #ff9a91;
+  font-size: 13px;
+  text-align: center;
+}
+
+.roadtrip-gate-meta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 18px;
+  color: rgba(247, 245, 239, 0.43);
+  font-size: 12px;
+}
+
+.roadtrip-gate-lock {
+  width: 12px;
+  height: 12px;
+  opacity: 0.72;
+}
+
+@media (max-width: 420px) {
+  .roadtrip-gate-card {
+    padding: 28px 20px 22px;
+    border-radius: 22px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .roadtrip-gate-input,
+  .roadtrip-gate-button {
+    transition: none;
+  }
+}
