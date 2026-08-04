@@ -36,14 +36,14 @@
 }
 .rt-primary-grid .rt-main-card:before{background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 13%,transparent),transparent 58%)!important}
 
-/* Both the legacy Game landing panel and the new arcade dashboard use raster artwork. */
+/* Game UI uses the dedicated eclipse/tropical artwork. Home keeps the bus-at-sunset painting. */
 .rt-game-hero{
-  background:linear-gradient(180deg,rgba(8,8,25,.05),rgba(7,13,27,.28) 48%,rgba(7,13,27,.94) 100%),url('./assets/home-roadtrip-sunset-v3.webp') center 58%/cover no-repeat!important;
+  background:linear-gradient(180deg,rgba(8,8,25,.03),rgba(7,13,27,.16) 48%,rgba(7,13,27,.82) 100%),url('./assets/game-eclipse-background.webp') center 45%/cover no-repeat!important;
 }
 .arcade-game-art{
-  background-image:linear-gradient(180deg,rgba(17,7,35,.08),rgba(8,18,31,.12) 48%,rgba(8,18,31,.62) 100%),url('./assets/home-roadtrip-sunset-v3.webp')!important;
+  background-image:linear-gradient(180deg,rgba(17,7,35,.03),rgba(8,18,31,.08) 48%,rgba(8,18,31,.44) 100%),url('./assets/game-eclipse-background.webp')!important;
   background-size:cover!important;
-  background-position:center 58%!important;
+  background-position:center 46%!important;
 }
 .arcade-game-art:before,.arcade-game-art:after{display:none!important}
 .arcade-eclipse{display:none!important}
@@ -72,4 +72,5 @@ body.modern-roadtrip .page.active>.section-return:first-child{
   }
   body.modern-roadtrip:not([data-active-tab="uebersicht"]) .page.active{padding-top:38px!important}
   .rt-primary-grid .rt-main-card{min-height:94px}
+  .arcade-game-art{background-position:center 40%!important}
 }
