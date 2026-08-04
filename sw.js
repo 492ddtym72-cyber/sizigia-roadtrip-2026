@@ -1,7 +1,7 @@
 /* Service Worker: App lädt auch im Funkloch.
    Strategie: Netz zuerst (immer aktuellste Version), Cache als Fallback.
    Cloud-Sync-Requests (fremde Origins, z. B. Firebase) werden nie angefasst. */
-const CACHE = 'sizigia-app-v39-game-sprites';
+const CACHE = 'sizigia-app-v40-hires-ui';
 const APP_ASSETS = [
   './',
   './index.html',
@@ -9,7 +9,7 @@ const APP_ASSETS = [
   './gatekeeper.css?v=2026-08-04-psy-v1',
   './passcode-gate.css?v=2026-08-04-v1',
   './redesign.css?v=2026-08-04-v2',
-  './raster-art.css?v=2026-08-04-v2',
+  './raster-art.css?v=2026-08-04-v3',
   './vendor/maplibre-gl.css',
   './vendor/maplibre-gl.js',
   './vendor/maplibre-LICENSE.txt',
@@ -25,9 +25,9 @@ const APP_ASSETS = [
   './game-sprite-config.js?v=2026-08-04-v1',
   './game-assets/psy-bird.svg',
   './game-assets/psy-pillar.svg',
-  './assets/home-roadtrip-sunset-v2.webp',
-  './assets/home-crew-campfire-v2.webp',
-  './assets/home-settings-van-v2.webp',
+  './assets/home-roadtrip-sunset-v3.webp',
+  './assets/home-crew-campfire-v3.webp',
+  './assets/home-settings-van-v3.webp',
   './roadtrip-scene.svg',
   './game-scene.svg',
   './manifest.webmanifest',
@@ -65,7 +65,7 @@ self.addEventListener('fetch', e => {
     url.pathname.endsWith('/redesign.js') ||
     url.pathname.endsWith('/redesign.css') ||
     url.pathname.endsWith('/raster-art.css') ||
-    url.pathname.endsWith('-v2.webp');
+    url.pathname.endsWith('-v3.webp');
   const fetchOptions = isAppShell ? { cache: 'no-store' } : undefined;
   e.respondWith(
     fetch(e.request, fetchOptions)
