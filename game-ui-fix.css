@@ -1,0 +1,23 @@
+/* iOS/PWA viewport correction for the standalone Roadtrip game.
+   Kept separate from game mechanics so visual fixes can merge safely. */
+html body .rtg-root{
+  position:fixed!important;
+  inset:0 auto auto 0!important;
+  width:100vw!important;
+  width:100dvw!important;
+  height:100vh!important;
+  height:100dvh!important;
+  max-width:100dvw!important;
+  max-height:100dvh!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+}
+html body .rtg-root canvas{
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  max-height:100dvh!important;
+}
+@supports (-webkit-touch-callout:none){
+  html body .rtg-root{min-height:100dvh!important;max-height:100dvh!important}
+}
