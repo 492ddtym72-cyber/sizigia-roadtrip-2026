@@ -1,7 +1,7 @@
 /* Service Worker: App lädt auch im Funkloch.
    Strategie: Netz zuerst (immer aktuellste Version), Cache als Fallback.
    Cloud-Sync-Requests (fremde Origins, z. B. Firebase) werden nie angefasst. */
-const CACHE = 'sizigia-app-v40-hires-ui';
+const CACHE = 'sizigia-app-v41-production-game-art';
 const APP_ASSETS = [
   './',
   './index.html',
@@ -23,8 +23,9 @@ const APP_ASSETS = [
   './roadtrip-game.css',
   './redesign.js?v=2026-08-04-v3',
   './game-sprite-config.js?v=2026-08-04-v1',
-  './game-assets/psy-bird.svg',
-  './game-assets/psy-pillar.svg',
+  './game-assets/production/backgrounds/game-background.svg',
+  './game-assets/production/sprites/psy-bird.svg',
+  './game-assets/production/sprites/psy-pillar.svg',
   './assets/home-roadtrip-sunset-v3.webp',
   './assets/home-crew-campfire-v3.webp',
   './assets/home-settings-van-v3.webp',
@@ -60,6 +61,7 @@ self.addEventListener('fetch', e => {
     url.pathname.endsWith('/roadtrip-game.js') ||
     url.pathname.endsWith('/roadtrip-game.css') ||
     url.pathname.endsWith('/game-sprite-config.js') ||
+    url.pathname.endsWith('/game-background.svg') ||
     url.pathname.endsWith('/psy-bird.svg') ||
     url.pathname.endsWith('/psy-pillar.svg') ||
     url.pathname.endsWith('/redesign.js') ||

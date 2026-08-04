@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 1600" role="img" aria-label="Psychedelic eclipse game landscape">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#130529"/><stop offset=".28" stop-color="#50105d"/><stop offset=".56" stop-color="#c32c72"/><stop offset=".78" stop-color="#ff7652"/><stop offset="1" stop-color="#170d2c"/>
+    </linearGradient>
+    <radialGradient id="halo"><stop offset="0" stop-color="#ffef8a" stop-opacity=".95"/><stop offset=".28" stop-color="#ff9a34" stop-opacity=".86"/><stop offset=".58" stop-color="#ff3d83" stop-opacity=".28"/><stop offset="1" stop-color="#ff3d83" stop-opacity="0"/></radialGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#35f0d0"/><stop offset=".5" stop-color="#1677a8"/><stop offset="1" stop-color="#07152e"/></linearGradient>
+    <linearGradient id="mount" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#57206d"/><stop offset="1" stop-color="#141536"/></linearGradient>
+    <filter id="blur"><feGaussianBlur stdDeviation="24"/></filter>
+    <filter id="glow"><feGaussianBlur stdDeviation="6"/></filter>
+    <pattern id="stars" width="120" height="120" patternUnits="userSpaceOnUse"><circle cx="18" cy="25" r="2" fill="#fff1a5"/><circle cx="79" cy="52" r="1.6" fill="#61f6df"/><circle cx="103" cy="12" r="1.2" fill="#ff7ed9"/><circle cx="43" cy="94" r="1.3" fill="#fff"/></pattern>
+  </defs>
+  <rect width="900" height="1600" fill="url(#sky)"/>
+  <rect width="900" height="760" fill="url(#stars)" opacity=".62"/>
+  <circle cx="450" cy="300" r="230" fill="url(#halo)" filter="url(#blur)"/>
+  <circle cx="450" cy="300" r="121" fill="#120b2e" stroke="#ffc64e" stroke-width="8"/>
+  <circle cx="450" cy="300" r="137" fill="none" stroke="#ff8e43" stroke-width="5" opacity=".68" filter="url(#glow)"/>
+  <path d="M0 835 115 662l96 83 116-197 114 154 142-214 124 194 193-131v460H0Z" fill="url(#mount)"/>
+  <path d="M0 940 171 807l97 71 123-169 128 137 137-115 244 193v390H0Z" fill="#123550" opacity=".9"/>
+  <path d="M355 1600c-35-233 27-398 131-536 87-115 105-198 66-274 108 116 95 254-36 411-87 104-112 241-83 399Z" fill="url(#water)" opacity=".92"/>
+  <path d="M414 1450c-7-144 30-254 89-337 54-76 66-147 41-210 70 74 68 168-20 274-58 70-75 161-61 273Z" fill="#9affef" opacity=".22"/>
+  <g fill="#ff6bbd" opacity=".9"><circle cx="105" cy="1250" r="17"/><circle cx="145" cy="1198" r="9"/><circle cx="785" cy="1270" r="14"/><circle cx="818" cy="1215" r="8"/></g>
+  <g fill="#54f0c8"><path d="M70 1600c5-159 35-258 91-305-29 92-18 192 23 305Z"/><path d="M830 1600c-6-160-37-259-94-307 31 96 19 195-21 307Z"/></g>
+  <g stroke="#ffdf6b" stroke-width="5" fill="none" opacity=".4"><path d="M56 1060c100-70 180-70 270 0s170 70 268 0 171-70 250 0"/><path d="M32 1110c110-74 201-74 294 0s180 74 283 0 179-74 258 0"/></g>
+  <rect y="1510" width="900" height="90" fill="#050817" opacity=".55"/>
+</svg>
