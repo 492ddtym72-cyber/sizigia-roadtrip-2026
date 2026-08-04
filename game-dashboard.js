@@ -1,6 +1,12 @@
 (() => {
   'use strict';
 
+  const HIRES_ART = Object.freeze({
+    background: './game-assets/production/hires/game-background.webp',
+    bird: './game-assets/production/hires/psy-bird.webp',
+    pillar: './game-assets/production/hires/psy-pillar.webp'
+  });
+
   const GAME_CATALOG = [
     {
       id: 'flappy-line',
@@ -9,6 +15,7 @@
       description: 'Flieg durch die psychedelischen Tore und knack den Crew-Highscore.',
       status: 'playable',
       accent: '#e66bd3',
+      art: HIRES_ART,
       action: () => typeof window.playRoadtripGame === 'function' && window.playRoadtripGame()
     }
   ];
@@ -20,7 +27,7 @@
 
   function leaderboard(){
     const crew = typeof state !== 'undefined' && Array.isArray(state.crew) ? state.crew : [];
-    const scores = state && state.gameLeaderboard && typeof state.gameLeaderboard === 'object' ? state.gameLeaderboard : {};
+    const scores = typeof state !== 'undefined' && state.gameLeaderboard && typeof state.gameLeaderboard === 'object' ? state.gameLeaderboard : {};
     return crew.map(c => ({
       id: c.id,
       name: c.name,
@@ -34,10 +41,12 @@
   }
 
   function gameCard(game){
+    const art = game.art || {};
     return `<article class="arcade-game-card" style="--game-accent:${game.accent}">
       <div class="arcade-game-art" aria-hidden="true">
-        <span class="arcade-eclipse"></span>
-        <span class="arcade-bird-mark">✦</span>
+        <img class="arcade-game-bg" src="${escapeHtml(art.background || '')}" alt="" decoding="async">
+        <img class="arcade-game-pillar" src="${escapeHtml(art.pillar || '')}" alt="" decoding="async">
+        <img class="arcade-game-bird" src="${escapeHtml(art.bird || '')}" alt="" decoding="async">
       </div>
       <div class="arcade-game-copy">
         <div class="arcade-game-topline"><span>${escapeHtml(game.eyebrow)}</span><i>SPIELBAR</i></div>
@@ -116,6 +125,7 @@
       if(tab) setTimeout(render,0);
     });
 
+    window.RoadtripGameAssets?.preload?.();
     if(document.body?.dataset?.activeTab === 'games') render();
     window.renderArcadeDashboard = render;
   }
