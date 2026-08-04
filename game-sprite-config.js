@@ -3,7 +3,8 @@
 
   window.playRoadtripGame = function playRoadtripGameWithArtwork(){
     const id = typeof whoami === 'function' ? whoami() : '';
-    const person = window.state?.crew?.find(c => c.id === id);
+    const crew = typeof state !== 'undefined' && Array.isArray(state.crew) ? state.crew : [];
+    const person = crew.find(c => c.id === id);
 
     if(!person){
       if(typeof toast === 'function') toast('Bitte zuerst dein Profil auswählen');
@@ -17,7 +18,7 @@
 
     window.openRoadtripGame({
       player: { id: person.id, name: person.name },
-      crew: state.crew.map(c => ({ id: c.id, name: c.name })),
+      crew: crew.map(c => ({ id: c.id, name: c.name })),
       backgrounds: [
         './assets/home-roadtrip-sunset-v2.webp',
         './assets/home-crew-campfire-v2.webp',
