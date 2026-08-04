@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" role="img" aria-label="Sunset roadtrip landscape with a camper van">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#25144f"/><stop offset=".28" stop-color="#74356f"/><stop offset=".55" stop-color="#ef6b62"/><stop offset=".78" stop-color="#ffad59"/><stop offset="1" stop-color="#172b48"/>
+    </linearGradient>
+    <radialGradient id="sunGlow"><stop offset="0" stop-color="#fff3ba" stop-opacity=".95"/><stop offset=".35" stop-color="#ffcb69" stop-opacity=".55"/><stop offset="1" stop-color="#ff9c52" stop-opacity="0"/></radialGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#f1a260"/><stop offset=".25" stop-color="#654a83"/><stop offset="1" stop-color="#0d3145"/></linearGradient>
+    <linearGradient id="road" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#5b4652"/><stop offset="1" stop-color="#172434"/></linearGradient>
+    <linearGradient id="van" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#477e83"/><stop offset="1" stop-color="#183f4a"/></linearGradient>
+    <filter id="soft"><feGaussianBlur stdDeviation="18"/></filter>
+    <filter id="glow"><feGaussianBlur stdDeviation="6"/></filter>
+  </defs>
+  <rect width="1200" height="820" fill="url(#sky)"/>
+  <ellipse cx="520" cy="376" rx="195" ry="155" fill="url(#sunGlow)" filter="url(#soft)"/>
+  <circle cx="520" cy="382" r="54" fill="#ffe6a0"/>
+  <g fill="#e85e73" opacity=".6">
+    <path d="M40 150c95-56 179-42 255 4-118-12-169 29-255-4Z"/><path d="M680 132c103-47 212-26 294 27-117-20-209 17-294-27Z"/><path d="M850 232c65-35 150-22 217 21-84-15-148 10-217-21Z"/>
+  </g>
+  <path d="M0 446 131 346l105 67 111-128 121 119 145-91 126 105 153-188 112 110 196-93v302H0Z" fill="#3b315f" opacity=".88"/>
+  <path d="M0 510 147 394l86 68 110-73 102 96 134-63 122 95 156-139 93 75 230-123v279H0Z" fill="#253b57"/>
+  <path d="M0 557c164-31 260-32 389 17 116 45 182 29 296-8 162-53 331-35 515 25v229H0Z" fill="url(#water)"/>
+  <path d="M337 559c75 32 167 40 252 20 77-18 139-47 210-41-58 18-106 50-167 72-116 40-222 32-295-51Z" fill="#ffd27b" opacity=".52"/>
+  <path d="M684 820H101c124-92 209-135 313-156 109-22 181-3 259 41-108-11-192 14-263 61 113-22 194 1 274 54Z" fill="url(#road)"/>
+  <path d="M409 820c61-58 129-91 205-99" fill="none" stroke="#ffc86d" stroke-width="7" stroke-linecap="round" stroke-dasharray="34 36" opacity=".8"/>
+  <g fill="#0b2230">
+    <path d="M0 596c63-58 118-83 165-65 34 13 46 55 91 71v218H0Z"/><path d="M1200 560c-68-46-127-55-178-19-39 27-53 70-108 89v190h286Z"/>
+  </g>
+  <g stroke="#0a1d27" stroke-width="12" stroke-linecap="round">
+    <path d="M96 647V493"/><path d="M96 516 54 465M96 530l53-64M96 548l-69-18M96 560l74-20"/>
+    <path d="M1050 650V474"/><path d="M1050 502l-45-55M1050 518l57-63M1050 539l-71-17M1050 555l76-25"/>
+  </g>
+  <g transform="translate(722 545)">
+    <ellipse cx="132" cy="176" rx="150" ry="28" fill="#06141c" opacity=".55" filter="url(#soft)"/>
+    <path d="M18 56h220c24 0 43 18 47 41l13 83H-4L5 86c3-17 6-30 13-30Z" fill="url(#van)" stroke="#0b2028" stroke-width="7"/>
+    <path d="M51 13h148l38 43H18L51 13Z" fill="#587f78" stroke="#0b2028" stroke-width="7"/>
+    <path d="M63 28h56v28H49Zm70 0h56l27 28h-83Z" fill="#16263d"/>
+    <rect x="20" y="81" width="99" height="58" rx="8" fill="#162b3c"/><rect x="132" y="81" width="93" height="58" rx="8" fill="#1a3040"/>
+    <path d="M122 78v105" stroke="#0b2028" stroke-width="7"/>
+    <circle cx="62" cy="181" r="29" fill="#0b141b" stroke="#5a6570" stroke-width="9"/><circle cx="235" cy="181" r="29" fill="#0b141b" stroke="#5a6570" stroke-width="9"/>
+    <rect x="13" y="145" width="36" height="19" rx="7" fill="#ff9b52" filter="url(#glow)"/><rect x="249" y="145" width="36" height="19" rx="7" fill="#ef594f" filter="url(#glow)"/>
+    <path d="M35 3h181" stroke="#101b25" stroke-width="10"/><path d="M61 -8h126" stroke="#c27b44" stroke-width="15" stroke-linecap="round"/><path d="M82 -20h83" stroke="#d79b59" stroke-width="12" stroke-linecap="round"/>
+  </g>
+  <g fill="#f06c72" opacity=".75"><circle cx="59" cy="755" r="12"/><circle cx="96" cy="731" r="8"/><circle cx="1117" cy="736" r="11"/><circle cx="1150" cy="704" r="7"/></g>
+</svg>
