@@ -1,7 +1,7 @@
 /* Service Worker: App lädt auch im Funkloch.
    Strategie: Netz zuerst (immer aktuellste Version), Cache als Fallback.
    Cloud-Sync-Requests (fremde Origins, z. B. Firebase) werden nie angefasst. */
-const CACHE = 'sizigia-app-v44-game-dashboard';
+const CACHE = 'sizigia-app-v45-raster-dashboard';
 const APP_ASSETS = [
   './',
   './index.html',
@@ -9,8 +9,9 @@ const APP_ASSETS = [
   './gatekeeper.css?v=2026-08-04-psy-v1',
   './passcode-gate.css?v=2026-08-04-v1',
   './redesign.css?v=2026-08-04-v2',
-  './raster-art.css?v=2026-08-04-v3',
+  './raster-art.css?v=2026-08-04-v4',
   './game-dashboard.css?v=2026-08-04-v1',
+  './game-ui-fix.css?v=2026-08-04-v1',
   './vendor/maplibre-gl.css',
   './vendor/maplibre-gl.js',
   './vendor/maplibre-LICENSE.txt',
@@ -23,9 +24,8 @@ const APP_ASSETS = [
   './roadtrip-game.js?v=2026-08-04-v1',
   './roadtrip-game.css',
   './redesign.js?v=2026-08-04-v3',
-  './game-sprite-config.js?v=2026-08-04-v1',
+  './game-sprite-config.js?v=2026-08-04-v2',
   './game-dashboard.js?v=2026-08-04-v1',
-  './game-assets/production/backgrounds/game-background.svg',
   './game-assets/production/sprites/psy-bird.svg',
   './game-assets/production/sprites/psy-pillar.svg',
   './assets/home-roadtrip-sunset-v3.webp',
@@ -62,10 +62,10 @@ self.addEventListener('fetch', e => {
     url.pathname.endsWith('/weighted-expenses.js') ||
     url.pathname.endsWith('/roadtrip-game.js') ||
     url.pathname.endsWith('/roadtrip-game.css') ||
+    url.pathname.endsWith('/game-ui-fix.css') ||
     url.pathname.endsWith('/game-sprite-config.js') ||
     url.pathname.endsWith('/game-dashboard.js') ||
     url.pathname.endsWith('/game-dashboard.css') ||
-    url.pathname.endsWith('/game-background.svg') ||
     url.pathname.endsWith('/psy-bird.svg') ||
     url.pathname.endsWith('/psy-pillar.svg') ||
     url.pathname.endsWith('/redesign.js') ||
