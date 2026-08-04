@@ -1,7 +1,25 @@
 (() => {
   'use strict';
 
-  window.playRoadtripGame = function playRoadtripGameWithArtwork(){
+  const FALLBACK = {
+    background: './game-assets/production/backgrounds/game-background.svg',
+    bird: './game-assets/production/sprites/psy-bird.svg',
+    pillar: './game-assets/production/sprites/psy-pillar.svg'
+  };
+
+  async function artwork(){
+    try {
+      if(window.RoadtripGameAssets?.load){
+        const loaded = await window.RoadtripGameAssets.load();
+        if(loaded?.background && loaded?.bird && loaded?.pillar) return loaded;
+      }
+    } catch(error){
+      console.warn('High-resolution game artwork failed to preload; using fallback.', error);
+    }
+    return FALLBACK;
+  }
+
+  window.playRoadtripGame = async function playRoadtripGameWithArtwork(){
     const id = typeof whoami === 'function' ? whoami() : '';
     const crew = typeof state !== 'undefined' && Array.isArray(state.crew) ? state.crew : [];
     const person = crew.find(c => c.id === id);
@@ -16,16 +34,15 @@
       return;
     }
 
+    const art = await artwork();
     window.openRoadtripGame({
       player: { id: person.id, name: person.name },
       crew: crew.map(c => ({ id: c.id, name: c.name })),
-      backgrounds: [
-        './assets/home-roadtrip-sunset-v3.webp',
-        './assets/home-crew-campfire-v3.webp',
-        './assets/home-settings-van-v3.webp'
-      ],
-      birdSprite: './game-assets/production/sprites/psy-bird.svg',
-      pipeSprite: './game-assets/production/sprites/psy-pillar.svg'
+      backgrounds: [art.background],
+      birdSprite: art.bird,
+      pipeSprite: art.pillar
     });
   };
+
+  window.RoadtripGameAssets?.preload?.();
 })();
