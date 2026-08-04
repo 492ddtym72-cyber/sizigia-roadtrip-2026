@@ -112,8 +112,8 @@
     const page=document.getElementById('page-games');
     if(!page) return;
     page.innerHTML=sectionBackButton()+`<div class="rt-section-shell">
-      <div class="rt-page-head"><div class="kicker">Arcade</div><h1>Game</h1><p>Das gleiche psychedelische Flappy-Spiel wie beim Zugangscheck — hier jederzeit noch einmal spielbar.</p></div>
-      <div class="rt-game-hero"><div class="rt-game-panel"><div class="rt-game-kicker">ROUTE RUNNER</div><h2>Flappy Line</h2><p>Bleib im Flow, flieg durch die Tore und knacke die Route. Im Zugangsmodus wird die App bei 15 Punkten freigeschaltet.</p><button class="rt-play" onclick="playRoadtripGame()">▶ &nbsp; Spielen</button><div class="rt-scoreline"><span>Ziel im Unlock-Challenge</span><b>15 Punkte</b></div></div></div>
+      <div class="rt-page-head"><div class="kicker">Arcade</div><h1>Game</h1><p>Flappy Line ist jetzt ein normales Roadtrip-Game und unabhängig vom App-Zugang jederzeit spielbar.</p></div>
+      <div class="rt-game-hero"><div class="rt-game-panel"><div class="rt-game-kicker">ROUTE RUNNER</div><h2>Flappy Line</h2><p>Bleib im Flow, flieg durch die Tore und knacke die Route.</p><button class="rt-play" onclick="playRoadtripGame()">▶ &nbsp; Spielen</button><div class="rt-scoreline"><span>Challenge</span><b>15 Punkte</b></div></div></div>
     </div>`;
   }
 
