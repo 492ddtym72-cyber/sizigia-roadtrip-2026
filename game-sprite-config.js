@@ -19,7 +19,11 @@
     window.openRoadtripGame({
       player: { id: person.id, name: person.name },
       crew: crew.map(c => ({ id: c.id, name: c.name })),
-      backgrounds: ['./game-assets/production/backgrounds/game-background.svg'],
+      backgrounds: [
+        './assets/home-roadtrip-sunset-v3.webp',
+        './assets/home-crew-campfire-v3.webp',
+        './assets/home-settings-van-v3.webp'
+      ],
       birdSprite: './game-assets/production/sprites/psy-bird.svg',
       pipeSprite: './game-assets/production/sprites/psy-pillar.svg'
     });
