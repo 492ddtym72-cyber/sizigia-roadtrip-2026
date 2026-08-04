@@ -1,7 +1,7 @@
 /* Service Worker: App lädt auch im Funkloch.
    Strategie: Netz zuerst (immer aktuellste Version), Cache als Fallback.
    Cloud-Sync-Requests (fremde Origins, z. B. Firebase) werden nie angefasst. */
-const CACHE = 'sizigia-app-v45-raster-dashboard';
+const CACHE = 'sizigia-app-v46-game-eclipse';
 const APP_ASSETS = [
   './',
   './index.html',
@@ -9,7 +9,7 @@ const APP_ASSETS = [
   './gatekeeper.css?v=2026-08-04-psy-v1',
   './passcode-gate.css?v=2026-08-04-v1',
   './redesign.css?v=2026-08-04-v2',
-  './raster-art.css?v=2026-08-04-v4',
+  './raster-art.css?v=2026-08-04-v5',
   './game-dashboard.css?v=2026-08-04-v1',
   './game-ui-fix.css?v=2026-08-04-v1',
   './vendor/maplibre-gl.css',
@@ -24,10 +24,11 @@ const APP_ASSETS = [
   './roadtrip-game.js?v=2026-08-04-v1',
   './roadtrip-game.css',
   './redesign.js?v=2026-08-04-v3',
-  './game-sprite-config.js?v=2026-08-04-v2',
+  './game-sprite-config.js?v=2026-08-04-v3',
   './game-dashboard.js?v=2026-08-04-v1',
   './game-assets/production/sprites/psy-bird.svg',
   './game-assets/production/sprites/psy-pillar.svg',
+  './assets/game-eclipse-background.webp',
   './assets/home-roadtrip-sunset-v3.webp',
   './assets/home-crew-campfire-v3.webp',
   './assets/home-settings-van-v3.webp',
@@ -71,6 +72,7 @@ self.addEventListener('fetch', e => {
     url.pathname.endsWith('/redesign.js') ||
     url.pathname.endsWith('/redesign.css') ||
     url.pathname.endsWith('/raster-art.css') ||
+    url.pathname.endsWith('/game-eclipse-background.webp') ||
     url.pathname.endsWith('-v3.webp');
   const fetchOptions = isAppShell ? { cache: 'no-store' } : undefined;
   e.respondWith(
