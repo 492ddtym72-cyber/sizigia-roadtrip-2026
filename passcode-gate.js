@@ -3,6 +3,11 @@
 
   const ACCESS_CODE = '739184';
   const CODE_LENGTH = ACCESS_CODE.length;
+  const KEYS = [
+    ['1', ''], ['2', 'ABC'], ['3', 'DEF'],
+    ['4', 'GHI'], ['5', 'JKL'], ['6', 'MNO'],
+    ['7', 'PQRS'], ['8', 'TUV'], ['9', 'WXYZ']
+  ];
 
   function setAppLocked(locked) {
     const app = document.querySelector('.wrap');
@@ -16,6 +21,10 @@
     }
   }
 
+  function keyMarkup(digit, letters = '') {
+    return `<button type="button" data-digit="${digit}" aria-label="${digit}"><strong>${digit}</strong>${letters ? `<small>${letters}</small>` : ''}</button>`;
+  }
+
   function buildPasscodeShell() {
     const shell = document.createElement('main');
     shell.className = 'roadtrip-passcode-shell';
@@ -26,15 +35,15 @@
       </div>
       <div class="roadtrip-passcode-brand">ROADTRIP</div>
       <h1>Code eingeben</h1>
-      <p>Gib den 6-stelligen Code ein, um die App zu öffnen.</p>
+      <p>Zum Öffnen der Roadtrip App</p>
       <div class="roadtrip-passcode-dots" id="roadtripPasscodeDots" aria-label="Noch kein Code eingegeben">
         ${Array.from({length: CODE_LENGTH}, (_, i) => `<i data-index="${i}"></i>`).join('')}
       </div>
       <div class="roadtrip-passcode-error" id="roadtripPasscodeError" role="status" aria-live="polite"></div>
       <div class="roadtrip-passcode-keypad" aria-label="Ziffernblock">
-        ${[1,2,3,4,5,6,7,8,9].map(n => `<button type="button" data-digit="${n}" aria-label="${n}"><strong>${n}</strong></button>`).join('')}
+        ${KEYS.map(([digit, letters]) => keyMarkup(digit, letters)).join('')}
         <span class="roadtrip-passcode-spacer" aria-hidden="true"></span>
-        <button type="button" data-digit="0" aria-label="0"><strong>0</strong></button>
+        ${keyMarkup('0')}
         <button type="button" class="roadtrip-passcode-delete" data-delete aria-label="Letzte Ziffer löschen">
           <svg viewBox="0 0 28 22"><path d="M10 2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H10L2 11 10 2Z"/><path d="m14 7 6 8M20 7l-6 8"/></svg>
         </button>
@@ -138,11 +147,8 @@
   }
 
   function init() {
-    // gatekeeper.js registers first and builds #roadtripGate before this handler.
     installPasscodeGate();
-    if (!document.getElementById('roadtripGate')) {
-      requestAnimationFrame(installPasscodeGate);
-    }
+    if (!document.getElementById('roadtripGate')) requestAnimationFrame(installPasscodeGate);
   }
 
   if (document.readyState === 'loading') {
