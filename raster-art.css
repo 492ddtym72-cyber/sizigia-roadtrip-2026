@@ -15,3 +15,19 @@
 .roadtrip-gate.roadtrip-passcode-mode:before{
   background-image:url('./assets/home-roadtrip-sunset-v2.webp')!important;
 }
+
+/* The hero artwork was generated in a portrait phone composition. On iPhone-sized screens,
+   preserve the full horizontal composition instead of zooming/cropping it with cover. */
+@media (max-width:600px){
+  .rt-home::before{
+    background:
+      linear-gradient(180deg,
+        rgba(3,6,18,.01) 0%,
+        rgba(3,7,18,.01) 31%,
+        rgba(4,9,21,.10) 50%,
+        rgba(4,10,22,.40) 69%,
+        rgba(5,12,24,.78) 87%,
+        #07111f 100%),
+      url('./assets/home-roadtrip-sunset-v2.webp') center top/100% auto no-repeat !important;
+  }
+}
