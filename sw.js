@@ -1,7 +1,7 @@
 /* Service Worker: App lädt auch im Funkloch.
    Strategie: Netz zuerst (immer aktuellste Version), Cache als Fallback.
    Cloud-Sync-Requests (fremde Origins, z. B. Firebase) werden nie angefasst. */
-const CACHE = 'sizigia-app-v46-game-eclipse';
+const CACHE = 'sizigia-app-v47-original-hires-game-art';
 const APP_ASSETS = [
   './',
   './index.html',
@@ -10,7 +10,7 @@ const APP_ASSETS = [
   './passcode-gate.css?v=2026-08-04-v1',
   './redesign.css?v=2026-08-04-v2',
   './raster-art.css?v=2026-08-04-v5',
-  './game-dashboard.css?v=2026-08-04-v1',
+  './game-dashboard.css?v=2026-08-04-v2',
   './game-ui-fix.css?v=2026-08-04-v1',
   './vendor/maplibre-gl.css',
   './vendor/maplibre-gl.js',
@@ -21,11 +21,15 @@ const APP_ASSETS = [
   './passcode-gate.js?v=2026-08-04-v2',
   './app.js?v=2026-07-20-sleep-ui-v24',
   './weighted-expenses.js?v=2026-08-03-v3',
-  './roadtrip-game.js?v=2026-08-04-v1',
+  './game-asset-loader.js?v=2026-08-04-v1',
+  './roadtrip-game.js?v=2026-08-04-v2',
   './roadtrip-game.css',
   './redesign.js?v=2026-08-04-v3',
-  './game-sprite-config.js?v=2026-08-04-v3',
-  './game-dashboard.js?v=2026-08-04-v1',
+  './game-sprite-config.js?v=2026-08-04-v4',
+  './game-dashboard.js?v=2026-08-04-v2',
+  './game-assets/production/hires/game-background.webp',
+  './game-assets/production/hires/psy-bird.webp',
+  './game-assets/production/hires/psy-pillar.webp',
   './game-assets/production/sprites/psy-bird.svg',
   './game-assets/production/sprites/psy-pillar.svg',
   './assets/game-eclipse-background.webp',
@@ -61,12 +65,14 @@ self.addEventListener('fetch', e => {
     url.pathname.endsWith('/passcode-gate.js') ||
     url.pathname.endsWith('/passcode-gate.css') ||
     url.pathname.endsWith('/weighted-expenses.js') ||
+    url.pathname.endsWith('/game-asset-loader.js') ||
     url.pathname.endsWith('/roadtrip-game.js') ||
     url.pathname.endsWith('/roadtrip-game.css') ||
     url.pathname.endsWith('/game-ui-fix.css') ||
     url.pathname.endsWith('/game-sprite-config.js') ||
     url.pathname.endsWith('/game-dashboard.js') ||
     url.pathname.endsWith('/game-dashboard.css') ||
+    url.pathname.includes('/game-assets/production/hires/') ||
     url.pathname.endsWith('/psy-bird.svg') ||
     url.pathname.endsWith('/psy-pillar.svg') ||
     url.pathname.endsWith('/redesign.js') ||
