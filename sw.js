@@ -1,13 +1,13 @@
 /* Service Worker: App lädt auch im Funkloch.
    Strategie: Netz zuerst (immer aktuellste Version), Cache als Fallback.
    Cloud-Sync-Requests (fremde Origins, z. B. Firebase) werden nie angefasst. */
-const CACHE = 'sizigia-app-v34-modern-roadtrip';
+const CACHE = 'sizigia-app-v35-raster-home';
 const APP_ASSETS = [
   './',
   './index.html',
   './styles.css?v=2026-07-20-sleep-ui-v25',
   './gatekeeper.css?v=2026-08-04-psy-v1',
-  './redesign.css?v=2026-08-04-v1',
+  './redesign.css?v=2026-08-04-v2',
   './vendor/maplibre-gl.css',
   './vendor/maplibre-gl.js',
   './vendor/maplibre-LICENSE.txt',
@@ -16,7 +16,10 @@ const APP_ASSETS = [
   './gatekeeper.js?v=2026-08-04-psy-v1',
   './app.js?v=2026-07-20-sleep-ui-v24',
   './weighted-expenses.js?v=2026-08-03-v3',
-  './redesign.js?v=2026-08-04-v1',
+  './redesign.js?v=2026-08-04-v2',
+  './assets/home-roadtrip-sunset.webp',
+  './assets/home-crew-campfire.webp',
+  './assets/home-settings-van.webp',
   './roadtrip-scene.svg',
   './game-scene.svg',
   './manifest.webmanifest',

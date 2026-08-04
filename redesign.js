@@ -99,6 +99,7 @@
     const selected=me()?.id;
     page.innerHTML=sectionBackButton()+`<div class="rt-section-shell">
       <div class="rt-page-head"><div class="kicker">Roadtrip Crew</div><h1>Teilnehmer</h1><p>Alle Mitreisenden und ihr aktueller Ausgaben-Saldo. Tippe auf „Als Profil“, um dieses Gerät zuzuordnen.</p></div>
+      <div class="rt-section-art rt-section-art-crew" role="img" aria-label="Roadtrip-Crew am Lagerfeuer vor einer Berglandschaft"></div>
       <div class="rt-crew-grid">${state.crew.map(c=>{
         const b=Math.round((balances[c.id]||0)*100)/100,cls=b>0.01?'pos':b<-0.01?'neg':'';
         const initials=c.name.split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase();
@@ -123,6 +124,7 @@
     const syncText=(document.getElementById('syncBadge')?.textContent||'Cloud-Sync').trim();
     page.innerHTML=sectionBackButton()+`<div class="rt-section-shell">
       <div class="rt-page-head"><div class="kicker">Roadtrip System</div><h1>Einstellungen</h1><p>Geräteprofil und Zugangsoptionen. Die Reisedaten selbst bleiben im bestehenden gemeinsamen Datenspeicher.</p></div>
+      <div class="rt-section-art rt-section-art-settings" role="img" aria-label="Camper auf einer tropischen Küstenstraße bei Sonnenuntergang"></div>
       <div class="rt-setting-list">
         <div class="rt-setting"><div><b>Aktuelles Profil</b><span>${esc(current?.name||'Noch nicht gewählt')}</span></div><button onclick="askWho()">Ändern</button></div>
         <div class="rt-setting"><div><b>Cloud-Sync</b><span>${esc(syncText||'Status wird geprüft')}</span></div><button onclick="typeof syncNow==='function'&&syncNow()">Prüfen</button></div>
