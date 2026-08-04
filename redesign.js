@@ -108,12 +108,36 @@
     </div>`;
   }
 
+  function gameLeaderboardRows(){
+    const scores=state.gameLeaderboard&&typeof state.gameLeaderboard==='object'?state.gameLeaderboard:{};
+    return state.crew.map(c=>({playerId:c.id,name:c.name,best:Math.max(0,Math.floor(Number(scores[c.id]?.best||0)))}));
+  }
+
+  function installGameLeaderboardAdapter(){
+    if(!window.RoadtripGame) return;
+    window.RoadtripGame.setLeaderboardAdapter({
+      async load(){ return gameLeaderboardRows(); },
+      async submit({playerId,name,score}){
+        if(!state.gameLeaderboard||typeof state.gameLeaderboard!=='object') state.gameLeaderboard={};
+        const old=state.gameLeaderboard[playerId];
+        const best=Math.max(0,Math.floor(Number(score)||0));
+        if(!old||best>Number(old.best||0)){
+          state.gameLeaderboard[playerId]={best,name:String(name||crewById(playerId)?.name||playerId),updatedAt:new Date().toISOString()};
+          if(typeof save==='function') save();
+        }
+        return gameLeaderboardRows();
+      }
+    });
+  }
+
   function renderGamesPage(){
     const page=document.getElementById('page-games');
     if(!page) return;
+    const leaders=gameLeaderboardRows().sort((a,b)=>b.best-a.best||a.name.localeCompare(b.name));
+    const top=leaders[0]?.best?`${leaders[0].name} · ${leaders[0].best}`:'Noch kein Highscore';
     page.innerHTML=sectionBackButton()+`<div class="rt-section-shell">
-      <div class="rt-page-head"><div class="kicker">Arcade</div><h1>Game</h1><p>Flappy Line ist jetzt ein normales Roadtrip-Game und unabhängig vom App-Zugang jederzeit spielbar.</p></div>
-      <div class="rt-game-hero"><div class="rt-game-panel"><div class="rt-game-kicker">ROUTE RUNNER</div><h2>Flappy Line</h2><p>Bleib im Flow, flieg durch die Tore und knacke die Route.</p><button class="rt-play" onclick="playRoadtripGame()">▶ &nbsp; Spielen</button><div class="rt-scoreline"><span>Challenge</span><b>15 Punkte</b></div></div></div>
+      <div class="rt-page-head"><div class="kicker">Arcade</div><h1>Game</h1><p>Flappy Line ist ein endloses Roadtrip-Game. Jeder Run zählt für den persönlichen Crew-Highscore.</p></div>
+      <div class="rt-game-hero"><div class="rt-game-panel"><div class="rt-game-kicker">ROUTE RUNNER</div><h2>Flappy Line</h2><p>Bleib im Flow, flieg durch die psychedelischen Tore und schlag den Crew-Highscore.</p><button class="rt-play" onclick="playRoadtripGame()">▶ &nbsp; Spielen</button><div class="rt-scoreline"><span>Crew-Bestwert</span><b>${esc(top)}</b></div></div></div>
     </div>`;
   }
 
@@ -153,29 +177,34 @@
   }
 
   window.playRoadtripGame=function playRoadtripGame(){
-    const gate=document.getElementById('roadtripGate');
-    const start=document.getElementById('roadtripRecoveryStart');
-    if(!gate||!start){ if(typeof toast==='function') toast('Game konnte nicht gestartet werden'); return; }
-    gate.dataset.practice='1';
-    gate.hidden=false;
-    requestAnimationFrame(()=>start.click());
-  };
-
-  function bindPracticeClose(){
-    const gate=document.getElementById('roadtripGate');
-    if(!gate||gate.dataset.practiceBound==='1') return;
-    gate.dataset.practiceBound='1';
-    ['psyGameClose','psyGameBack'].forEach(id=>{
-      document.getElementById(id)?.addEventListener('click',()=>{
-        if(gate.dataset.practice==='1') setTimeout(()=>{gate.hidden=true;delete gate.dataset.practice;},0);
-      });
+    const person=me();
+    if(!person){
+      if(typeof toast==='function') toast('Bitte zuerst dein Profil auswählen');
+      if(typeof askWho==='function') askWho();
+      return;
+    }
+    if(typeof window.openRoadtripGame!=='function'){
+      if(typeof toast==='function') toast('Game-Modul konnte nicht geladen werden');
+      return;
+    }
+    installGameLeaderboardAdapter();
+    window.openRoadtripGame({
+      player:{id:person.id,name:person.name},
+      crew:state.crew.map(c=>({id:c.id,name:c.name})),
+      backgrounds:[
+        './assets/home-roadtrip-sunset-v2.webp',
+        './assets/home-crew-campfire-v2.webp',
+        './assets/home-settings-van-v2.webp'
+      ],
+      birdSprite:'./game-assets/psy-bird.png',
+      pipeSprite:'./game-assets/psy-pillar.png'
     });
-  }
+  };
 
   ensureModernPages();
   document.body.classList.add('modern-roadtrip');
   renderNav=modernRenderNav;
   renderOverview=renderModernHome;
-  bindPracticeClose();
+  installGameLeaderboardAdapter();
   renderAll();
 })();

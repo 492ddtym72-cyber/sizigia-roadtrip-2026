@@ -1,7 +1,7 @@
 /* Service Worker: App lädt auch im Funkloch.
    Strategie: Netz zuerst (immer aktuellste Version), Cache als Fallback.
    Cloud-Sync-Requests (fremde Origins, z. B. Firebase) werden nie angefasst. */
-const CACHE = 'sizigia-app-v37-raster-repair';
+const CACHE = 'sizigia-app-v38-game-integration';
 const APP_ASSETS = [
   './',
   './index.html',
@@ -19,7 +19,9 @@ const APP_ASSETS = [
   './passcode-gate.js?v=2026-08-04-v2',
   './app.js?v=2026-07-20-sleep-ui-v24',
   './weighted-expenses.js?v=2026-08-03-v3',
-  './redesign.js?v=2026-08-04-v2',
+  './roadtrip-game.js?v=2026-08-04-v1',
+  './roadtrip-game.css',
+  './redesign.js?v=2026-08-04-v3',
   './assets/home-roadtrip-sunset-v2.webp',
   './assets/home-crew-campfire-v2.webp',
   './assets/home-settings-van-v2.webp',
@@ -52,6 +54,8 @@ self.addEventListener('fetch', e => {
     url.pathname.endsWith('/passcode-gate.js') ||
     url.pathname.endsWith('/passcode-gate.css') ||
     url.pathname.endsWith('/weighted-expenses.js') ||
+    url.pathname.endsWith('/roadtrip-game.js') ||
+    url.pathname.endsWith('/roadtrip-game.css') ||
     url.pathname.endsWith('/redesign.js') ||
     url.pathname.endsWith('/redesign.css') ||
     url.pathname.endsWith('/raster-art.css') ||
