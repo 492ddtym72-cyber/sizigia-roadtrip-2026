@@ -1,61 +1,35 @@
 (() => {
   'use strict';
 
-  const ROOT = './game-assets/production/hires';
-  const SPECS = {
-    background: { prefix: 'background', chunks: 6, mime: 'image/webp' },
-    bird: { prefix: 'bird', chunks: 3, mime: 'image/webp' },
-    pillar: { prefix: 'pillar', chunks: 4, mime: 'image/webp' }
-  };
+  const assets = Object.freeze({
+    background: './game-assets/production/hires/game-background.webp',
+    bird: './game-assets/production/hires/psy-bird.webp',
+    pillar: './game-assets/production/hires/psy-pillar.webp'
+  });
 
-  let bundlePromise = null;
-  const objectUrls = [];
+  let loadPromise = null;
 
-  function chunkPath(spec, index){
-    return `${ROOT}/${spec.prefix}.${String(index).padStart(3, '0')}.b64`;
-  }
-
-  function base64ToBlobUrl(base64, mime){
-    const binary = atob(base64.replace(/\s+/g, ''));
-    const bytes = new Uint8Array(binary.length);
-    for(let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-    const url = URL.createObjectURL(new Blob([bytes], { type: mime }));
-    objectUrls.push(url);
-    return url;
-  }
-
-  function verifyImage(url){
+  function verify(url){
     return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.decoding = 'async';
-      img.onload = () => resolve(url);
-      img.onerror = () => reject(new Error('Decoded game artwork is invalid'));
-      img.src = url;
+      const image = new Image();
+      image.decoding = 'async';
+      image.onload = () => resolve(url);
+      image.onerror = () => reject(new Error(`Game artwork failed to load: ${url}`));
+      image.src = url;
     });
   }
 
-  async function loadOne(spec){
-    const parts = await Promise.all(Array.from({ length: spec.chunks }, async (_, index) => {
-      const response = await fetch(chunkPath(spec, index));
-      if(!response.ok) throw new Error(`Missing game artwork chunk ${spec.prefix}.${index}`);
-      return (await response.text()).trim();
-    }));
-    return verifyImage(base64ToBlobUrl(parts.join(''), spec.mime));
-  }
-
-  async function load(){
-    if(!bundlePromise){
-      bundlePromise = Promise.all([
-        loadOne(SPECS.background),
-        loadOne(SPECS.bird),
-        loadOne(SPECS.pillar)
-      ]).then(([background, bird, pillar]) => ({ background, bird, pillar }));
+  function load(){
+    if(!loadPromise){
+      loadPromise = Promise.all(Object.values(assets).map(verify))
+        .then(() => ({ ...assets }));
     }
-    return bundlePromise;
+    return loadPromise;
   }
 
   window.RoadtripGameAssets = {
+    ...assets,
     load,
-    preload(){ return load().catch(() => null); }
+    preload(){ return load().catch(error => { console.warn(error); return null; }); }
   };
 })();
