@@ -1,7 +1,7 @@
 (() => {
   'use strict';
 
-  const ACCESS_CODE = '739184';
+  const ACCESS_CODE = '42067';
   const CODE_LENGTH = ACCESS_CODE.length;
   const KEYS = [
     ['1', ''], ['2', 'ABC'], ['3', 'DEF'],
