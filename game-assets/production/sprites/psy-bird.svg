@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 280" role="img" aria-label="Goa psychedelic bird">
+  <defs>
+    <linearGradient id="body" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff4fae"/><stop offset=".28" stop-color="#7f36d6"/><stop offset=".62" stop-color="#164d91"/><stop offset="1" stop-color="#19d7bd"/></linearGradient>
+    <linearGradient id="wing" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffd45b"/><stop offset=".35" stop-color="#ff5ab7"/><stop offset=".7" stop-color="#5d43cf"/><stop offset="1" stop-color="#2be2ca"/></linearGradient>
+    <radialGradient id="iris"><stop stop-color="#fff"/><stop offset=".18" stop-color="#9affef"/><stop offset=".48" stop-color="#28d9c2"/><stop offset=".72" stop-color="#ffd85b"/><stop offset="1" stop-color="#281235"/></radialGradient>
+    <filter id="shadow" x="-30%" y="-40%" width="170%" height="190%"><feDropShadow dx="0" dy="10" stdDeviation="8" flood-color="#080515" flood-opacity=".65"/></filter>
+    <filter id="glow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="6"/></filter>
+  </defs>
+  <ellipse cx="220" cy="148" rx="150" ry="100" fill="#ff6fc7" opacity=".28" filter="url(#glow)"/>
+  <g filter="url(#shadow)">
+    <path d="M109 146C60 113 27 109 8 124c31 7 53 21 65 43-32-3-55 4-72 22 44 11 82 1 119-25Z" fill="#ee3ca0" stroke="#1b0f2d" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M112 116C77 61 46 42 17 50c29 22 46 47 52 76Z" fill="#29d2bf" stroke="#1b0f2d" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M114 173C75 183 51 201 41 226c29-13 58-13 86-1Z" fill="#5147cc" stroke="#1b0f2d" stroke-width="8" stroke-linejoin="round"/>
+    <ellipse cx="212" cy="148" rx="119" ry="82" fill="url(#body)" stroke="#180d29" stroke-width="11"/>
+    <path d="M115 149c32-58 84-79 139-52-32 14-57 43-64 81-27 5-52-5-75-29Z" fill="url(#wing)" stroke="#271439" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M132 149c28-31 58-39 89-24-19 13-32 32-36 56-19-1-37-12-53-32Z" fill="#ffba49" opacity=".73"/>
+    <circle cx="285" cy="113" r="53" fill="url(#iris)" stroke="#ffe26a" stroke-width="9"/>
+    <circle cx="295" cy="117" r="24" fill="#120c25"/><circle cx="305" cy="104" r="8" fill="#fff"/>
+    <path d="M331 121 413 151 330 185Z" fill="#ffad3f" stroke="#21112f" stroke-width="9" stroke-linejoin="round"/>
+    <path d="M248 55c15-39 45-62 86-67-13 30-10 56 9 79Z" fill="#f94ac2" stroke="#20112f" stroke-width="8" stroke-linejoin="round"/>
+    <path d="M156 81c25 17 49 17 73 0M143 205c29-13 55-12 82 2" fill="none" stroke="#fff2a2" stroke-width="7" stroke-linecap="round" opacity=".8"/>
+    <circle cx="147" cy="94" r="10" fill="#ffd64d" stroke="#331846" stroke-width="4"/>
+    <circle cx="119" cy="131" r="8" fill="#37e6cf" stroke="#331846" stroke-width="4"/>
+    <circle cx="142" cy="191" r="9" fill="#ff67ac" stroke="#331846" stroke-width="4"/>
+  </g>
+</svg>
