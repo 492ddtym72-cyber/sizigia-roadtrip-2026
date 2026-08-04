@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 900" role="img" aria-label="Ornate psychedelic Goa pillar">
+  <defs>
+    <linearGradient id="base" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffbd35"/><stop offset=".2" stop-color="#f04e9e"/><stop offset=".45" stop-color="#793fb6"/><stop offset=".72" stop-color="#1cc8b8"/><stop offset="1" stop-color="#ffe35a"/></linearGradient>
+    <pattern id="mandala" width="88" height="88" patternUnits="userSpaceOnUse">
+      <rect width="88" height="88" fill="none"/>
+      <circle cx="44" cy="44" r="29" fill="none" stroke="#ffe46f" stroke-width="5"/>
+      <circle cx="44" cy="44" r="16" fill="none" stroke="#2de5cb" stroke-width="5"/>
+      <path d="M44 7 54 34 81 44 54 54 44 81 34 54 7 44 34 34Z" fill="none" stroke="#4b174f" stroke-width="5" stroke-linejoin="round"/>
+      <circle cx="44" cy="44" r="5" fill="#fff3ae"/>
+    </pattern>
+    <filter id="shadow" x="-30%" y="-10%" width="160%" height="120%"><feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#0c0820" flood-opacity=".6"/></filter>
+  </defs>
+  <g filter="url(#shadow)">
+    <rect x="37" y="34" width="186" height="832" rx="28" fill="url(#base)" stroke="#1b102b" stroke-width="12"/>
+    <rect x="50" y="48" width="160" height="804" rx="20" fill="url(#mandala)" opacity=".86"/>
+    <path d="M56 96c46 36 92-36 148 0M56 180c46 36 92-36 148 0M56 264c46 36 92-36 148 0M56 348c46 36 92-36 148 0M56 432c46 36 92-36 148 0M56 516c46 36 92-36 148 0M56 600c46 36 92-36 148 0M56 684c46 36 92-36 148 0M56 768c46 36 92-36 148 0" fill="none" stroke="#ffe05a" stroke-width="8" stroke-linecap="round" opacity=".74"/>
+    <path d="M69 56v788M191 56v788" stroke="#48efd7" stroke-width="6" opacity=".75"/>
+    <rect x="12" y="0" width="236" height="74" rx="24" fill="#df8840" stroke="#1b102b" stroke-width="12"/>
+    <rect x="24" y="13" width="212" height="48" rx="17" fill="url(#base)"/>
+    <path d="M39 36h182" stroke="#fff0a2" stroke-width="6" stroke-linecap="round" opacity=".8"/>
+    <rect x="12" y="826" width="236" height="74" rx="24" fill="#df8840" stroke="#1b102b" stroke-width="12"/>
+    <rect x="24" y="839" width="212" height="48" rx="17" fill="url(#base)"/>
+    <path d="M39 864h182" stroke="#fff0a2" stroke-width="6" stroke-linecap="round" opacity=".8"/>
+  </g>
+</svg>
