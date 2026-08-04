@@ -1,0 +1,17 @@
+/* Generated raster artwork override. Kept separate so the Home/UI layer can be updated safely without touching data, sync, or game code. */
+.rt-home::before{
+  background:
+    linear-gradient(180deg,
+      rgba(3,6,18,.02) 0%,
+      rgba(3,7,18,.015) 30%,
+      rgba(4,9,21,.12) 49%,
+      rgba(4,10,22,.42) 68%,
+      rgba(5,12,24,.78) 86%,
+      #07111f 100%),
+    url('./assets/home-roadtrip-sunset-v2.webp') center top/cover no-repeat !important;
+}
+.rt-section-art-crew{background-image:url('./assets/home-crew-campfire-v2.webp')!important}
+.rt-section-art-settings{background-image:url('./assets/home-settings-van-v2.webp')!important}
+.roadtrip-gate.roadtrip-passcode-mode:before{
+  background-image:url('./assets/home-roadtrip-sunset-v2.webp')!important;
+}
