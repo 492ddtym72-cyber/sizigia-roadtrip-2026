@@ -8,12 +8,35 @@
       rgba(4,10,22,.42) 68%,
       rgba(5,12,24,.78) 86%,
       #07111f 100%),
-    url('./assets/home-roadtrip-sunset-v2.webp') center top/cover no-repeat !important;
+    url('./assets/home-roadtrip-sunset-v3.webp') center top/cover no-repeat !important;
+  /* Filters on large composited pseudo-elements get visibly soft in iOS Safari. */
+  filter:none!important;
+  image-rendering:-webkit-optimize-contrast;
 }
-.rt-section-art-crew{background-image:url('./assets/home-crew-campfire-v2.webp')!important}
-.rt-section-art-settings{background-image:url('./assets/home-settings-van-v2.webp')!important}
+.rt-section-art-crew{background-image:url('./assets/home-crew-campfire-v3.webp')!important}
+.rt-section-art-settings{background-image:url('./assets/home-settings-van-v3.webp')!important}
 .roadtrip-gate.roadtrip-passcode-mode:before{
-  background-image:url('./assets/home-roadtrip-sunset-v2.webp')!important;
+  background-image:url('./assets/home-roadtrip-sunset-v3.webp')!important;
+}
+
+/*
+  Inner-page navigation clearance.
+  Safari's sticky compositing can visually place the first child underneath the nav even
+  though the sticky element still participates in normal flow. Reserve explicit space so
+  the back control is always fully visible below the menu and Dynamic Island safe area.
+*/
+body.modern-roadtrip:not([data-active-tab="uebersicht"]) #nav{
+  margin-bottom:0!important;
+}
+body.modern-roadtrip:not([data-active-tab="uebersicht"]) .page.active{
+  padding-top:26px!important;
+  scroll-margin-top:calc(env(safe-area-inset-top) + 92px);
+}
+body.modern-roadtrip .page.active>.section-return:first-child{
+  margin-top:0!important;
+  margin-bottom:18px!important;
+  position:relative!important;
+  z-index:2!important;
 }
 
 /* The hero artwork was generated in a portrait phone composition. On iPhone-sized screens,
@@ -28,6 +51,11 @@
         rgba(4,10,22,.40) 69%,
         rgba(5,12,24,.78) 87%,
         #07111f 100%),
-      url('./assets/home-roadtrip-sunset-v2.webp') center top/100% auto no-repeat !important;
+      url('./assets/home-roadtrip-sunset-v3.webp') center top/100% auto no-repeat !important;
+    filter:none!important;
+    image-rendering:-webkit-optimize-contrast;
+  }
+  body.modern-roadtrip:not([data-active-tab="uebersicht"]) .page.active{
+    padding-top:38px!important;
   }
 }
