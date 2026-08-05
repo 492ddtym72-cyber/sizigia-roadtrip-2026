@@ -1,53 +1,87 @@
-/* Generated raster artwork override. Kept separate so the Home/UI layer can be updated safely without touching data, sync, or game code. */
-.rt-home::before{
+/* Generated raster artwork override. Kept separate so Home/UI visuals can evolve without touching data, sync, or game mechanics. */
+
+/*
+  HOME HERO
+  Put the painting on the actual Home element instead of a negative-z pseudo element.
+  The previous ::before could render behind .rt-home's opaque background in iOS Safari,
+  producing the large blank navy area seen on device.
+*/
+.rt-home{
   background:
     linear-gradient(180deg,
-      rgba(3,6,18,.02) 0%,
-      rgba(3,7,18,.015) 30%,
-      rgba(4,9,21,.12) 49%,
-      rgba(4,10,22,.42) 68%,
-      rgba(5,12,24,.78) 86%,
-      #07111f 100%),
-    url('./assets/home-roadtrip-sunset-v3.webp') center top/cover no-repeat !important;
-  filter:none!important;
+      rgba(3,6,18,.00) 0%,
+      rgba(3,7,18,.01) 28%,
+      rgba(4,9,21,.08) 46%,
+      rgba(4,10,22,.34) 61%,
+      rgba(5,12,24,.76) 76%,
+      #07111f 91%),
+    url('./assets/home-roadtrip-sunset-v3.webp') center top/cover no-repeat,
+    #07111f!important;
   image-rendering:-webkit-optimize-contrast;
 }
+.rt-home::before{display:none!important}
+.rt-home::after{
+  z-index:1!important;
+  top:min(74svh,700px)!important;
+  background:linear-gradient(180deg,transparent,#07111f 88%)!important;
+}
+.rt-hero,.rt-home-body{position:relative;z-index:2}
+
 .rt-section-art-crew{background-image:url('./assets/home-crew-campfire-v3.webp')!important}
 .rt-section-art-settings{background-image:url('./assets/home-settings-van-v3.webp')!important}
 .roadtrip-gate.roadtrip-passcode-mode:before{background-image:url('./assets/home-roadtrip-sunset-v3.webp')!important}
 
-/* Generated paintings are visible on the four primary Home cards, matching the concept. */
-.rt-primary-grid .rt-main-card{background-size:cover!important;background-position:center!important}
+/* Primary Home cards: real paintings beneath readable translucent glass. */
+.rt-primary-grid .rt-main-card{
+  background-size:cover!important;
+  background-repeat:no-repeat!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+}
 .rt-primary-grid .rt-main-card:nth-child(1){
-  background-image:linear-gradient(90deg,rgba(51,28,17,.88) 0%,rgba(8,15,27,.76) 62%,rgba(8,15,27,.54) 100%),url('./assets/home-roadtrip-sunset-v3.webp')!important;
-  background-position:center 62%!important;
+  background-image:
+    linear-gradient(90deg,rgba(48,27,17,.66) 0%,rgba(8,15,27,.56) 58%,rgba(8,15,27,.38) 100%),
+    url('./assets/home-roadtrip-sunset-v3.webp')!important;
+  background-position:center 64%!important;
 }
 .rt-primary-grid .rt-main-card:nth-child(2){
-  background-image:linear-gradient(90deg,rgba(5,44,43,.9) 0%,rgba(7,20,30,.76) 62%,rgba(7,20,30,.52) 100%),url('./assets/home-crew-campfire-v3.webp')!important;
-  background-position:center 54%!important;
+  background-image:
+    linear-gradient(90deg,rgba(5,44,43,.66) 0%,rgba(7,20,30,.55) 58%,rgba(7,20,30,.36) 100%),
+    url('./assets/home-crew-campfire-v3.webp')!important;
+  background-position:center 55%!important;
 }
 .rt-primary-grid .rt-main-card:nth-child(3){
-  background-image:linear-gradient(90deg,rgba(48,19,55,.9) 0%,rgba(8,15,28,.73) 62%,rgba(8,15,28,.48) 100%),url('./assets/home-roadtrip-sunset-v3.webp')!important;
-  background-position:center 70%!important;
+  background-image:
+    linear-gradient(90deg,rgba(48,19,55,.62) 0%,rgba(8,15,28,.51) 58%,rgba(8,15,28,.32) 100%),
+    url('./assets/game-eclipse-background.webp')!important;
+  background-position:center 42%!important;
 }
 .rt-primary-grid .rt-main-card:nth-child(4){
-  background-image:linear-gradient(90deg,rgba(55,45,10,.88) 0%,rgba(11,18,27,.76) 62%,rgba(11,18,27,.5) 100%),url('./assets/home-settings-van-v3.webp')!important;
+  background-image:
+    linear-gradient(90deg,rgba(55,45,10,.64) 0%,rgba(11,18,27,.54) 58%,rgba(11,18,27,.34) 100%),
+    url('./assets/home-settings-van-v3.webp')!important;
   background-position:center 62%!important;
 }
-.rt-primary-grid .rt-main-card:before{background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 13%,transparent),transparent 58%)!important}
+.rt-primary-grid .rt-main-card:before{
+  background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 8%,transparent),transparent 58%)!important;
+}
 
-/* Game UI uses the dedicated eclipse/tropical artwork. Home keeps the bus-at-sunset painting. */
+/* Game UI: dedicated eclipse/tropical artwork, never the Home bus painting. */
 .rt-game-hero{
-  background:linear-gradient(180deg,rgba(8,8,25,.03),rgba(7,13,27,.16) 48%,rgba(7,13,27,.82) 100%),url('./assets/game-eclipse-background.webp') center 45%/cover no-repeat!important;
+  background:
+    linear-gradient(180deg,rgba(8,8,25,.02),rgba(7,13,27,.10) 48%,rgba(7,13,27,.74) 100%),
+    url('./assets/game-eclipse-background.webp') center 44%/cover no-repeat!important;
 }
 .arcade-game-art{
-  background-image:linear-gradient(180deg,rgba(17,7,35,.03),rgba(8,18,31,.08) 48%,rgba(8,18,31,.44) 100%),url('./assets/game-eclipse-background.webp')!important;
+  background-image:
+    linear-gradient(180deg,rgba(17,7,35,.01),rgba(8,18,31,.04) 48%,rgba(8,18,31,.34) 100%),
+    url('./assets/game-eclipse-background.webp')!important;
   background-size:cover!important;
-  background-position:center 46%!important;
+  background-position:center 43%!important;
 }
 .arcade-game-art:before,.arcade-game-art:after{display:none!important}
 .arcade-eclipse{display:none!important}
-.arcade-bird-mark{background:rgba(17,11,35,.72)!important;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.arcade-bird-mark{background:rgba(17,11,35,.62)!important;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
 
 /* Explicit mobile clearance so the legacy back control cannot hide under the sticky nav. */
 body.modern-roadtrip:not([data-active-tab="uebersicht"]) #nav{margin-bottom:0!important}
@@ -63,14 +97,19 @@ body.modern-roadtrip .page.active>.section-return:first-child{
 }
 
 @media (max-width:600px){
-  .rt-home::before{
+  .rt-home{
     background:
-      linear-gradient(180deg,rgba(3,6,18,.01) 0%,rgba(3,7,18,.01) 31%,rgba(4,9,21,.10) 50%,rgba(4,10,22,.40) 69%,rgba(5,12,24,.78) 87%,#07111f 100%),
-      url('./assets/home-roadtrip-sunset-v3.webp') center top/100% auto no-repeat !important;
-    filter:none!important;
-    image-rendering:-webkit-optimize-contrast;
+      linear-gradient(180deg,
+        rgba(3,6,18,.00) 0%,
+        rgba(3,7,18,.00) 31%,
+        rgba(4,9,21,.06) 49%,
+        rgba(4,10,22,.30) 63%,
+        rgba(5,12,24,.76) 78%,
+        #07111f 92%),
+      url('./assets/home-roadtrip-sunset-v3.webp') center top/100% auto no-repeat,
+      #07111f!important;
   }
   body.modern-roadtrip:not([data-active-tab="uebersicht"]) .page.active{padding-top:38px!important}
-  .rt-primary-grid .rt-main-card{min-height:94px}
-  .arcade-game-art{background-position:center 40%!important}
+  .rt-primary-grid .rt-main-card{min-height:100px}
+  .arcade-game-art{background-position:center 39%!important}
 }
